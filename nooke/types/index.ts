@@ -1,0 +1,89 @@
+// User types
+export interface User {
+  id: string;
+  phone: string;
+  display_name: string;
+  avatar_url?: string;
+  mood: 'good' | 'neutral' | 'not_great' | 'reach_out';
+  is_online: boolean;
+  last_seen_at: string;
+  ghost_mode_until?: string;
+  take_break_until?: string;
+  fcm_token?: string;
+  created_at: string;
+}
+
+// Friendship types
+export interface Friendship {
+  id: string;
+  user_id: string;
+  friend_id: string;
+  status: 'pending' | 'accepted' | 'declined';
+  visibility: 'full' | 'limited' | 'minimal' | 'hidden';
+  created_at: string;
+  last_interaction_at: string;
+  friend?: User;
+}
+
+// Room types
+export interface Room {
+  id: string;
+  creator_id: string;
+  name?: string;
+  is_active: boolean;
+  is_private: boolean;
+  audio_active: boolean;
+  created_at: string;
+  closed_at?: string;
+  participants?: RoomParticipant[];
+}
+
+export interface RoomParticipant {
+  id: string;
+  room_id: string;
+  user_id: string;
+  is_muted: boolean;
+  joined_at: string;
+  user?: User;
+}
+
+// Flare types
+export interface Flare {
+  id: string;
+  user_id: string;
+  expires_at: string;
+  responded_by?: string;
+  created_at: string;
+  user?: User;
+}
+
+// Nudge types
+export interface Nudge {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  created_at: string;
+}
+
+// Block types
+export interface Block {
+  id: string;
+  blocker_id: string;
+  blocked_id: string;
+  block_type: 'mute' | 'soft' | 'hard';
+  created_at: string;
+}
+
+// Anchor types
+export interface Anchor {
+  id: string;
+  user_id: string;
+  anchor_id: string;
+  created_at: string;
+}
+
+// Auth types
+export interface AuthResponse {
+  user: User;
+  token: string;
+}

@@ -1,0 +1,105 @@
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { colors, gradients, typography, spacing, radius } from '../lib/theme';
+
+interface FlareButtonProps {
+  onPress: () => void;
+  loading?: boolean;
+  hasActiveFlare?: boolean;
+}
+
+export const FlareButton: React.FC<FlareButtonProps> = ({
+  onPress,
+  loading = false,
+  hasActiveFlare = false,
+}) => {
+  const pulseAnim = React.useRef(new Animated.Value(1)).current;
+
+  React.useEffect(() => {
+    if (hasActiveFlare) {
+      // Pulsing animation for active flare
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      pulseAnim.setValue(1);
+    }
+  }, [hasActiveFlare]);
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={onPress}
+      disabled={loading}
+    >
+      <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+        <LinearGradient
+          colors={hasActiveFlare ? ['#ef4444', '#dc2626'] : gradients.button}
+          style={[
+            styles.button,
+            hasActiveFlare && styles.activeButton,
+            loading && styles.buttonDisabled,
+          ]}
+        >
+          <View style={styles.content}>
+            <Text style={styles.emoji}>{hasActiveFlare ? '🚨' : '🔥'}</Text>
+            <View>
+              <Text style={styles.title}>
+                {hasActiveFlare ? 'Flare Active' : 'Send Flare'}
+              </Text>
+              <Text style={styles.subtitle}>
+                {hasActiveFlare ? 'Help is on the way' : 'Need support?'}
+              </Text>
+            </View>
+          </View>
+        </LinearGradient>
+      </Animated.View>
+    </TouchableOpacity>
+  );
+};
+
+const styles = StyleSheet.create({
+  button: {
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.ui.border,
+  },
+  activeButton: {
+    borderColor: '#ef4444',
+    borderWidth: 2,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  emoji: {
+    fontSize: 32,
+  },
+  title: {
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.bold,
+    color: colors.text.primary,
+    marginBottom: spacing.xs / 2,
+  },
+  subtitle: {
+    fontSize: typography.size.sm,
+    color: colors.text.secondary,
+  },
+});
