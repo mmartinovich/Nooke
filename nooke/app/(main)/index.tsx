@@ -1,11 +1,13 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Alert, StatusBar } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../../lib/supabase";
+import { Animated as RNAnimated, PanResponder, Easing } from "react-native";
 
 // AsyncStorage with fallback for when package isn't installed
 // TODO: Install @react-native-async-storage/async-storage package: npm install @react-native-async-storage/async-storage
@@ -63,87 +65,251 @@ export default function QuantumOrbitScreen() {
   const { sendNudge } = useNudge();
   const { sendFlare, activeFlares, myActiveFlare } = useFlare();
   const { updateActivity } = usePresence(); // Track presence while app is active
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with false - friends from Zustand show immediately
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [showHint, setShowHint] = useState(true); // Show hint by default until user interacts
+
+  // Shared orbit angle for roulette rotation - all friends rotate together
+  // Using React Native Animated API (works in Expo Go, can upgrade to Reanimated later)
+  const orbitAngle = useRef(new RNAnimated.Value(0)).current;
+  const orbitAngleValueRef = useRef(0); // Track the actual value
+  const orbitVelocity = useRef(0);
+  const lastAngleRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number>(Date.now());
+  const decayAnimationRef = useRef<RNAnimated.CompositeAnimation | null>(null);
+
+  // Pan gesture handler for drag-to-spin rotation
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false, // Never capture on start - let taps through
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        // Only capture after significant movement (drag, not tap)
+        return Math.abs(gestureState.dx) > 15 || Math.abs(gestureState.dy) > 15;
+      },
+      onPanResponderTerminationRequest: () => true, // Allow other responders to take over
+      onShouldBlockNativeResponder: () => false,
+      onPanResponderGrant: (event) => {
+        lastTimeRef.current = Date.now();
+        if (decayAnimationRef.current) {
+          decayAnimationRef.current.stop();
+          decayAnimationRef.current = null;
+        }
+        orbitVelocity.current = 0;
+        const touchX = event.nativeEvent.pageX;
+        const touchY = event.nativeEvent.pageY;
+        const { width, height } = Dimensions.get("window");
+        lastAngleRef.current = Math.atan2(touchY - height / 2, touchX - width / 2);
+      },
+      onPanResponderMove: (event) => {
+        if (lastAngleRef.current === null) return;
+        const touchX = event.nativeEvent.pageX;
+        const touchY = event.nativeEvent.pageY;
+        const { width, height } = Dimensions.get("window");
+        const currentAngle = Math.atan2(touchY - height / 2, touchX - width / 2);
+        let deltaAngle = currentAngle - lastAngleRef.current;
+        if (deltaAngle > Math.PI) deltaAngle -= 2 * Math.PI;
+        else if (deltaAngle < -Math.PI) deltaAngle += 2 * Math.PI;
+
+        const newValue = orbitAngleValueRef.current + deltaAngle;
+        orbitAngleValueRef.current = newValue;
+        orbitAngle.setValue(newValue);
+
+        const currentTime = Date.now();
+        const deltaTime = currentTime - lastTimeRef.current;
+        if (deltaTime > 0) {
+          orbitVelocity.current = (deltaAngle / deltaTime) * 1000;
+        }
+        lastTimeRef.current = currentTime;
+        lastAngleRef.current = currentAngle;
+      },
+      onPanResponderRelease: () => {
+        const velocity = orbitVelocity.current;
+        if (Math.abs(velocity) > 0.1) {
+          const targetValue = orbitAngleValueRef.current + velocity * 1.5;
+          decayAnimationRef.current = RNAnimated.timing(orbitAngle, {
+            toValue: targetValue,
+            duration: Math.min(Math.abs(velocity) * 800, 2000),
+            useNativeDriver: false,
+            easing: Easing.out(Easing.cubic),
+          });
+          const listenerId = orbitAngle.addListener(({ value }) => {
+            orbitAngleValueRef.current = value;
+          });
+          decayAnimationRef.current.start(() => {
+            orbitAngle.removeListener(listenerId);
+            orbitVelocity.current = 0;
+            decayAnimationRef.current = null;
+          });
+        }
+        lastAngleRef.current = null;
+      },
+    })
+  ).current;
 
   // All hooks must be called before any conditional returns
   const currentVibe = useMemo(() => getVibeText(currentUser?.mood || "neutral"), [currentUser?.mood]);
   const moodEmoji = getMoodEmoji(currentUser?.mood || "neutral");
 
   // Calculate friend list and positions - must be before conditional returns
-  const friendList = friends.map((f) => f.friend as User);
+  // Filter out any invalid friends (where friend data is missing)
+  // Friends persist in Zustand, so they're available immediately on remount
+  const friendList = friends.map((f) => f.friend as User).filter((f): f is User => f !== null && f !== undefined);
+
+  // CRITICAL: Immediately restore mock friends if they're missing
+  // This prevents the Friends page from clearing them
+  // This effect runs whenever friends array changes - if it becomes empty, restore immediately
+  useEffect(() => {
+    if (currentUser && friends.length === 0 && friendList.length === 0) {
+      // Friends were cleared (possibly by Friends page) - restore immediately
+      // Use silent mode so we don't show loading - friends will appear as soon as they're set
+      loadFriends(true);
+    }
+  }, [currentUser, friends.length, friendList.length]);
 
   // Organic layout algorithm - calculate positions for friends
+  // Ensures even distribution around central orb with no overlaps
   const calculateFriendPositions = (count: number) => {
+    if (count === 0) return [];
+
     const positions: Array<{ x: number; y: number }> = [];
-    const baseRadius = 150; // Base distance from center (increased)
-    const minDistance = 100; // Minimum distance between particles (increased to prevent overlap with orbital rotation)
+    const PARTICLE_SIZE = 60; // Size of friend particle
+    const ORBITAL_MARGIN = 20; // Extra space for orbital motion
+    const minDistance = PARTICLE_SIZE + ORBITAL_MARGIN; // Minimum center-to-center distance (80px)
+
+    // Safe zones to avoid UI elements
     const safeZoneTop = 200; // Avoid top card
     const safeZoneBottom = height - 100; // Avoid bottom nav
     const safeZoneLeft = 50;
     const safeZoneRight = width - 50;
 
+    // Calculate available space for radius
+    const maxRadiusX = Math.min(CENTER_X - safeZoneLeft, safeZoneRight - CENTER_X);
+    const maxRadiusY = Math.min(CENTER_Y - safeZoneTop, safeZoneBottom - CENTER_Y);
+    const maxRadius = Math.min(maxRadiusX, maxRadiusY) - PARTICLE_SIZE / 2;
+
+    // Start with base radius, use multiple layers if needed
+    let baseRadius = 140;
+    const radiusStep = 40; // Step between layers if needed
+    const maxLayers = 3;
+
+    // Distribute evenly around the circle
     for (let i = 0; i < count; i++) {
-      let attempts = 0;
-      let validPosition = false;
-      let x = 0;
-      let y = 0;
+      const baseAngle = (i / count) * 2 * Math.PI;
+      let placed = false;
+      let layer = 0;
 
-      while (!validPosition && attempts < 100) {
-        // Polar coordinates with more even distribution
-        const angle = (i / count) * 2 * Math.PI + (Math.random() - 0.5) * 0.4; // Reduced random variation
-        const radius = baseRadius + (Math.random() - 0.5) * 30; // Reduced radius variation
+      // Try placing on different layers if needed
+      while (!placed && layer < maxLayers) {
+        const currentRadius = baseRadius + layer * radiusStep;
 
-        x = CENTER_X + Math.cos(angle) * radius;
-        y = CENTER_Y + Math.sin(angle) * radius;
+        // Try multiple angles around the base angle for better fit
+        const angleVariations = [
+          baseAngle, // Primary position
+          baseAngle - 0.1, // Slight left
+          baseAngle + 0.1, // Slight right
+          baseAngle - 0.2,
+          baseAngle + 0.2,
+        ];
 
-        // Check safe zones
-        if (y > safeZoneTop && y < safeZoneBottom && x > safeZoneLeft && x < safeZoneRight) {
-          // Check distance from other particles (accounting for orbital rotation radius)
-          let tooClose = false;
-          for (const pos of positions) {
-            const distance = Math.sqrt(Math.pow(x - pos.x, 2) + Math.pow(y - pos.y, 2));
-            // Account for orbital rotation - particles can move closer during rotation
-            // So we need more spacing initially
-            if (distance < minDistance) {
-              tooClose = true;
+        for (const angle of angleVariations) {
+          const x = CENTER_X + Math.cos(angle) * currentRadius;
+          const y = CENTER_Y + Math.sin(angle) * currentRadius;
+
+          // Check if within safe zones
+          if (
+            y >= safeZoneTop &&
+            y <= safeZoneBottom &&
+            x >= safeZoneLeft &&
+            x <= safeZoneRight &&
+            currentRadius <= maxRadius
+          ) {
+            // Check distance from all existing positions
+            let tooClose = false;
+            for (const pos of positions) {
+              const distance = Math.sqrt(Math.pow(x - pos.x, 2) + Math.pow(y - pos.y, 2));
+              if (distance < minDistance) {
+                tooClose = true;
+                break;
+              }
+            }
+
+            if (!tooClose) {
+              positions.push({ x, y });
+              placed = true;
               break;
             }
           }
-
-          if (!tooClose) {
-            validPosition = true;
-          }
         }
 
-        attempts++;
+        layer++;
       }
 
-      // If we couldn't find a valid position, use a fallback with even spacing
-      if (!validPosition) {
-        const angle = (i / count) * 2 * Math.PI;
-        const radius = baseRadius + (i % 2) * 20; // Alternate radius for spacing
-        x = CENTER_X + Math.cos(angle) * radius;
-        y = CENTER_Y + Math.sin(angle) * radius;
+      // Final fallback: place at base angle with minimum radius, even if slightly overlapping
+      // This ensures all friends are visible
+      if (!placed) {
+        const fallbackRadius = Math.max(baseRadius, 120);
+        const x = CENTER_X + Math.cos(baseAngle) * fallbackRadius;
+        const y = CENTER_Y + Math.sin(baseAngle) * fallbackRadius;
+        positions.push({ x, y });
       }
-
-      positions.push({ x, y });
     }
 
     return positions;
   };
 
-  const friendPositions = useMemo(() => calculateFriendPositions(friendList.length), [friendList.length]);
+  // Recalculate positions when friends change
+  // Use friend IDs as dependency to detect actual changes, not just length
+  const friendIds = useMemo(() => friendList.map((f) => f.id).join(","), [friendList]);
+  const friendPositions = useMemo(() => calculateFriendPositions(friendList.length), [friendList.length, friendIds]);
+
+  // Calculate base angles for each friend from their initial positions
+  // These are used with orbitAngle to calculate final positions during rotation
+  const friendBaseAngles = useMemo(() => {
+    return friendPositions.map((pos) => {
+      const deltaX = pos.x - CENTER_X;
+      const deltaY = pos.y - CENTER_Y;
+      return Math.atan2(deltaY, deltaX);
+    });
+  }, [friendPositions]);
+
+  // Calculate radius for each friend (distance from center)
+  const friendRadii = useMemo(() => {
+    return friendPositions.map((pos) => {
+      const deltaX = pos.x - CENTER_X;
+      const deltaY = pos.y - CENTER_Y;
+      return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    });
+  }, [friendPositions]);
+
+  // Friends persist in Zustand store across navigation, so avatars show immediately
+  // No need to reload on focus - friends are already in store and realtime updates them
 
   useEffect(() => {
     if (currentUser) {
-      loadFriends();
+      // Always ensure loading is false if we have friends (they render immediately)
+      if (friendList.length > 0) {
+        setLoading(false);
+      }
+
+      // Check if we need to load friends
+      const needsLoad = friendList.length === 0;
+
+      if (needsLoad) {
+        // No friends yet, load them
+        setLoading(true);
+        loadFriends(false);
+      } else {
+        // We have friends - refresh silently in background
+        loadFriends(true);
+      }
+
       loadHintState();
       const cleanup = setupRealtimeSubscription();
       return cleanup;
+    } else {
+      setLoading(false);
     }
-  }, [currentUser]);
+  }, [currentUser]); // Only depend on currentUser - friends from store are reactive
 
   const loadHintState = async () => {
     try {
@@ -166,10 +332,15 @@ export default function QuantumOrbitScreen() {
     }
   };
 
-  const loadFriends = async () => {
+  const loadFriends = async (silent = false) => {
     if (!currentUser) {
       setLoading(false);
       return;
+    }
+
+    // Don't show loading state if this is a silent refresh
+    if (!silent) {
+      setLoading(true);
     }
 
     try {
@@ -293,111 +464,122 @@ export default function QuantumOrbitScreen() {
       ];
 
       // Use mock friends for now (comment out the real data line)
+      // Always set mock friends to ensure they're available
       setFriends(mockFriends);
       // setFriends(data || []);
+
+      // Ensure loading is false after setting friends
+      setLoading(false);
     } catch (error: any) {
       console.error("Error loading friends:", error);
-      // Even on error, show mock friends with avatars
-      const mockFriends: any[] = [
-        {
-          id: "mock-1",
-          user_id: currentUser.id,
-          friend_id: "friend-1",
-          status: "accepted",
-          visibility: "full",
-          created_at: new Date().toISOString(),
-          last_interaction_at: new Date().toISOString(),
-          friend: {
-            id: "friend-1",
-            phone: "+1234567890",
-            display_name: "Alex",
-            mood: "good",
-            is_online: true,
-            last_seen_at: new Date().toISOString(),
-            avatar_url: "https://i.pravatar.cc/150?img=1",
+      // Only show error friends if we don't already have friends in store
+      if (friends.length === 0) {
+        // Even on error, show mock friends with avatars
+        const mockFriends: any[] = [
+          {
+            id: "mock-1",
+            user_id: currentUser.id,
+            friend_id: "friend-1",
+            status: "accepted",
+            visibility: "full",
             created_at: new Date().toISOString(),
+            last_interaction_at: new Date().toISOString(),
+            friend: {
+              id: "friend-1",
+              phone: "+1234567890",
+              display_name: "Alex",
+              mood: "good",
+              is_online: true,
+              last_seen_at: new Date().toISOString(),
+              avatar_url: "https://i.pravatar.cc/150?img=1",
+              created_at: new Date().toISOString(),
+            },
           },
-        },
-        {
-          id: "mock-2",
-          user_id: currentUser.id,
-          friend_id: "friend-2",
-          status: "accepted",
-          visibility: "full",
-          created_at: new Date().toISOString(),
-          last_interaction_at: new Date().toISOString(),
-          friend: {
-            id: "friend-2",
-            phone: "+1234567891",
-            display_name: "Sam",
-            mood: "neutral",
-            is_online: false,
-            last_seen_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-            avatar_url: "https://i.pravatar.cc/150?img=5",
+          {
+            id: "mock-2",
+            user_id: currentUser.id,
+            friend_id: "friend-2",
+            status: "accepted",
+            visibility: "full",
             created_at: new Date().toISOString(),
+            last_interaction_at: new Date().toISOString(),
+            friend: {
+              id: "friend-2",
+              phone: "+1234567891",
+              display_name: "Sam",
+              mood: "neutral",
+              is_online: false,
+              last_seen_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+              avatar_url: "https://i.pravatar.cc/150?img=5",
+              created_at: new Date().toISOString(),
+            },
           },
-        },
-        {
-          id: "mock-3",
-          user_id: currentUser.id,
-          friend_id: "friend-3",
-          status: "accepted",
-          visibility: "full",
-          created_at: new Date().toISOString(),
-          last_interaction_at: new Date().toISOString(),
-          friend: {
-            id: "friend-3",
-            phone: "+1234567892",
-            display_name: "Jordan",
-            mood: "not_great",
-            is_online: true,
-            last_seen_at: new Date().toISOString(),
-            avatar_url: "https://i.pravatar.cc/150?img=12",
+          {
+            id: "mock-3",
+            user_id: currentUser.id,
+            friend_id: "friend-3",
+            status: "accepted",
+            visibility: "full",
             created_at: new Date().toISOString(),
+            last_interaction_at: new Date().toISOString(),
+            friend: {
+              id: "friend-3",
+              phone: "+1234567892",
+              display_name: "Jordan",
+              mood: "not_great",
+              is_online: true,
+              last_seen_at: new Date().toISOString(),
+              avatar_url: "https://i.pravatar.cc/150?img=12",
+              created_at: new Date().toISOString(),
+            },
           },
-        },
-        {
-          id: "mock-4",
-          user_id: currentUser.id,
-          friend_id: "friend-4",
-          status: "accepted",
-          visibility: "full",
-          created_at: new Date().toISOString(),
-          last_interaction_at: new Date().toISOString(),
-          friend: {
-            id: "friend-4",
-            phone: "+1234567893",
-            display_name: "Taylor",
-            mood: "reach_out",
-            is_online: false,
-            last_seen_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            avatar_url: "https://i.pravatar.cc/150?img=47",
+          {
+            id: "mock-4",
+            user_id: currentUser.id,
+            friend_id: "friend-4",
+            status: "accepted",
+            visibility: "full",
             created_at: new Date().toISOString(),
+            last_interaction_at: new Date().toISOString(),
+            friend: {
+              id: "friend-4",
+              phone: "+1234567893",
+              display_name: "Taylor",
+              mood: "reach_out",
+              is_online: false,
+              last_seen_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+              avatar_url: "https://i.pravatar.cc/150?img=47",
+              created_at: new Date().toISOString(),
+            },
           },
-        },
-        {
-          id: "mock-5",
-          user_id: currentUser.id,
-          friend_id: "friend-5",
-          status: "accepted",
-          visibility: "full",
-          created_at: new Date().toISOString(),
-          last_interaction_at: new Date().toISOString(),
-          friend: {
-            id: "friend-5",
-            phone: "+1234567894",
-            display_name: "Riley",
-            mood: "good",
-            is_online: true,
-            last_seen_at: new Date().toISOString(),
-            avatar_url: "https://i.pravatar.cc/150?img=33",
+          {
+            id: "mock-5",
+            user_id: currentUser.id,
+            friend_id: "friend-5",
+            status: "accepted",
+            visibility: "full",
             created_at: new Date().toISOString(),
+            last_interaction_at: new Date().toISOString(),
+            friend: {
+              id: "friend-5",
+              phone: "+1234567894",
+              display_name: "Riley",
+              mood: "good",
+              is_online: true,
+              last_seen_at: new Date().toISOString(),
+              avatar_url: "https://i.pravatar.cc/150?img=33",
+              created_at: new Date().toISOString(),
+            },
           },
-        },
-      ];
-      setFriends(mockFriends);
+        ];
+        setFriends(mockFriends);
+        setLoading(false);
+      }
     } finally {
-      setLoading(false);
+      // Only update loading state if not a silent refresh
+      if (!silent) {
+        setLoading(false);
+      }
     }
   };
 
@@ -414,7 +596,8 @@ export default function QuantumOrbitScreen() {
           table: "users",
         },
         () => {
-          loadFriends();
+          // Silent refresh on realtime updates - don't show loading
+          loadFriends(true);
         }
       )
       .subscribe();
@@ -468,7 +651,9 @@ export default function QuantumOrbitScreen() {
     await sendFlare();
   };
 
-  if (loading) {
+  // NEVER show loading if we have friends - friends from Zustand always render immediately
+  // Only show loading screen if we have no friends AND no user (initial auth)
+  if (loading && friendList.length === 0 && !currentUser) {
     return (
       <LinearGradient colors={gradients.background} style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -477,6 +662,9 @@ export default function QuantumOrbitScreen() {
       </LinearGradient>
     );
   }
+
+  // Friends from Zustand store are always rendered immediately when they exist
+  // This ensures avatars appear instantly when navigating back from other screens
 
   const userMoodColors = getMoodColor(currentUser?.mood || "neutral");
 
@@ -489,6 +677,10 @@ export default function QuantumOrbitScreen() {
 
       {/* Animated Star Field */}
       <StarField />
+
+      {/* Gesture handler for drag-to-spin - BEHIND interactive elements */}
+      {/* Rendered before CentralOrb/FriendParticles so they receive touches first */}
+      <View style={StyleSheet.absoluteFill} {...panResponder.panHandlers} pointerEvents="auto" />
 
       {/* Central Orb - Your Presence */}
       <CentralOrb
@@ -504,17 +696,22 @@ export default function QuantumOrbitScreen() {
       />
 
       {/* Friend Particles - Organic Layout (rendered after central orb to appear on top) */}
-      {friendList.map((friend, index) => (
-        <FriendParticle
-          key={friend.id}
-          friend={friend}
-          index={index}
-          total={friendList.length}
-          onPress={() => handleFriendPress(friend)}
-          hasActiveFlare={activeFlares.some((f: any) => f.user_id === friend.id)}
-          position={friendPositions[index] || { x: CENTER_X, y: CENTER_Y }}
-        />
-      ))}
+      {/* Always render friends if they exist - they persist in Zustand */}
+      {friendList.length > 0 &&
+        friendList.map((friend, index) => (
+          <FriendParticle
+            key={friend.id}
+            friend={friend}
+            index={index}
+            total={friendList.length}
+            onPress={() => handleFriendPress(friend)}
+            hasActiveFlare={activeFlares.some((f: any) => f.user_id === friend.id)}
+            position={friendPositions[index] || { x: CENTER_X, y: CENTER_Y }}
+            baseAngle={friendBaseAngles[index] || 0}
+            radius={friendRadii[index] || 150}
+            orbitAngle={orbitAngle}
+          />
+        ))}
 
       {/* Top Header - Simple Text */}
       <View style={styles.topHeader} pointerEvents="box-none">

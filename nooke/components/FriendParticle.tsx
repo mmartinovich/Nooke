@@ -17,6 +17,9 @@ interface FriendParticleProps {
   onPress: () => void;
   hasActiveFlare: boolean;
   position: { x: number; y: number };
+  baseAngle: number;
+  radius: number;
+  orbitAngle: Animated.Value;
 }
 
 export function FriendParticle({
@@ -26,40 +29,97 @@ export function FriendParticle({
   onPress,
   hasActiveFlare,
   position,
+  baseAngle,
+  radius,
+  orbitAngle,
 }: FriendParticleProps) {
-  const orbitAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const flareAnim = useRef(new Animated.Value(0)).current;
   const bounceAnim = useRef(new Animated.Value(0)).current;
 
-  // Calculate orbital parameters from initial position
   const centerX = CENTER_X;
   const centerY = CENTER_Y;
-  const initialX = position.x;
-  const initialY = position.y;
-  const deltaX = initialX - centerX;
-  const deltaY = initialY - centerY;
-  const radius = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-  const initialAngle = Math.atan2(deltaY, deltaX);
 
-  // Subtle orbital rotation animation - slow and smooth
+  // Orbital rotation is now controlled by shared orbitAngle from parent
+  // Use Animated.Value listener to update position reactively
+  const [translateX, setTranslateX] = React.useState(() => {
+    // Calculate initial position based on baseAngle
+    return Math.cos(baseAngle) * radius;
+  });
+  const [translateY, setTranslateY] = React.useState(() => {
+    return Math.sin(baseAngle) * radius;
+  });
+
+  // Track combined orbit angle (parent drag + local oscillation)
+  const localOrbitOffset = useRef(0);
+  const localOrbitAnim = useRef(new Animated.Value(0)).current;
+  
   useEffect(() => {
-    // Extremely slow rotation around center (one full rotation every 180-240 seconds, varies by index)
-    // Each friend rotates at slightly different speeds for organic feel
-    const rotationDuration = 180000 + index * 10000; // 180-240 seconds (3-4 minutes) depending on index
-    
-    Animated.loop(
-      Animated.timing(orbitAnim, {
-        toValue: 1,
-        duration: rotationDuration,
-        easing: Easing.linear,
-        useNativeDriver: false, // Need to use false for translateX/Y with calculated values
-      })
-    ).start();
-  }, [index]);
+    // Function to update position based on combined orbit angles
+    const updatePosition = (parentValue: number, localValue: number) => {
+      const angle = baseAngle + parentValue + localValue;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      setTranslateX(x);
+      setTranslateY(y);
+    };
 
-  // Gentle floating animation - no orbital motion
-  // Note: Using useNativeDriver: false to match orbital animation (can't mix native/JS drivers)
+    // Set initial position
+    updatePosition(0, 0);
+
+    // Listen for parent orbit angle changes (from drag-to-spin)
+    const parentListenerId = orbitAngle.addListener(({ value }) => {
+      updatePosition(value, localOrbitOffset.current);
+    });
+
+    // Listen for local orbit animation (oscillation around base position)
+    const localListenerId = localOrbitAnim.addListener(({ value }) => {
+      localOrbitOffset.current = value;
+      updatePosition((orbitAngle as any)._value || 0, value);
+    });
+
+    // Oscillation parameters - each avatar oscillates differently
+    // This prevents them from clustering together over time
+    const oscillationAmplitude = 0.15 + (index * 0.05); // Radians (about 8-25 degrees)
+    const oscillationDuration = 8000 + (index * 3000) + ((index % 3) * 5000); // 8-26 seconds per oscillation
+    const startDirection = index % 2 === 0 ? 1 : -1; // Alternate starting direction
+
+    // Start with oscillation - avatars swing back and forth around their base position
+    // This keeps them evenly distributed and never clustering
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(localOrbitAnim, {
+          toValue: oscillationAmplitude * startDirection,
+          duration: oscillationDuration / 2,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+        Animated.timing(localOrbitAnim, {
+          toValue: -oscillationAmplitude * startDirection,
+          duration: oscillationDuration,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+        Animated.timing(localOrbitAnim, {
+          toValue: 0,
+          duration: oscillationDuration / 2,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+      ])
+    ).start();
+
+    return () => {
+      if (parentListenerId) {
+        orbitAngle.removeListener(parentListenerId);
+      }
+      if (localListenerId) {
+        localOrbitAnim.removeListener(localListenerId);
+      }
+    };
+  }, [baseAngle, radius, orbitAngle, index]);
+
+  // Gentle floating animation - independent of orbital rotation
   useEffect(() => {
     // Gentle floating bob
     Animated.loop(
@@ -68,13 +128,13 @@ export function FriendParticle({
           toValue: 1,
           duration: 2000 + index * 150,
           easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
-          useNativeDriver: false, // Must match orbital animation driver type
+          useNativeDriver: true, // Can use native driver now since orbit is separate
         }),
         Animated.timing(bounceAnim, {
           toValue: 0,
           duration: 2000 + index * 150,
           easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
-          useNativeDriver: false, // Must match orbital animation driver type
+          useNativeDriver: true,
         }),
       ])
     ).start();
@@ -87,18 +147,18 @@ export function FriendParticle({
             toValue: 1,
             duration: 1500,
             easing: Easing.bezier(0.4, 0, 0.2, 1),
-            useNativeDriver: false, // Must match orbital animation driver type
+            useNativeDriver: true,
           }),
           Animated.timing(pulseAnim, {
             toValue: 0,
             duration: 1500,
             easing: Easing.bezier(0.4, 0, 0.2, 1),
-            useNativeDriver: false, // Must match orbital animation driver type
+            useNativeDriver: true,
           }),
         ])
       ).start();
     }
-  }, [friend.is_online]);
+  }, [friend.is_online, index]);
 
   useEffect(() => {
     if (hasActiveFlare) {
@@ -107,7 +167,7 @@ export function FriendParticle({
           toValue: 1,
           duration: 350,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false, // Must match orbital animation driver type
+          useNativeDriver: true,
         })
       ).start();
     } else {
@@ -138,32 +198,6 @@ export function FriendParticle({
     outputRange: [0, -4],
   });
 
-  // Orbital rotation - subtle circular motion around center
-  // Pre-calculate positions for 8 key points around the circle for smooth interpolation
-  const orbitPoints = 8;
-  const orbitXValues: number[] = [];
-  const orbitYValues: number[] = [];
-  const inputRangeValues: number[] = [];
-  
-  for (let i = 0; i <= orbitPoints; i++) {
-    const angle = initialAngle + (i / orbitPoints) * 2 * Math.PI;
-    orbitXValues.push(Math.cos(angle) * radius);
-    orbitYValues.push(Math.sin(angle) * radius);
-    inputRangeValues.push(i / orbitPoints);
-  }
-
-  const orbitX = orbitAnim.interpolate({
-    inputRange: inputRangeValues,
-    outputRange: orbitXValues,
-    extrapolate: 'clamp',
-  });
-
-  const orbitY = orbitAnim.interpolate({
-    inputRange: inputRangeValues,
-    outputRange: orbitYValues,
-    extrapolate: 'clamp',
-  });
-
   // More prominent glow for online friends
   const glowOpacity = pulseAnim.interpolate({
     inputRange: [0, 1],
@@ -186,20 +220,26 @@ export function FriendParticle({
   });
 
   return (
-    <Animated.View
+    <View
       style={[
         styles.container,
         {
           left: centerX - PARTICLE_SIZE / 2,
           top: centerY - PARTICLE_SIZE / 2,
           transform: [
-            { translateX: orbitX },
-            { translateY: Animated.add(orbitY, bounceTranslate) },
+            { translateX: translateX },
+            { translateY: translateY },
           ],
         },
       ]}
       pointerEvents="box-none"
     >
+      <Animated.View
+        style={{
+          transform: [{ translateY: bounceTranslate }],
+        }}
+        pointerEvents="box-none"
+      >
       {/* Emergency Flare Alert */}
       {hasActiveFlare && (
         <Animated.View
@@ -299,7 +339,8 @@ export function FriendParticle({
       <Text style={styles.nameLabel} numberOfLines={1}>
         {friend.display_name}
       </Text>
-    </Animated.View>
+      </Animated.View>
+    </View>
   );
 }
 
