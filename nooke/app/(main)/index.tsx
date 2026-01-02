@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 import { supabase } from "../../lib/supabase";
 import { Animated as RNAnimated, PanResponder, Easing } from "react-native";
 
@@ -52,6 +53,7 @@ import {
 import { CentralOrb } from "../../components/CentralOrb";
 import { FriendParticle } from "../../components/FriendParticle";
 import { StarField } from "../../components/StarField";
+import { FriendActionBubble } from "../../components/FriendActionBubble";
 
 const { width, height } = Dimensions.get("window");
 const CENTER_X = width / 2;
@@ -68,6 +70,8 @@ export default function QuantumOrbitScreen() {
   const [loading, setLoading] = useState(false); // Start with false - friends from Zustand show immediately
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [showHint, setShowHint] = useState(true); // Show hint by default until user interacts
+  const [selectedFriend, setSelectedFriend] = useState<User | null>(null);
+  const [bubblePosition, setBubblePosition] = useState({ x: 0, y: 0 });
 
   // Shared orbit angle for roulette rotation - all friends rotate together
   // Using React Native Animated API (works in Expo Go, can upgrade to Reanimated later)
@@ -607,17 +611,42 @@ export default function QuantumOrbitScreen() {
     };
   };
 
-  const handleFriendPress = (friend: User) => {
-    const moodLabel = getMoodLabel(friend.mood);
-    const statusText = friend.is_online ? "Online now" : `Last seen: ${new Date(friend.last_seen_at).toLocaleString()}`;
+  const handleFriendPress = (friend: User, friendIndex: number) => {
+    // Calculate friend's current position based on orbit angle
+    const baseAngle = friendBaseAngles[friendIndex] || 0;
+    const radius = friendRadii[friendIndex] || 150;
+    const currentAngle = baseAngle + orbitAngleValueRef.current;
+    const friendX = CENTER_X + Math.cos(currentAngle) * radius;
+    const friendY = CENTER_Y + Math.sin(currentAngle) * radius;
 
-    Alert.alert(friend.display_name, `${moodLabel}\n${statusText}`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Send Nudge 👋",
-        onPress: () => sendNudge(friend.id, friend.display_name),
-      },
-    ]);
+    setBubblePosition({ x: friendX, y: friendY });
+    setSelectedFriend(friend);
+  };
+
+  const handleDismissBubble = () => {
+    setSelectedFriend(null);
+  };
+
+  const handleNudge = async () => {
+    if (selectedFriend) {
+      await sendNudge(selectedFriend.id, selectedFriend.display_name);
+    }
+  };
+
+  const handleFlare = async () => {
+    if (selectedFriend) {
+      // Flare is sent to all friends, not just one
+      await sendFlare();
+    }
+  };
+
+  const handleHeart = async () => {
+    if (!selectedFriend) return;
+
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // Could integrate with Supabase to store heart reactions
+    // For now, just show a brief feedback
+    Alert.alert("Heart Sent", `You sent a heart to ${selectedFriend.display_name}`, [{ text: "OK", style: "default" }]);
   };
 
   const getMoodLabel = (mood: User["mood"]) => {
@@ -704,7 +733,7 @@ export default function QuantumOrbitScreen() {
             friend={friend}
             index={index}
             total={friendList.length}
-            onPress={() => handleFriendPress(friend)}
+            onPress={() => handleFriendPress(friend, index)}
             hasActiveFlare={activeFlares.some((f: any) => f.user_id === friend.id)}
             position={friendPositions[index] || { x: CENTER_X, y: CENTER_Y }}
             baseAngle={friendBaseAngles[index] || 0}
@@ -712,6 +741,18 @@ export default function QuantumOrbitScreen() {
             orbitAngle={orbitAngle}
           />
         ))}
+
+      {/* Friend Action Bubble */}
+      {selectedFriend && (
+        <FriendActionBubble
+          friend={selectedFriend}
+          position={bubblePosition}
+          onDismiss={handleDismissBubble}
+          onNudge={handleNudge}
+          onFlare={handleFlare}
+          onHeart={handleHeart}
+        />
+      )}
 
       {/* Top Header - Simple Text */}
       <View style={styles.topHeader} pointerEvents="box-none">
