@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -11,7 +11,7 @@ interface FriendActionBubbleProps {
   position: { x: number; y: number };
   onDismiss: () => void;
   onNudge: () => void;
-  onFlare: () => void;
+  onCallMe: () => void;
   onHeart: () => void;
 }
 
@@ -20,11 +20,14 @@ export function FriendActionBubble({
   position,
   onDismiss,
   onNudge,
-  onFlare,
+  onCallMe,
   onHeart,
 }: FriendActionBubbleProps) {
   const scaleAnim = useRef(new Animated.Value(0.3)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
+  const heartScale = useRef(new Animated.Value(0)).current;
+  const heartOpacity = useRef(new Animated.Value(0)).current;
+  const [showHeartAnimation, setShowHeartAnimation] = useState(false);
 
   useEffect(() => {
     // Snappy Apple-style spring animation
@@ -58,6 +61,34 @@ export function FriendActionBubble({
   
   // Calculate tail position to point at friend
   const tailX = position.x - bubbleX;
+
+  const handleHeartPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    // Show heart animation
+    setShowHeartAnimation(true);
+    heartScale.setValue(0.3); // Start small (same size as icon)
+    heartOpacity.setValue(1);
+    
+    // Animate heart growing much bigger while fading out
+    Animated.parallel([
+      Animated.spring(heartScale, {
+        toValue: 5, // Grow much bigger
+        tension: 60,
+        friction: 5,
+        useNativeDriver: true,
+      }),
+      Animated.timing(heartOpacity, {
+        toValue: 0, // Fade out as it grows
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowHeartAnimation(false);
+      onHeart();
+      // Don't close bubble - let user dismiss manually or tap another action
+    });
+  };
 
   const handleAction = (action: () => void) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -131,18 +162,18 @@ export function FriendActionBubble({
 
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={() => handleAction(onFlare)}
+              onPress={() => handleAction(onCallMe)}
               activeOpacity={0.6}
             >
-              <Ionicons name="flame" size={24} color="#FF3B30" />
+              <Ionicons name="call" size={24} color="#34C759" />
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={() => handleAction(onHeart)}
+              onPress={handleHeartPress}
               activeOpacity={0.6}
             >
-              <Ionicons name="heart" size={24} color="#EC4899" />
+              <Ionicons name="heart" size={24} color="#FF0000" />
             </TouchableOpacity>
           </View>
         </View>
@@ -167,6 +198,27 @@ export function FriendActionBubble({
           />
         )}
       </Animated.View>
+
+      {/* Animated heart that grows and fades - positioned at heart button location */}
+      {showHeartAnimation && (
+        <Animated.View
+          style={[
+            styles.heartAnimation,
+            {
+              // Heart button is the 3rd button, at the right side of the bubble
+              // Bubble: 140 width, 12px padding, 3 buttons with space-around
+              // Heart is at approximately bubbleX + 110 (right third)
+              left: bubbleX + 110,
+              top: finalBubbleY + 24, // Center of bubble vertically (10 padding + ~14 to icon center)
+              transform: [{ scale: heartScale }],
+              opacity: heartOpacity,
+            },
+          ]}
+          pointerEvents="none"
+        >
+          <Ionicons name="heart" size={60} color="#FF0000" />
+        </Animated.View>
+      )}
     </>
   );
 }
@@ -231,5 +283,15 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderBottomColor: 'rgba(255, 255, 255, 0.85)',
+  },
+  heartAnimation: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    marginLeft: -30, // Center horizontally
+    marginTop: -30, // Center vertically
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1002,
   },
 });

@@ -72,6 +72,7 @@ export default function QuantumOrbitScreen() {
   const [showHint, setShowHint] = useState(true); // Show hint by default until user interacts
   const [selectedFriend, setSelectedFriend] = useState<User | null>(null);
   const [bubblePosition, setBubblePosition] = useState({ x: 0, y: 0 });
+  const [isMuted, setIsMuted] = useState(true); // Start muted by default
 
   // Shared orbit angle for roulette rotation - all friends rotate together
   // Using React Native Animated API (works in Expo Go, can upgrade to Reanimated later)
@@ -633,10 +634,14 @@ export default function QuantumOrbitScreen() {
     }
   };
 
-  const handleFlare = async () => {
+  const handleCallMe = async () => {
     if (selectedFriend) {
-      // Flare is sent to all friends, not just one
-      await sendFlare();
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // TODO: Integrate with Supabase to send notification to friend to call
+      // For now, just show feedback
+      Alert.alert("Call Me Sent", `You requested ${selectedFriend.display_name} to call you`, [
+        { text: "OK", style: "default" },
+      ]);
     }
   };
 
@@ -645,8 +650,7 @@ export default function QuantumOrbitScreen() {
 
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     // Could integrate with Supabase to store heart reactions
-    // For now, just show a brief feedback
-    Alert.alert("Heart Sent", `You sent a heart to ${selectedFriend.display_name}`, [{ text: "OK", style: "default" }]);
+    // Animation is handled in FriendActionBubble component
   };
 
   const getMoodLabel = (mood: User["mood"]) => {
@@ -749,7 +753,7 @@ export default function QuantumOrbitScreen() {
           position={bubblePosition}
           onDismiss={handleDismissBubble}
           onNudge={handleNudge}
-          onFlare={handleFlare}
+          onCallMe={handleCallMe}
           onHeart={handleHeart}
         />
       )}
@@ -784,6 +788,21 @@ export default function QuantumOrbitScreen() {
               <Feather name="users" size={24} color="rgba(255, 255, 255, 0.85)" />
               <Text style={styles.navLabel}>Friends</Text>
             </TouchableOpacity>
+
+            {/* Center Mute/Unmute Button - Overlaps the bar */}
+            <View style={styles.centerButtonContainer}>
+              <TouchableOpacity
+                onPress={() => {
+                  setIsMuted(!isMuted);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  // TODO: Integrate with audio room system
+                }}
+                activeOpacity={0.8}
+                style={styles.centerButton}
+              >
+                <Ionicons name={isMuted ? "mic-off" : "mic"} size={28} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
 
             {/* Profile Tab */}
             <TouchableOpacity onPress={() => router.push("/(main)/profile")} activeOpacity={0.7} style={styles.navTab}>
@@ -885,7 +904,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 0.33,
     borderTopColor: "rgba(255, 255, 255, 0.08)",
     backgroundColor: "transparent",
-    overflow: "hidden",
+    overflow: "visible", // Changed to visible so center button can overlap
   },
   navContent: {
     flexDirection: "row",
@@ -893,6 +912,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 0,
     height: 49,
+    position: "relative",
   },
   navTab: {
     flex: 1,
@@ -900,6 +920,28 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 4,
     minHeight: 49,
+  },
+  centerButtonContainer: {
+    position: "absolute",
+    left: "50%",
+    marginLeft: -32, // Half of button width (64/2)
+    top: -28, // Position above the bar, overlapping more
+    zIndex: 10,
+  },
+  centerButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#A855F7", // Purple color matching design
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#A855F7",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 10,
+    borderWidth: 2.5,
+    borderColor: "rgba(255, 255, 255, 0.15)",
   },
   navLabel: {
     fontSize: 10,
