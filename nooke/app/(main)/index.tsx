@@ -766,57 +766,54 @@ export default function QuantumOrbitScreen() {
         </Text>
       </View>
 
-      {/* iOS-Style Bottom Navigation */}
-      <View style={styles.bottomNav} pointerEvents="box-none">
-        <BlurView intensity={80} tint="dark" style={[styles.navContainer, { paddingBottom: insets.bottom }]}>
-          <View style={styles.navContent}>
-            {/* Flare Tab - First position, red color */}
+      {/* Bottom Navigation Bar */}
+      <View style={[styles.bottomNav, { paddingBottom: Math.max(insets.bottom, 8) }]} pointerEvents="box-none">
+        {/* Floating center button wrapper */}
+        <View style={styles.floatingButtonWrapper} pointerEvents="box-none">
+          <TouchableOpacity
+            onPress={() => {
+              setIsMuted(!isMuted);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            }}
+            activeOpacity={0.85}
+            style={styles.floatingButton}
+          >
+            <Ionicons name={isMuted ? "mic-off" : "mic"} size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Navigation bar */}
+        <View style={styles.navBar}>
+          {/* Left section */}
+          <View style={styles.navSection}>
             <TouchableOpacity
               onPress={handleFlarePress}
               activeOpacity={0.7}
               disabled={!!myActiveFlare}
               style={styles.navTab}
             >
-              <Ionicons name="flame" size={24} color="#FF3B30" />
-              <Text style={[styles.navLabel, myActiveFlare && styles.navLabelActive]}>
-                {myActiveFlare ? "Active" : "Flare"}
-              </Text>
+              <Ionicons name="flame" size={26} color="#FF3B30" />
             </TouchableOpacity>
 
-            {/* Friends Tab */}
             <TouchableOpacity onPress={() => router.push("/(main)/friends")} activeOpacity={0.7} style={styles.navTab}>
               <Feather name="users" size={24} color="rgba(255, 255, 255, 0.85)" />
-              <Text style={styles.navLabel}>Friends</Text>
-            </TouchableOpacity>
-
-            {/* Center Mute/Unmute Button - Overlaps the bar */}
-            <View style={styles.centerButtonContainer}>
-              <TouchableOpacity
-                onPress={() => {
-                  setIsMuted(!isMuted);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  // TODO: Integrate with audio room system
-                }}
-                activeOpacity={0.8}
-                style={styles.centerButton}
-              >
-                <Ionicons name={isMuted ? "mic-off" : "mic"} size={28} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Profile Tab */}
-            <TouchableOpacity onPress={() => router.push("/(main)/profile")} activeOpacity={0.7} style={styles.navTab}>
-              <Feather name="user" size={24} color="rgba(255, 255, 255, 0.85)" />
-              <Text style={styles.navLabel}>Profile</Text>
-            </TouchableOpacity>
-
-            {/* Settings Tab */}
-            <TouchableOpacity onPress={() => router.push("/(main)/settings")} activeOpacity={0.7} style={styles.navTab}>
-              <Feather name="settings" size={24} color="rgba(255, 255, 255, 0.85)" />
-              <Text style={styles.navLabel}>Settings</Text>
             </TouchableOpacity>
           </View>
-        </BlurView>
+
+          {/* Center gap for button */}
+          <View style={styles.centerGap} />
+
+          {/* Right section */}
+          <View style={styles.navSection}>
+            <TouchableOpacity onPress={() => router.push("/(main)/profile")} activeOpacity={0.7} style={styles.navTab}>
+              <Feather name="user" size={24} color="rgba(255, 255, 255, 0.7)" />
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => router.push("/(main)/settings")} activeOpacity={0.7} style={styles.navTab}>
+              <Feather name="settings" size={24} color="rgba(255, 255, 255, 0.7)" />
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
 
       {/* Active Flares Alert */}
@@ -891,48 +888,49 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     letterSpacing: 0.2,
   },
-  // iOS-Style Bottom Navigation
+  // Bottom Navigation Bar
   bottomNav: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
+    paddingHorizontal: 16,
+    alignItems: "center",
   },
-  navContainer: {
-    paddingTop: 8,
-    paddingBottom: 8,
-    borderTopWidth: 0.33,
-    borderTopColor: "rgba(255, 255, 255, 0.08)",
-    backgroundColor: "transparent",
-    overflow: "visible", // Changed to visible so center button can overlap
-  },
-  navContent: {
+  navBar: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    backgroundColor: "#1a1a2e",
+    height: 60,
+    borderRadius: 30,
     alignItems: "center",
-    paddingHorizontal: 0,
-    height: 49,
-    position: "relative",
-  },
-  navTab: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-    minHeight: 49,
-  },
-  centerButtonContainer: {
-    position: "absolute",
-    left: "50%",
-    marginLeft: -32, // Half of button width (64/2)
-    top: -28, // Position above the bar, overlapping more
+    width: "100%",
+    borderWidth: 1.5,
+    borderColor: "rgba(139, 92, 246, 0.25)",
     zIndex: 10,
   },
-  centerButton: {
+  navSection: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-evenly",
+    height: "100%",
+  },
+  centerGap: {
+    width: 72,
+  },
+  floatingButtonWrapper: {
+    position: "absolute",
+    top: -24,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    zIndex: 20,
+  },
+  floatingButton: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#A855F7", // Purple color matching design
+    backgroundColor: "#A855F7",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#A855F7",
@@ -940,8 +938,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 12,
     elevation: 10,
-    borderWidth: 2.5,
-    borderColor: "rgba(255, 255, 255, 0.15)",
+    borderWidth: 4,
+    borderColor: "#0d0d1a",
+  },
+  navTab: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 52,
+    height: 52,
   },
   navLabel: {
     fontSize: 10,
