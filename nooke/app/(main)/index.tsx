@@ -40,11 +40,11 @@ import { useMood } from "../../hooks/useMood";
 import { useNudge } from "../../hooks/useNudge";
 import { useFlare } from "../../hooks/useFlare";
 import { usePresence } from "../../hooks/usePresence";
+import { useRoom } from "../../hooks/useRoom";
 import {
   colors,
   getMoodColor,
   getVibeText,
-  getMoodEmoji,
   gradients,
   spacing,
   radius,
@@ -54,6 +54,8 @@ import { CentralOrb } from "../../components/CentralOrb";
 import { FriendParticle } from "../../components/FriendParticle";
 import { StarField } from "../../components/StarField";
 import { FriendActionBubble } from "../../components/FriendActionBubble";
+import { RoomListModal } from "../../components/RoomListModal";
+import { CreateRoomModal } from "../../components/CreateRoomModal";
 
 const { width, height } = Dimensions.get("window");
 const CENTER_X = width / 2;
@@ -67,12 +69,15 @@ export default function QuantumOrbitScreen() {
   const { sendNudge } = useNudge();
   const { sendFlare, activeFlares, myActiveFlare } = useFlare();
   const { updateActivity } = usePresence(); // Track presence while app is active
+  const { activeRooms, createRoom, joinRoom: joinRoomFn } = useRoom();
   const [loading, setLoading] = useState(false); // Start with false - friends from Zustand show immediately
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [showHint, setShowHint] = useState(true); // Show hint by default until user interacts
   const [selectedFriend, setSelectedFriend] = useState<User | null>(null);
   const [bubblePosition, setBubblePosition] = useState({ x: 0, y: 0 });
   const [isMuted, setIsMuted] = useState(true); // Start muted by default
+  const [showRoomList, setShowRoomList] = useState(false);
+  const [showCreateRoom, setShowCreateRoom] = useState(false);
 
   // Shared orbit angle for roulette rotation - all friends rotate together
   // Using React Native Animated API (works in Expo Go, can upgrade to Reanimated later)
@@ -153,7 +158,6 @@ export default function QuantumOrbitScreen() {
 
   // All hooks must be called before any conditional returns
   const currentVibe = useMemo(() => getVibeText(currentUser?.mood || "neutral"), [currentUser?.mood]);
-  const moodEmoji = getMoodEmoji(currentUser?.mood || "neutral");
 
   // Calculate friend list and positions - must be before conditional returns
   // Filter out any invalid friends (where friend data is missing)
@@ -684,6 +688,24 @@ export default function QuantumOrbitScreen() {
     await sendFlare();
   };
 
+  const handleOpenRooms = () => {
+    setShowRoomList(true);
+  };
+
+  const handleCreateRoom = async (name?: string, isPrivate?: boolean) => {
+    const room = await createRoom(name, isPrivate);
+    if (room) {
+      setShowCreateRoom(false);
+      router.push(`/(main)/room/${room.id}`);
+    }
+  };
+
+  const handleJoinRoom = async (roomId: string) => {
+    setShowRoomList(false);
+    await joinRoomFn(roomId);
+    router.push(`/(main)/room/${roomId}`);
+  };
+
   // NEVER show loading if we have friends - friends from Zustand always render immediately
   // Only show loading screen if we have no friends AND no user (initial auth)
   if (loading && friendList.length === 0 && !currentUser) {
@@ -761,9 +783,7 @@ export default function QuantumOrbitScreen() {
       {/* Top Header - Simple Text */}
       <View style={styles.topHeader} pointerEvents="box-none">
         <Text style={styles.appTitle}>Nookē</Text>
-        <Text style={styles.moodText}>
-          {currentVibe} {moodEmoji}
-        </Text>
+        <Text style={styles.moodText}>{currentVibe}</Text>
       </View>
 
       {/* Bottom Navigation Bar */}
@@ -793,10 +813,12 @@ export default function QuantumOrbitScreen() {
               style={styles.navTab}
             >
               <Ionicons name="flame" size={26} color="#FF3B30" />
+              <Text style={styles.navLabel}>Flare</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => router.push("/(main)/friends")} activeOpacity={0.7} style={styles.navTab}>
               <Feather name="users" size={24} color="rgba(255, 255, 255, 0.85)" />
+              <Text style={styles.navLabel}>Friends</Text>
             </TouchableOpacity>
           </View>
 
@@ -805,12 +827,19 @@ export default function QuantumOrbitScreen() {
 
           {/* Right section */}
           <View style={styles.navSection}>
-            <TouchableOpacity onPress={() => router.push("/(main)/profile")} activeOpacity={0.7} style={styles.navTab}>
-              <Feather name="user" size={24} color="rgba(255, 255, 255, 0.7)" />
+            <TouchableOpacity onPress={handleOpenRooms} activeOpacity={0.7} style={styles.navTab}>
+              <Ionicons name="home-outline" size={24} color="rgba(255, 255, 255, 0.85)" />
+              {activeRooms.length > 0 && (
+                <View style={styles.roomBadge}>
+                  <Text style={styles.roomBadgeText}>{activeRooms.length}</Text>
+                </View>
+              )}
+              <Text style={styles.navLabel}>Rooms</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => router.push("/(main)/settings")} activeOpacity={0.7} style={styles.navTab}>
               <Feather name="settings" size={24} color="rgba(255, 255, 255, 0.7)" />
+              <Text style={styles.navLabel}>Settings</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -845,6 +874,25 @@ export default function QuantumOrbitScreen() {
         currentMood={currentMood}
         onSelectMood={changeMood}
         onClose={() => setShowMoodPicker(false)}
+      />
+
+      {/* Room List Modal */}
+      <RoomListModal
+        visible={showRoomList}
+        onClose={() => setShowRoomList(false)}
+        rooms={activeRooms}
+        onJoinRoom={handleJoinRoom}
+        onCreateRoom={() => {
+          setShowRoomList(false);
+          setShowCreateRoom(true);
+        }}
+      />
+
+      {/* Create Room Modal */}
+      <CreateRoomModal
+        visible={showCreateRoom}
+        onClose={() => setShowCreateRoom(false)}
+        onCreate={handleCreateRoom}
       />
 
       {/* Grain Overlay */}
@@ -946,6 +994,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 52,
     height: 52,
+  },
+  roomBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: colors.mood.neutral.base,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  roomBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.text.primary,
   },
   navLabel: {
     fontSize: 10,

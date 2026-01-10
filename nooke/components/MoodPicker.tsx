@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { User } from '../types';
-import { colors, gradients, getMoodColor, typography, spacing, radius } from '../lib/theme';
+import { colors, gradients, getMoodColor, getMoodImage, typography, spacing, radius } from '../lib/theme';
 
 interface MoodPickerProps {
   visible: boolean;
@@ -91,19 +91,11 @@ export const MoodPicker: React.FC<MoodPickerProps> = ({
                           isSelected && styles.moodOptionSelected,
                         ]}
                       >
-                        {/* Orb */}
-                        <View style={styles.orbWrapper}>
-                          <View
-                            style={[
-                              styles.glow,
-                              { backgroundColor: moodColors.glow },
-                            ]}
-                          />
-                          <View
-                            style={[
-                              styles.orb,
-                              { backgroundColor: moodColors.base },
-                            ]}
+                        {/* Mood Creature Image */}
+                        <View style={styles.imageWrapper}>
+                          <Image
+                            source={getMoodImage(mood)}
+                            style={styles.moodImage}
                           />
                         </View>
 
@@ -191,24 +183,17 @@ const styles = StyleSheet.create({
     borderColor: colors.text.accent,
     borderWidth: 2,
   },
-  orbWrapper: {
-    width: 44,
-    height: 44,
+  imageWrapper: {
+    width: 60,
+    height: 60,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
   },
-  glow: {
-    position: 'absolute',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    opacity: 0.5,
-  },
-  orb: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  moodImage: {
+    width: 60,
+    height: 60,
+    resizeMode: 'contain',
   },
   moodText: {
     flex: 1,

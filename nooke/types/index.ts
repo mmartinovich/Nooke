@@ -82,6 +82,17 @@ export interface Anchor {
   created_at: string;
 }
 
+// Report types
+export interface Report {
+  id: string;
+  reporter_id: string;
+  reported_id: string;
+  report_type: string;
+  details?: string;
+  status: 'pending' | 'reviewed' | 'resolved';
+  created_at: string;
+}
+
 // Auth types
 export interface AuthResponse {
   user: User;

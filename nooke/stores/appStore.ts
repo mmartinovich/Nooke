@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { User, Friendship, Room } from '../types';
+import { User, Friendship, Room, RoomParticipant } from '../types';
 
 interface AppState {
   // Auth state
@@ -12,6 +12,8 @@ interface AppState {
   // Rooms state
   activeRooms: Room[];
   currentRoom: Room | null;
+  isInRoom: boolean;
+  roomParticipants: RoomParticipant[];
 
   // Actions
   setCurrentUser: (user: User | null) => void;
@@ -20,6 +22,8 @@ interface AppState {
   removeFriend: (friendId: string) => void;
   setActiveRooms: (rooms: Room[]) => void;
   setCurrentRoom: (room: Room | null) => void;
+  setIsInRoom: (inRoom: boolean) => void;
+  setRoomParticipants: (participants: RoomParticipant[]) => void;
   updateUserMood: (mood: User['mood']) => void;
   logout: () => void;
 }
@@ -31,6 +35,8 @@ export const useAppStore = create<AppState>((set) => ({
   friends: [],
   activeRooms: [],
   currentRoom: null,
+  isInRoom: false,
+  roomParticipants: [],
 
   // Actions
   setCurrentUser: (user) => set({ currentUser: user, isAuthenticated: !!user }),
@@ -47,7 +53,14 @@ export const useAppStore = create<AppState>((set) => ({
 
   setActiveRooms: (rooms) => set({ activeRooms: rooms }),
 
-  setCurrentRoom: (room) => set({ currentRoom: room }),
+  setCurrentRoom: (room) => set({
+    currentRoom: room,
+    isInRoom: !!room
+  }),
+
+  setIsInRoom: (inRoom) => set({ isInRoom: inRoom }),
+
+  setRoomParticipants: (participants) => set({ roomParticipants: participants }),
 
   updateUserMood: (mood) => set((state) => ({
     currentUser: state.currentUser
@@ -60,6 +73,8 @@ export const useAppStore = create<AppState>((set) => ({
     isAuthenticated: false,
     friends: [],
     activeRooms: [],
-    currentRoom: null
+    currentRoom: null,
+    isInRoom: false,
+    roomParticipants: []
   })
 }));

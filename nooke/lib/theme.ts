@@ -97,6 +97,20 @@ export const typography = {
     xs: 11,
     sm: 13,
     base: 15,
+    md: 15,
+    lg: 17,
+    xl: 20,
+    '2xl': 24,
+    '3xl': 32,
+    '4xl': 40,
+    '5xl': 56,
+  },
+  // Alias for plural form
+  sizes: {
+    xs: 11,
+    sm: 13,
+    base: 15,
+    md: 15,
     lg: 17,
     xl: 20,
     '2xl': 24,
@@ -107,6 +121,15 @@ export const typography = {
 
   // Font weights
   weight: {
+    normal: '400',
+    medium: '500',
+    semibold: '600',
+    bold: '700',
+    extrabold: '800',
+    black: '900',
+  },
+  // Alias for plural form
+  weights: {
     normal: '400',
     medium: '500',
     semibold: '600',
@@ -170,19 +193,19 @@ export const getMoodColor = (mood: 'good' | 'neutral' | 'not_great' | 'reach_out
   }
 };
 
-// Helper to get mood emoji
-export const getMoodEmoji = (mood: 'good' | 'neutral' | 'not_great' | 'reach_out') => {
+// Helper to get mood image
+export const getMoodImage = (mood: 'good' | 'neutral' | 'not_great' | 'reach_out') => {
   switch (mood) {
     case 'good':
-      return '😊';
+      return require('../assets/good.png');
     case 'neutral':
-      return '😌';
+      return require('../assets/chill.png');
     case 'not_great':
-      return '😔';
+      return require('../assets/down.png');
     case 'reach_out':
-      return '❤️';
+      return require('../assets/help.png');
     default:
-      return '😌';
+      return require('../assets/chill.png');
   }
 };
 

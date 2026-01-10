@@ -1,9 +1,9 @@
 import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, Dimensions, TouchableOpacity, Animated, Easing, Text } from "react-native";
+import { View, StyleSheet, Dimensions, TouchableOpacity, Animated, Easing, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
-import { getMoodEmoji } from "../lib/theme";
+import { getMoodImage } from "../lib/theme";
 
 const { width, height } = Dimensions.get("window");
 const ORB_SIZE = 180;
@@ -185,7 +185,7 @@ export function CentralOrb({
     outputRange: [0, 0.8],
   });
 
-  const moodEmoji = getMoodEmoji(mood);
+  const moodImage = getMoodImage(mood);
 
   // Hint ring interpolations
   const hintRingScale = hintAnim.interpolate({
@@ -303,8 +303,8 @@ export function CentralOrb({
                 style={styles.highlight}
               />
 
-              {/* Emoji in center - larger */}
-              <Text style={styles.emojiText}>{moodEmoji}</Text>
+              {/* Mood creature image in center */}
+              <Image source={moodImage} style={styles.moodImage} />
             </LinearGradient>
           </BlurView>
 
@@ -378,8 +378,10 @@ const styles = StyleSheet.create({
     height: "60%",
     borderRadius: 9999,
   },
-  emojiText: {
-    fontSize: 64,
+  moodImage: {
+    width: 130,
+    height: 130,
+    resizeMode: 'contain',
     zIndex: 10,
   },
   glassBorder: {
