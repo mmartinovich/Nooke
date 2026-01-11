@@ -40,7 +40,13 @@ export default {
     },
     plugins: [
       "expo-router",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-contacts",
+        {
+          contactsPermission: "Allow Nooke to access your contacts to find friends who are already using the app."
+        }
+      ]
     ],
     extra: {
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://ezbamrqoewrbvdvbypyd.supabase.co',

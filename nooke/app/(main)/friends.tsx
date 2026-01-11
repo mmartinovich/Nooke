@@ -8,11 +8,15 @@ import {
   TextInput,
   Alert,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useFriends } from '../../hooks/useFriends';
+import { useContactSync } from '../../hooks/useContactSync';
+import { useInvite } from '../../hooks/useInvite';
 import { colors, gradients, typography, spacing, radius, getMoodColor } from '../../lib/theme';
-import { User } from '../../types';
+import { User, PhoneContact, MatchedContact } from '../../types';
 
 export default function FriendsScreen() {
   const {
@@ -26,8 +30,37 @@ export default function FriendsScreen() {
     refreshFriends,
   } = useFriends();
 
+  const {
+    loading: syncLoading,
+    hasSynced,
+    matches,
+    syncContacts,
+    clearMatches,
+  } = useContactSync();
+
+  const { sending, inviteWithChoice } = useInvite();
+
   const [phone, setPhone] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+
+  const handleSyncContacts = async () => {
+    await syncContacts();
+  };
+
+  const handleAddFromContacts = async (contact: MatchedContact) => {
+    if (contact.phoneNumbers.length > 0) {
+      const success = await sendFriendRequest(contact.phoneNumbers[0]);
+      if (success) {
+        Alert.alert('Request Sent', `Friend request sent to ${contact.displayName || contact.name}`);
+      }
+    }
+  };
+
+  const handleInviteContact = (contact: PhoneContact) => {
+    if (contact.phoneNumbers.length > 0) {
+      inviteWithChoice(contact.phoneNumbers[0], contact.name);
+    }
+  };
 
   const handleAddFriend = async () => {
     if (!phone) {
@@ -110,8 +143,120 @@ export default function FriendsScreen() {
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
+
+            {/* Divider */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Sync Contacts Button */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleSyncContacts}
+              disabled={syncLoading}
+            >
+              <LinearGradient
+                colors={['rgba(34, 197, 94, 0.2)', 'rgba(34, 197, 94, 0.1)']}
+                style={[styles.syncButton, syncLoading && styles.buttonDisabled]}
+              >
+                {syncLoading ? (
+                  <ActivityIndicator size="small" color={colors.mood.good.base} />
+                ) : (
+                  <Ionicons name="people-outline" size={20} color={colors.mood.good.base} />
+                )}
+                <Text style={styles.syncButtonText}>
+                  {syncLoading ? 'Syncing...' : 'Find Friends from Contacts'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </LinearGradient>
         </View>
+
+        {/* Contacts on Nooke */}
+        {hasSynced && matches.onNooke.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              On Nooke ({matches.onNooke.length})
+            </Text>
+
+            {matches.onNooke.map((contact) => (
+              <LinearGradient
+                key={contact.id}
+                colors={gradients.card}
+                style={styles.contactCard}
+              >
+                <View style={styles.contactInfo}>
+                  <View style={styles.contactAvatar}>
+                    <Ionicons name="person" size={18} color={colors.mood.good.base} />
+                  </View>
+                  <View style={styles.contactText}>
+                    <Text style={styles.contactName}>{contact.name}</Text>
+                    <Text style={styles.contactPhone}>
+                      {contact.displayName || contact.phoneNumbers[0]}
+                    </Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => handleAddFromContacts(contact)}
+                  disabled={loading}
+                  style={styles.addContactButton}
+                >
+                  <LinearGradient
+                    colors={gradients.button}
+                    style={styles.addContactButtonGradient}
+                  >
+                    <Text style={styles.addContactButtonText}>Add</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </LinearGradient>
+            ))}
+          </View>
+        )}
+
+        {/* Invite to Nooke */}
+        {hasSynced && matches.notOnNooke.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              Invite to Nooke ({matches.notOnNooke.length})
+            </Text>
+
+            {matches.notOnNooke.slice(0, 15).map((contact) => (
+              <LinearGradient
+                key={contact.id}
+                colors={gradients.card}
+                style={styles.contactCard}
+              >
+                <View style={styles.contactInfo}>
+                  <View style={[styles.contactAvatar, styles.inviteAvatar]}>
+                    <Ionicons name="person-add-outline" size={16} color={colors.text.secondary} />
+                  </View>
+                  <View style={styles.contactText}>
+                    <Text style={styles.contactName}>{contact.name}</Text>
+                    <Text style={styles.contactPhone}>{contact.phoneNumbers[0]}</Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => handleInviteContact(contact)}
+                  disabled={sending}
+                  style={styles.inviteButton}
+                >
+                  <Ionicons name="paper-plane-outline" size={16} color={colors.neon.cyan} />
+                  <Text style={styles.inviteButtonText}>Invite</Text>
+                </TouchableOpacity>
+              </LinearGradient>
+            ))}
+
+            {matches.notOnNooke.length > 15 && (
+              <Text style={styles.moreContactsText}>
+                + {matches.notOnNooke.length - 15} more contacts to invite
+              </Text>
+            )}
+          </View>
+        )}
 
         {/* Pending Requests */}
         {pendingRequests.length > 0 && (
@@ -448,5 +593,118 @@ const styles = StyleSheet.create({
   emptySubtext: {
     fontSize: typography.size.sm,
     color: colors.text.tertiary,
+  },
+  // New styles for contact sync and invite
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: spacing.md,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.ui.border,
+  },
+  dividerText: {
+    marginHorizontal: spacing.md,
+    fontSize: typography.size.sm,
+    color: colors.text.tertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  syncButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.3)',
+    gap: spacing.sm,
+  },
+  syncButtonText: {
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.semibold,
+    color: colors.mood.good.base,
+  },
+  contactCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.ui.border,
+    marginBottom: spacing.sm,
+  },
+  contactInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  contactAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  inviteAvatar: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  contactText: {
+    flex: 1,
+  },
+  contactName: {
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.medium,
+    color: colors.text.primary,
+    marginBottom: 2,
+  },
+  contactPhone: {
+    fontSize: typography.size.sm,
+    color: colors.text.tertiary,
+  },
+  addContactButton: {
+    borderRadius: radius.md,
+    overflow: 'hidden',
+  },
+  addContactButtonGradient: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.ui.border,
+  },
+  addContactButtonText: {
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
+    color: colors.text.primary,
+  },
+  inviteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.3)',
+    backgroundColor: 'rgba(0, 240, 255, 0.08)',
+    gap: spacing.xs,
+  },
+  inviteButtonText: {
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
+    color: colors.neon.cyan,
+  },
+  moreContactsText: {
+    fontSize: typography.size.sm,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    fontStyle: 'italic',
   },
 });

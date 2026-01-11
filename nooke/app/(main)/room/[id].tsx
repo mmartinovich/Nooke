@@ -11,7 +11,7 @@ import { useAppStore } from '../../../stores/appStore';
 export default function RoomScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { currentUser, friends } = useAppStore();
+  const { currentUser, friends, setCurrentRoom } = useAppStore();
   const {
     currentRoom,
     participants,
@@ -31,11 +31,11 @@ export default function RoomScreen() {
       handleJoinRoom();
     }
 
-    // Leave room when navigating away
+    // Clear current room when navigating away (but don't leave the room)
     return () => {
-      if (currentRoom) {
-        leaveRoom();
-      }
+      // Clear the current room state when navigating away
+      // Users should explicitly leave via the leave button
+      setCurrentRoom(null);
     };
   }, [id]);
 

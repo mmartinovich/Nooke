@@ -113,3 +113,22 @@ export interface AuthResponse {
   user: User;
   token: string;
 }
+
+// Contact types for phone contact syncing
+export interface PhoneContact {
+  id: string;
+  name: string;
+  phoneNumbers: string[];
+}
+
+export interface ContactMatch {
+  onNooke: PhoneContact[];
+  notOnNooke: PhoneContact[];
+}
+
+// Matched contact with user data
+export interface MatchedContact extends PhoneContact {
+  userId?: string;
+  displayName?: string;
+  avatarUrl?: string;
+}

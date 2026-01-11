@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../stores/appStore';
@@ -48,6 +49,15 @@ export default function RoomsScreen() {
       loadData();
     }
   }, [firstTimeLoading]);
+
+  // Refresh rooms list when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!firstTimeLoading) {
+        loadData();
+      }
+    }, [firstTimeLoading])
+  );
 
   const loadData = async () => {
     await Promise.all([loadMyRooms(), loadMyInvites()]);

@@ -41,7 +41,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onPress, isCreator = f
                 </Text>
                 {isCreator && (
                   <View style={styles.creatorBadge}>
-                    <Ionicons name="crown" size={12} color={colors.neon.orange} />
+                    <Ionicons name="star" size={12} color={colors.neon.orange} />
                   </View>
                 )}
               </View>
