@@ -1,4 +1,4 @@
-# Nooke - Soft Cosmic Design 🌌
+# Nūūky - Soft Cosmic Design 🌌
 
 A distinctive, production-grade redesign with a **soft cosmic aesthetic**.
 
@@ -100,7 +100,7 @@ npx expo start
 **Login Screen**
 - Deep gradient background
 - Pulsing purple orb
-- Large "Nooke" title
+- Large "Nūūky" title
 - Clean input with subtle border
 - Frosted glass button
 
@@ -262,7 +262,7 @@ import { colors, spacing, typography, radius } from '@/lib/theme';
 **Before**: Generic white background, simple colored dots, basic list
 **After**: Cosmic gradient, glowing orbs with halos, grid layout, breathing animations
 
-The new design creates an **ambient, peaceful experience** that matches Nooke's core concept: staying connected without pressure.
+The new design creates an **ambient, peaceful experience** that matches Nūūky's core concept: staying connected without pressure.
 
 ---
 

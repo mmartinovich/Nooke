@@ -1,4 +1,4 @@
--- Nooke Database Schema
+-- Nūūky Database Schema
 -- Initial migration for Phase 1
 
 -- Enable UUID extension

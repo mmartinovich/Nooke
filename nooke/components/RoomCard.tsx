@@ -10,9 +10,10 @@ interface RoomCardProps {
   room: Room;
   onPress: () => void;
   isCreator?: boolean;
+  isDefault?: boolean;
 }
 
-export const RoomCard: React.FC<RoomCardProps> = ({ room, onPress, isCreator = false }) => {
+export const RoomCard: React.FC<RoomCardProps> = ({ room, onPress, isCreator = false, isDefault = false }) => {
   const participants = room.participants || [];
   const participantCount = participants.length;
   const maxMembers = 10;
@@ -39,6 +40,11 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onPress, isCreator = f
                 <Text style={styles.roomName} numberOfLines={1}>
                   {room.name || 'Unnamed Room'}
                 </Text>
+                {isDefault && (
+                  <View style={styles.defaultBadge}>
+                    <Ionicons name="home" size={12} color={colors.neon.cyan} />
+                  </View>
+                )}
                 {isCreator && (
                   <View style={styles.creatorBadge}>
                     <Ionicons name="star" size={12} color={colors.neon.orange} />
@@ -146,6 +152,14 @@ const styles = StyleSheet.create({
     fontWeight: typography.weight.semibold as any,
     color: colors.text.primary,
     flex: 1,
+  },
+  defaultBadge: {
+    backgroundColor: 'rgba(0, 240, 255, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.3)',
   },
   creatorBadge: {
     backgroundColor: 'rgba(255, 107, 53, 0.15)',

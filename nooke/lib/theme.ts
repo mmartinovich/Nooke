@@ -1,4 +1,4 @@
-// Nooke Design System - Neon Cyber Garden (Gen-Z Edition)
+// Nūūky Design System - Neon Cyber Garden (Gen-Z Edition)
 
 export const colors = {
   // Backgrounds - Darker, richer gradients for glassmorphism

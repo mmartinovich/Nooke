@@ -84,7 +84,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
               {/* Header */}
               <View style={styles.header}>
                 <Text style={styles.title}>Report {userName}</Text>
-                <Text style={styles.subtitle}>Help us keep Nooke safe</Text>
+                <Text style={styles.subtitle}>Help us keep Nūūky safe</Text>
               </View>
 
               {/* Report Types */}

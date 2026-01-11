@@ -1,4 +1,4 @@
-# Nooke Setup Guide
+# Nūūky Setup Guide
 
 ## Current Status
 
@@ -15,7 +15,7 @@
 1. Go to [supabase.com/dashboard](https://supabase.com/dashboard)
 2. Select your **CRAX** organization
 3. Click **"New Project"**
-4. Project name: **Nooke**
+4. Project name: **Nūūky**
 5. Choose a strong database password (save it!)
 6. Select region (choose closest to target users)
 7. Click **"Create new project"**

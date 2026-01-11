@@ -15,7 +15,7 @@ export const useInvite = () => {
   const getInviteLink = useCallback((): string => {
     const referralCode = currentUser?.id || 'welcome';
     // For now, use a placeholder. Replace with actual app store link later.
-    return `https://nooke.app/invite/${referralCode}`;
+    return `https://nuuky.app/invite/${referralCode}`;
   }, [currentUser?.id]);
 
   /**
@@ -25,9 +25,9 @@ export const useInvite = () => {
     const userName = currentUser?.display_name || 'A friend';
     const greeting = contactName ? `Hey ${contactName}!` : 'Hey!';
 
-    return `${greeting} ${userName} invited you to join Nooke!
+    return `${greeting} ${userName} invited you to join Nūūky!
 
-Nooke is a mood-based social app where you can see how your friends are feeling and connect through voice rooms.
+Nūūky is a mood-based social app where you can see how your friends are feeling and connect through voice rooms.
 
 Download now: ${getInviteLink()}`;
   }, [currentUser?.display_name, getInviteLink]);
@@ -93,7 +93,7 @@ Download now: ${getInviteLink()}`;
 
       const result = await Share.share({
         message,
-        title: 'Join me on Nooke!',
+        title: 'Join me on Nūūky!',
         // iOS supports URL separately
         ...(Platform.OS === 'ios' && { url: getInviteLink() }),
       });

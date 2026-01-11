@@ -91,7 +91,7 @@ Changes:
 **File:** `nooke/hooks/useFirstTimeRoom.ts` (NEW)
 
 - Check if user has any rooms
-- If not, auto-create "My Nooke" default room
+- If not, auto-create "My Nūūky" default room
 - Show onboarding prompt to invite friends
 
 ---
@@ -116,7 +116,7 @@ Changes:
 ├─────────────────────────────┤
 │  MY ROOMS                   │
 │  ┌─────────────────────────┐│
-│  │ 🟢 My Nooke     3/10   ││  Room card
+│  │ 🟢 My Nūūky     3/10   ││  Room card
 │  │ ○○○ avatars            ││
 │  └─────────────────────────┘│
 │  ┌─────────────────────────┐│
@@ -228,7 +228,7 @@ Changes:
 ### 5.2 First-time user flow
 In rooms.tsx:
 - Detect first-time user (no rooms)
-- Auto-create "My Nooke" room
+- Auto-create "My Nūūky" room
 - Show friendly onboarding card
 - Prompt to invite friends
 
@@ -309,7 +309,7 @@ Update hooks to subscribe to:
 ## Verification & Testing
 
 ### Manual Testing Checklist
-1. **First-time user**: Opens app → Rooms page shows default "My Nooke" room with onboarding
+1. **First-time user**: Opens app → Rooms page shows default "My Nūūky" room with onboarding
 2. **Create room**: Tap + → Enter name → Select friends → Room created, invites sent
 3. **Receive invite**: Push notification appears → Rooms page shows invite → Accept joins room
 4. **Room view**: Tap room → See orbit UI with all members → Interactions work

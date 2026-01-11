@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../stores/appStore';
 import { useRoom } from './useRoom';
+import { useDefaultRoom } from './useDefaultRoom';
 
 export const useFirstTimeRoom = () => {
   const { currentUser } = useAppStore();
   const { myRooms, loadMyRooms, createRoom } = useRoom();
+  const { setAsDefaultRoom } = useDefaultRoom();
   const [isFirstTime, setIsFirstTime] = useState(false);
   const [loading, setLoading] = useState(true);
   const [defaultRoomCreated, setDefaultRoomCreated] = useState(false);
@@ -50,11 +52,13 @@ export const useFirstTimeRoom = () => {
     if (!currentUser || defaultRoomCreated) return;
 
     try {
-      // Create "My Nooke" default room
-      const room = await createRoom('My Nooke');
+      // Create "My Nūūky" default room
+      const room = await createRoom('My Nūūky');
 
       if (room) {
         setDefaultRoomCreated(true);
+        // Set as default room
+        await setAsDefaultRoom(room.id);
         await loadMyRooms();
       }
     } catch (error: any) {

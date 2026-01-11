@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-## 🚀 Get Nooke Running in 5 Minutes
+## 🚀 Get Nūūky Running in 5 Minutes
 
 ### Step 1: Run Database Migration (REQUIRED)
 
@@ -32,7 +32,7 @@ For testing, the built-in SMS provider works fine. For production, you'll need T
 ### Step 4: Start the App
 
 ```bash
-cd /Users/crax/DEVELOPMENT/Nooke/nooke
+cd /Users/crax/DEVELOPMENT/Nūūky/nooke
 npx expo start
 ```
 

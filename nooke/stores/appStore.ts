@@ -17,6 +17,9 @@ interface AppState {
   roomParticipants: RoomParticipant[];
   roomInvites: RoomInvite[];
 
+  // Default room state
+  defaultRoomId: string | null;
+
   // Actions
   setCurrentUser: (user: User | null) => void;
   setFriends: (friends: Friendship[]) => void;
@@ -33,6 +36,7 @@ interface AppState {
   addRoomInvite: (invite: RoomInvite) => void;
   removeRoomInvite: (inviteId: string) => void;
   updateUserMood: (mood: User['mood']) => void;
+  setDefaultRoomId: (roomId: string | null) => void;
   logout: () => void;
 }
 
@@ -47,6 +51,7 @@ export const useAppStore = create<AppState>((set) => ({
   isInRoom: false,
   roomParticipants: [],
   roomInvites: [],
+  defaultRoomId: null,
 
   // Actions
   setCurrentUser: (user) => set({ currentUser: user, isAuthenticated: !!user }),
@@ -98,6 +103,8 @@ export const useAppStore = create<AppState>((set) => ({
       : null
   })),
 
+  setDefaultRoomId: (roomId) => set({ defaultRoomId: roomId }),
+
   logout: () => set({
     currentUser: null,
     isAuthenticated: false,
@@ -107,6 +114,7 @@ export const useAppStore = create<AppState>((set) => ({
     currentRoom: null,
     isInRoom: false,
     roomParticipants: [],
-    roomInvites: []
+    roomInvites: [],
+    defaultRoomId: null
   })
 }));

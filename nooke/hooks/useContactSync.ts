@@ -5,8 +5,8 @@ import { supabase } from '../lib/supabase';
 import { PhoneContact, MatchedContact } from '../types';
 
 interface ContactSyncResult {
-  onNooke: MatchedContact[];
-  notOnNooke: PhoneContact[];
+  onNuuky: MatchedContact[];
+  notOnNuuky: PhoneContact[];
 }
 
 export const useContactSync = () => {
@@ -14,8 +14,8 @@ export const useContactSync = () => {
   const [hasPermission, setHasPermission] = useState(false);
   const [hasSynced, setHasSynced] = useState(false);
   const [matches, setMatches] = useState<ContactSyncResult>({
-    onNooke: [],
-    notOnNooke: [],
+    onNuuky: [],
+    notOnNuuky: [],
   });
 
   /**
@@ -53,7 +53,7 @@ export const useContactSync = () => {
       if (!granted) {
         Alert.alert(
           'Permission Required',
-          'Please allow contacts access in Settings to find your friends on Nooke.',
+          'Please allow contacts access in Settings to find your friends on Nūūky.',
           [{ text: 'OK' }]
         );
       }
@@ -81,7 +81,7 @@ export const useContactSync = () => {
   };
 
   /**
-   * Sync contacts from phone and match against Nooke users
+   * Sync contacts from phone and match against Nūūky users
    */
   const syncContacts = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -175,8 +175,8 @@ export const useContactSync = () => {
       );
 
       // Split contacts into two groups
-      const onNooke: MatchedContact[] = [];
-      const notOnNooke: PhoneContact[] = [];
+      const onNuuky: MatchedContact[] = [];
+      const notOnNuuky: PhoneContact[] = [];
 
       contactMap.forEach((contact) => {
         // Check if any of the contact's phone numbers are registered
@@ -184,28 +184,28 @@ export const useContactSync = () => {
 
         if (matchedPhone) {
           const userDetails = userDetailsMap.get(matchedPhone);
-          onNooke.push({
+          onNuuky.push({
             ...contact,
             userId: userDetails?.id,
             displayName: userDetails?.display_name,
             avatarUrl: userDetails?.avatar_url,
           });
         } else {
-          notOnNooke.push(contact);
+          notOnNuuky.push(contact);
         }
       });
 
-      // Sort: onNooke by name, notOnNooke by name
-      onNooke.sort((a, b) => a.name.localeCompare(b.name));
-      notOnNooke.sort((a, b) => a.name.localeCompare(b.name));
+      // Sort: onNuuky by name, notOnNuuky by name
+      onNuuky.sort((a, b) => a.name.localeCompare(b.name));
+      notOnNuuky.sort((a, b) => a.name.localeCompare(b.name));
 
-      setMatches({ onNooke, notOnNooke });
+      setMatches({ onNuuky, notOnNuuky });
       setHasSynced(true);
 
       // Show results summary
       Alert.alert(
         'Contacts Synced',
-        `Found ${onNooke.length} friend${onNooke.length !== 1 ? 's' : ''} on Nooke and ${notOnNooke.length} to invite.`
+        `Found ${onNuuky.length} friend${onNuuky.length !== 1 ? 's' : ''} on Nūūky and ${notOnNuuky.length} to invite.`
       );
     } catch (error: any) {
       console.error('Error syncing contacts:', error);
@@ -219,7 +219,7 @@ export const useContactSync = () => {
    * Clear synced contacts (useful for refresh)
    */
   const clearMatches = useCallback(() => {
-    setMatches({ onNooke: [], notOnNooke: [] });
+    setMatches({ onNuuky: [], notOnNuuky: [] });
     setHasSynced(false);
   }, []);
 

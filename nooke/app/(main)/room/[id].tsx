@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRoom } from '../../../hooks/useRoom';
+import { useDefaultRoom } from '../../../hooks/useDefaultRoom';
 import { RoomView } from '../../../components/RoomView';
 import { RoomSettingsModal } from '../../../components/RoomSettingsModal';
 import { InviteFriendsModal } from '../../../components/InviteFriendsModal';
@@ -22,6 +23,7 @@ export default function RoomScreen() {
     inviteFriendToRoom,
     loading,
   } = useRoom();
+  const { isDefaultRoom, setAsDefaultRoom } = useDefaultRoom();
   const [showSettings, setShowSettings] = useState(false);
   const [showInviteFriends, setShowInviteFriends] = useState(false);
 
@@ -86,6 +88,11 @@ export default function RoomScreen() {
     setShowInviteFriends(true);
   };
 
+  const handleSetDefault = async () => {
+    if (!currentRoom) return;
+    await setAsDefaultRoom(currentRoom.id);
+  };
+
   if (!currentRoom || loading || !currentUser) {
     return <View style={styles.container} />;
   }
@@ -106,13 +113,16 @@ export default function RoomScreen() {
 
       <RoomSettingsModal
         visible={showSettings}
-        roomName={currentRoom.name}
+        roomName={currentRoom.name || 'Room'}
+        roomId={currentRoom.id}
         isCreator={currentRoom.creator_id === currentUser?.id}
+        isDefault={isDefaultRoom(currentRoom.id)}
         onClose={() => setShowSettings(false)}
         onRename={handleRename}
         onDelete={handleDelete}
         onLeave={handleLeaveRoom}
         onInviteFriends={handleOpenInviteFriends}
+        onSetDefault={handleSetDefault}
       />
 
       <InviteFriendsModal

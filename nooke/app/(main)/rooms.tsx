@@ -18,6 +18,7 @@ import { useAppStore } from "../../stores/appStore";
 import { useRoom } from "../../hooks/useRoom";
 import { useRoomInvites } from "../../hooks/useRoomInvites";
 import { useFirstTimeRoom } from "../../hooks/useFirstTimeRoom";
+import { useDefaultRoom } from "../../hooks/useDefaultRoom";
 import { RoomCard } from "../../components/RoomCard";
 import { InviteCard } from "../../components/InviteCard";
 import { CreateRoomModal } from "../../components/CreateRoomModal";
@@ -32,6 +33,7 @@ export default function RoomsScreen() {
   const { loadMyRooms, canCreateRoom, createRoom } = useRoom();
   const { roomInvites, loading: invitesLoading, loadMyInvites, acceptInvite, declineInvite } = useRoomInvites();
   const { loading: firstTimeLoading } = useFirstTimeRoom();
+  const { isDefaultRoom, setAsDefaultRoom } = useDefaultRoom();
 
   const [refreshing, setRefreshing] = useState(false);
   const [showInvites, setShowInvites] = useState(true);
@@ -72,12 +74,14 @@ export default function RoomsScreen() {
     if (room) {
       setShowCreateRoom(false);
       await loadMyRooms();
-      router.push(`/(main)/room/${room.id}`);
+      await setAsDefaultRoom(room.id);
+      router.replace('/(main)');
     }
   };
 
-  const handleRoomPress = (roomId: string) => {
-    router.push(`/(main)/room/${roomId}`);
+  const handleRoomPress = async (roomId: string) => {
+    await setAsDefaultRoom(roomId);
+    router.replace('/(main)');
   };
 
   const handleAcceptInvite = async (inviteId: string) => {
@@ -166,6 +170,7 @@ export default function RoomsScreen() {
                     room={room}
                     onPress={() => handleRoomPress(room.id)}
                     isCreator={room.creator_id === currentUser?.id}
+                    isDefault={isDefaultRoom(room.id)}
                   />
                 ))}
               </View>

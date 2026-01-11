@@ -114,7 +114,7 @@ A wrapper script is already created at `.supabase-mcp.sh` in your project root. 
 {
   "mcpServers": {
     "supabase": {
-      "command": "/Users/crax/DEVELOPMENT/Nooke/.supabase-mcp.sh",
+      "command": "/Users/crax/DEVELOPMENT/Nūūky/.supabase-mcp.sh",
       "args": [
         "https://ezbamrqoewrbvdvbypyd.supabase.co",
         "YOUR_SERVICE_ROLE_KEY_HERE"
@@ -143,7 +143,7 @@ Once configured, Claude can:
 Once MCP is configured, tell Claude:
 
 ```
-Deploy the Nooke database schema to Supabase
+Deploy the Nūūky database schema to Supabase
 ```
 
 Claude will then:

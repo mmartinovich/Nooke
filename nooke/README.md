@@ -1,4 +1,4 @@
-# Nooke - Ambient Presence App
+# Nūūky - Ambient Presence App
 
 Feel connected without the pressure of communicating.
 

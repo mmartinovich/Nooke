@@ -17,23 +17,29 @@ import { colors, spacing, radius, typography, gradients } from '../lib/theme';
 interface RoomSettingsModalProps {
   visible: boolean;
   roomName: string;
+  roomId: string;
   isCreator: boolean;
+  isDefault: boolean;
   onClose: () => void;
   onRename: (newName: string) => Promise<void>;
   onDelete: () => Promise<void>;
   onLeave: () => void;
   onInviteFriends: () => void;
+  onSetDefault: () => Promise<void>;
 }
 
 export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
   visible,
   roomName,
+  roomId,
   isCreator,
+  isDefault,
   onClose,
   onRename,
   onDelete,
   onLeave,
   onInviteFriends,
+  onSetDefault,
 }) => {
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(roomName);
@@ -63,6 +69,16 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
   };
 
   const handleDelete = () => {
+    // Block deletion if this is the default room
+    if (isDefault) {
+      Alert.alert(
+        'Cannot Delete Default Room',
+        'This is your default room. Please set another room as default before deleting.',
+        [{ text: 'OK', style: 'default' }]
+      );
+      return;
+    }
+
     Alert.alert(
       'Delete Room',
       'Are you sure you want to delete this room? This action cannot be undone.',
@@ -85,6 +101,18 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
         },
       ]
     );
+  };
+
+  const handleSetDefault = async () => {
+    try {
+      setLoading(true);
+      await onSetDefault();
+      Alert.alert('Success', 'Default room updated');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to set default room');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClose = () => {
@@ -116,6 +144,51 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
               contentContainerStyle={styles.contentContainer}
               showsVerticalScrollIndicator={false}
             >
+              {/* Default Room Section */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>DEFAULT ROOM</Text>
+                {isDefault ? (
+                  <View style={styles.settingItem}>
+                    <View style={styles.settingInfo}>
+                      <Ionicons
+                        name="home"
+                        size={24}
+                        color={colors.mood.good.base}
+                      />
+                      <View style={styles.defaultInfo}>
+                        <Text style={styles.settingLabel}>This is your default room</Text>
+                        <Text style={styles.settingDescription}>
+                          Shown when you open the app
+                        </Text>
+                      </View>
+                    </View>
+                    <Ionicons name="checkmark-circle" size={24} color={colors.mood.good.base} />
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.settingItem}
+                    onPress={handleSetDefault}
+                    disabled={loading}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.settingInfo}>
+                      <Ionicons
+                        name="home-outline"
+                        size={24}
+                        color={colors.text.secondary}
+                      />
+                      <View style={styles.defaultInfo}>
+                        <Text style={styles.settingLabel}>Set as Default</Text>
+                        <Text style={styles.settingDescription}>
+                          Make this your home screen
+                        </Text>
+                      </View>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+
               {/* Room Name Section */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>ROOM NAME</Text>
@@ -342,6 +415,14 @@ const styles = StyleSheet.create({
     fontSize: typography.size.md,
     fontWeight: typography.weight.semibold as any,
     color: colors.text.primary,
+  },
+  defaultInfo: {
+    flex: 1,
+  },
+  settingDescription: {
+    fontSize: typography.size.xs,
+    color: colors.text.tertiary,
+    marginTop: 2,
   },
   renameContainer: {
     gap: spacing.sm,

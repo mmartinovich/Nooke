@@ -193,14 +193,14 @@ export default function FriendsScreen() {
           </LinearGradient>
         </View>
 
-        {/* Contacts on Nooke */}
-        {hasSynced && matches.onNooke.length > 0 && (
+        {/* Contacts on Nūūky */}
+        {hasSynced && matches.onNuuky.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              On Nooke ({matches.onNooke.length})
+              On Nūūky ({matches.onNuuky.length})
             </Text>
 
-            {matches.onNooke.map((contact) => (
+            {matches.onNuuky.map((contact) => (
               <LinearGradient
                 key={contact.id}
                 colors={gradients.card}
@@ -235,14 +235,14 @@ export default function FriendsScreen() {
           </View>
         )}
 
-        {/* Invite to Nooke */}
-        {hasSynced && matches.notOnNooke.length > 0 && (
+        {/* Invite to Nūūky */}
+        {hasSynced && matches.notOnNuuky.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              Invite to Nooke ({matches.notOnNooke.length})
+              Invite to Nūūky ({matches.notOnNuuky.length})
             </Text>
 
-            {matches.notOnNooke.slice(0, 15).map((contact) => (
+            {matches.notOnNuuky.slice(0, 15).map((contact) => (
               <LinearGradient
                 key={contact.id}
                 colors={gradients.card}
@@ -269,9 +269,9 @@ export default function FriendsScreen() {
               </LinearGradient>
             ))}
 
-            {matches.notOnNooke.length > 15 && (
+            {matches.notOnNuuky.length > 15 && (
               <Text style={styles.moreContactsText}>
-                + {matches.notOnNooke.length - 15} more contacts to invite
+                + {matches.notOnNuuky.length - 15} more contacts to invite
               </Text>
             )}
           </View>

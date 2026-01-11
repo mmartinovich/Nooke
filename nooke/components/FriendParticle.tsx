@@ -279,22 +279,22 @@ export function FriendParticle({
             />
           </Animated.View>
 
-          {/* Mood-colored ring - always visible, brighter for online friends */}
-          <View 
+          {/* Mood-colored ring - same for all friends */}
+          <View
             style={[
-              styles.moodRing, 
-              { 
-                borderColor: friend.is_online ? moodColors.base : moodColors.base,
-                borderWidth: friend.is_online ? 4 : 3,
-                opacity: friend.is_online ? 1 : 0.7,
+              styles.moodRing,
+              {
+                borderColor: moodColors.base,
+                borderWidth: 4,
+                opacity: 0.9,
                 shadowColor: moodColors.base,
-                shadowOpacity: friend.is_online ? 0.6 : 0.3,
-                shadowRadius: friend.is_online ? 8 : 6,
+                shadowOpacity: 0.5,
+                shadowRadius: 8,
                 shadowOffset: { width: 0, height: 0 },
-                elevation: friend.is_online ? 8 : 5,
+                elevation: 8,
                 zIndex: 1,
               }
-            ]} 
+            ]}
           />
           
           {/* Avatar circle - on top */}

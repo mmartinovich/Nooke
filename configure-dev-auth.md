@@ -10,7 +10,7 @@ The error "Database error saving new user" means email confirmation is still ena
 
 ### Step 1: Open Supabase Dashboard
 - Go to: https://supabase.com/dashboard
-- Select your **Nooke** project
+- Select your **Nūūky** project
 - Navigate to **Authentication** (left sidebar)
 - Click **Settings**
 

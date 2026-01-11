@@ -4,6 +4,106 @@ import { supabase } from '../lib/supabase';
 import { useAppStore } from '../stores/appStore';
 import { Room, RoomParticipant } from '../types';
 
+/**
+ * TESTING MODE TOGGLE
+ *
+ * Set to true to use mocked room participants for testing/development
+ * Set to false to use real data from Supabase
+ *
+ * Mock data includes:
+ * - Mock participants in the current room (using mock friends)
+ */
+const USE_MOCK_DATA = true;
+
+// Mock room participants (matching the friends from index.tsx with avatars)
+const MOCK_PARTICIPANTS: RoomParticipant[] = [
+  {
+    id: 'mock-participant-1',
+    room_id: 'current-room',
+    user_id: 'friend-1',
+    is_muted: false,
+    joined_at: new Date().toISOString(),
+    user: {
+      id: 'friend-1',
+      phone: '+1234567890',
+      display_name: 'Alex',
+      mood: 'good',
+      is_online: true,
+      last_seen_at: new Date().toISOString(),
+      avatar_url: 'https://i.pravatar.cc/150?img=1',
+      created_at: new Date().toISOString(),
+    },
+  },
+  {
+    id: 'mock-participant-2',
+    room_id: 'current-room',
+    user_id: 'friend-2',
+    is_muted: true,
+    joined_at: new Date().toISOString(),
+    user: {
+      id: 'friend-2',
+      phone: '+1234567891',
+      display_name: 'Sam',
+      mood: 'neutral',
+      is_online: false,
+      last_seen_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+      avatar_url: 'https://i.pravatar.cc/150?img=5',
+      created_at: new Date().toISOString(),
+    },
+  },
+  {
+    id: 'mock-participant-3',
+    room_id: 'current-room',
+    user_id: 'friend-3',
+    is_muted: false,
+    joined_at: new Date().toISOString(),
+    user: {
+      id: 'friend-3',
+      phone: '+1234567892',
+      display_name: 'Jordan',
+      mood: 'not_great',
+      is_online: true,
+      last_seen_at: new Date().toISOString(),
+      avatar_url: 'https://i.pravatar.cc/150?img=12',
+      created_at: new Date().toISOString(),
+    },
+  },
+  {
+    id: 'mock-participant-4',
+    room_id: 'current-room',
+    user_id: 'friend-4',
+    is_muted: false,
+    joined_at: new Date().toISOString(),
+    user: {
+      id: 'friend-4',
+      phone: '+1234567893',
+      display_name: 'Taylor',
+      mood: 'reach_out',
+      is_online: false,
+      last_seen_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      avatar_url: 'https://i.pravatar.cc/150?img=47',
+      created_at: new Date().toISOString(),
+    },
+  },
+  {
+    id: 'mock-participant-5',
+    room_id: 'current-room',
+    user_id: 'friend-5',
+    is_muted: true,
+    joined_at: new Date().toISOString(),
+    user: {
+      id: 'friend-5',
+      phone: '+1234567894',
+      display_name: 'Riley',
+      mood: 'good',
+      is_online: true,
+      last_seen_at: new Date().toISOString(),
+      avatar_url: 'https://i.pravatar.cc/150?img=33',
+      created_at: new Date().toISOString(),
+    },
+  },
+];
+
 export const useRoom = () => {
   const { currentUser, currentRoom, setCurrentRoom, setActiveRooms, myRooms, setMyRooms, addMyRoom, removeMyRoom } = useAppStore();
   const [participants, setParticipants] = useState<RoomParticipant[]>([]);
@@ -50,7 +150,16 @@ export const useRoom = () => {
 
       if (error) throw error;
 
-      const rooms = data || [];
+      let rooms = data || [];
+
+      // Add mock participants to rooms if enabled
+      if (USE_MOCK_DATA && rooms.length > 0) {
+        rooms = rooms.map(room => ({
+          ...room,
+          participants: MOCK_PARTICIPANTS,
+        }));
+      }
+
       setActiveRoomsList(rooms);
       setActiveRooms(rooms);
     } catch (error: any) {
@@ -62,6 +171,16 @@ export const useRoom = () => {
     if (!currentUser) return;
 
     try {
+      // Use mocked data if enabled - add mock participants to existing rooms
+      if (USE_MOCK_DATA && myRooms.length > 0) {
+        const roomsWithMockParticipants = myRooms.map(room => ({
+          ...room,
+          participants: MOCK_PARTICIPANTS,
+        }));
+        setMyRooms(roomsWithMockParticipants);
+        return;
+      }
+
       // Get rooms where user is creator or participant
       const { data: participantData } = await supabase
         .from('room_participants')
@@ -109,6 +228,12 @@ export const useRoom = () => {
     if (!currentRoom) return;
 
     try {
+      // Use mocked data if enabled
+      if (USE_MOCK_DATA) {
+        setParticipants(MOCK_PARTICIPANTS);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('room_participants')
         .select(`

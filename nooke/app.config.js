@@ -8,7 +8,7 @@ try {
 
 export default {
   expo: {
-    name: "Nooke",
+    name: "Nūūky",
     slug: "nooke",
     version: "1.0.0",
     orientation: "portrait",
@@ -44,7 +44,7 @@ export default {
       [
         "expo-contacts",
         {
-          contactsPermission: "Allow Nooke to access your contacts to find friends who are already using the app."
+          contactsPermission: "Allow Nūūky to access your contacts to find friends who are already using the app."
         }
       ]
     ],

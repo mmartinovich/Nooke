@@ -42,6 +42,7 @@ import { useFlare } from "../../hooks/useFlare";
 import { usePresence } from "../../hooks/usePresence";
 import { useRoom } from "../../hooks/useRoom";
 import { useRoomInvites } from "../../hooks/useRoomInvites";
+import { useDefaultRoom } from "../../hooks/useDefaultRoom";
 import {
   colors,
   getMoodColor,
@@ -57,6 +58,8 @@ import { StarField } from "../../components/StarField";
 import { FriendActionBubble } from "../../components/FriendActionBubble";
 import { RoomListModal } from "../../components/RoomListModal";
 import { CreateRoomModal } from "../../components/CreateRoomModal";
+import { RoomSettingsModal } from "../../components/RoomSettingsModal";
+import { InviteFriendsModal } from "../../components/InviteFriendsModal";
 
 const { width, height } = Dimensions.get("window");
 const CENTER_X = width / 2;
@@ -70,8 +73,9 @@ export default function QuantumOrbitScreen() {
   const { sendNudge } = useNudge();
   const { sendFlare, activeFlares, myActiveFlare } = useFlare();
   const { updateActivity } = usePresence(); // Track presence while app is active
-  const { activeRooms, createRoom, joinRoom: joinRoomFn } = useRoom();
+  const { activeRooms, createRoom, joinRoom: joinRoomFn, updateRoomName, deleteRoom, inviteFriendToRoom, participants } = useRoom();
   const { roomInvites } = useRoomInvites();
+  const { defaultRoom, defaultRoomId, isDefaultRoom, setAsDefaultRoom } = useDefaultRoom();
   const [loading, setLoading] = useState(false); // Start with false - friends from Zustand show immediately
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [showHint, setShowHint] = useState(true); // Show hint by default until user interacts
@@ -80,6 +84,8 @@ export default function QuantumOrbitScreen() {
   const [isMuted, setIsMuted] = useState(true); // Start muted by default
   const [showRoomList, setShowRoomList] = useState(false);
   const [showCreateRoom, setShowCreateRoom] = useState(false);
+  const [showRoomSettings, setShowRoomSettings] = useState(false);
+  const [showInviteFriendsFromDefault, setShowInviteFriendsFromDefault] = useState(false);
 
   // Shared orbit angle for roulette rotation - all friends rotate together
   // Using React Native Animated API (works in Expo Go, can upgrade to Reanimated later)
@@ -165,6 +171,15 @@ export default function QuantumOrbitScreen() {
   // Filter out any invalid friends (where friend data is missing)
   // Friends persist in Zustand, so they're available immediately on remount
   const friendList = friends.map((f) => f.friend as User).filter((f): f is User => f !== null && f !== undefined);
+
+  // Get participant users from room (when in room mode)
+  const participantUsers: User[] = useMemo(() => {
+    if (!defaultRoom) return [];
+    return participants.map(p => p.user).filter((u): u is User => u !== null && u !== undefined);
+  }, [defaultRoom, participants]);
+
+  // Use participants when in room mode, friends otherwise
+  const orbitUsers = defaultRoom ? participantUsers : friendList;
 
   // CRITICAL: Immediately restore mock friends if they're missing
   // This prevents the Friends page from clearing them
@@ -268,29 +283,36 @@ export default function QuantumOrbitScreen() {
     return positions;
   };
 
-  // Recalculate positions when friends change
-  // Use friend IDs as dependency to detect actual changes, not just length
-  const friendIds = useMemo(() => friendList.map((f) => f.id).join(","), [friendList]);
-  const friendPositions = useMemo(() => calculateFriendPositions(friendList.length), [friendList.length, friendIds]);
+  // Recalculate positions when orbit users change (friends or room participants)
+  // Use IDs as dependency to detect actual changes, not just length
+  const orbitIds = useMemo(() => orbitUsers.map((f) => f.id).join(","), [orbitUsers]);
+  const orbitPositions = useMemo(() => calculateFriendPositions(orbitUsers.length), [orbitUsers.length, orbitIds]);
 
-  // Calculate base angles for each friend from their initial positions
+  // Calculate base angles for each orbit user from their initial positions
   // These are used with orbitAngle to calculate final positions during rotation
-  const friendBaseAngles = useMemo(() => {
-    return friendPositions.map((pos) => {
+  const orbitBaseAngles = useMemo(() => {
+    return orbitPositions.map((pos) => {
       const deltaX = pos.x - CENTER_X;
       const deltaY = pos.y - CENTER_Y;
       return Math.atan2(deltaY, deltaX);
     });
-  }, [friendPositions]);
+  }, [orbitPositions]);
 
-  // Calculate radius for each friend (distance from center)
-  const friendRadii = useMemo(() => {
-    return friendPositions.map((pos) => {
+  // Calculate radius for each orbit user (distance from center)
+  const orbitRadii = useMemo(() => {
+    return orbitPositions.map((pos) => {
       const deltaX = pos.x - CENTER_X;
       const deltaY = pos.y - CENTER_Y;
       return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
     });
-  }, [friendPositions]);
+  }, [orbitPositions]);
+
+  // Join default room when it's set
+  useEffect(() => {
+    if (defaultRoom && currentUser) {
+      joinRoomFn(defaultRoom.id);
+    }
+  }, [defaultRoom?.id, currentUser]);
 
   // Friends persist in Zustand store across navigation, so avatars show immediately
   // No need to reload on focus - friends are already in store and realtime updates them
@@ -620,8 +642,8 @@ export default function QuantumOrbitScreen() {
 
   const handleFriendPress = (friend: User, friendIndex: number) => {
     // Calculate friend's current position based on orbit angle
-    const baseAngle = friendBaseAngles[friendIndex] || 0;
-    const radius = friendRadii[friendIndex] || 150;
+    const baseAngle = orbitBaseAngles[friendIndex] || 0;
+    const radius = orbitRadii[friendIndex] || 150;
     const currentAngle = baseAngle + orbitAngleValueRef.current;
     const friendX = CENTER_X + Math.cos(currentAngle) * radius;
     const friendY = CENTER_Y + Math.sin(currentAngle) * radius;
@@ -752,20 +774,19 @@ export default function QuantumOrbitScreen() {
         showHint={showHint}
       />
 
-      {/* Friend Particles - Organic Layout (rendered after central orb to appear on top) */}
-      {/* Always render friends if they exist - they persist in Zustand */}
-      {friendList.length > 0 &&
-        friendList.map((friend, index) => (
+      {/* Orbit Particles - Shows room participants when in room, friends otherwise */}
+      {orbitUsers.length > 0 &&
+        orbitUsers.map((user, index) => (
           <FriendParticle
-            key={friend.id}
-            friend={friend}
+            key={user.id}
+            friend={user}
             index={index}
-            total={friendList.length}
-            onPress={() => handleFriendPress(friend, index)}
-            hasActiveFlare={activeFlares.some((f: any) => f.user_id === friend.id)}
-            position={friendPositions[index] || { x: CENTER_X, y: CENTER_Y }}
-            baseAngle={friendBaseAngles[index] || 0}
-            radius={friendRadii[index] || 150}
+            total={orbitUsers.length}
+            onPress={() => handleFriendPress(user, index)}
+            hasActiveFlare={activeFlares.some((f: any) => f.user_id === user.id)}
+            position={orbitPositions[index] || { x: CENTER_X, y: CENTER_Y }}
+            baseAngle={orbitBaseAngles[index] || 0}
+            radius={orbitRadii[index] || 150}
             orbitAngle={orbitAngle}
           />
         ))}
@@ -784,8 +805,19 @@ export default function QuantumOrbitScreen() {
 
       {/* Top Header - Simple Text */}
       <View style={styles.topHeader} pointerEvents="box-none">
-        <Text style={styles.appTitle}>Nookē</Text>
-        <Text style={styles.moodText}>{currentVibe}</Text>
+        <Text style={styles.appTitle}>Nūūky</Text>
+        {defaultRoom ? (
+          <TouchableOpacity
+            style={styles.roomPill}
+            onPress={() => setShowRoomSettings(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="home" size={14} color={colors.neon.cyan} />
+            <Text style={styles.roomPillText}>{defaultRoom.name || 'Room'}</Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={styles.moodText}>{currentVibe}</Text>
+        )}
       </View>
 
       {/* Bottom Navigation Bar */}
@@ -897,6 +929,42 @@ export default function QuantumOrbitScreen() {
         onCreate={handleCreateRoom}
       />
 
+      {/* Room Settings Modal (for default room) */}
+      {defaultRoom && (
+        <RoomSettingsModal
+          visible={showRoomSettings}
+          roomName={defaultRoom.name || 'Room'}
+          roomId={defaultRoom.id}
+          isCreator={defaultRoom.creator_id === currentUser?.id}
+          isDefault={true}
+          onClose={() => setShowRoomSettings(false)}
+          onRename={async (name) => await updateRoomName(defaultRoom.id, name)}
+          onDelete={async () => await deleteRoom(defaultRoom.id)}
+          onLeave={() => {
+            // Can't leave default room - would need to set another as default first
+            Alert.alert('Cannot Leave', 'Set another room as default before leaving this room.');
+          }}
+          onInviteFriends={() => {
+            setShowRoomSettings(false);
+            setShowInviteFriendsFromDefault(true);
+          }}
+          onSetDefault={async () => {
+            // Already default, no-op
+          }}
+        />
+      )}
+
+      {/* Invite Friends Modal (for default room) */}
+      {defaultRoom && (
+        <InviteFriendsModal
+          visible={showInviteFriendsFromDefault}
+          friends={friendList}
+          participantIds={participants.map(p => p.user_id)}
+          onClose={() => setShowInviteFriendsFromDefault(false)}
+          onInvite={async (friendId) => await inviteFriendToRoom(defaultRoom.id, friendId)}
+        />
+      )}
+
       {/* Grain Overlay */}
       <View style={styles.grain} pointerEvents="none" />
     </View>
@@ -937,6 +1005,27 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontWeight: "500",
     letterSpacing: 0.2,
+  },
+  roomPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.glass.background,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: `rgba(0, 240, 255, 0.3)`,
+    marginTop: 6,
+    shadowColor: colors.neon.cyan,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  roomPillText: {
+    fontSize: typography.size.sm,
+    color: colors.text.secondary,
+    fontWeight: typography.weight.medium as any,
   },
   // Bottom Navigation Bar
   bottomNav: {

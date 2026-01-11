@@ -12,6 +12,7 @@ export interface User {
   take_break_until?: string;
   fcm_token?: string;
   auth_provider?: 'google' | 'apple' | 'email';  // OAuth provider
+  default_room_id?: string;
   created_at: string;
 }
 
@@ -122,8 +123,8 @@ export interface PhoneContact {
 }
 
 export interface ContactMatch {
-  onNooke: PhoneContact[];
-  notOnNooke: PhoneContact[];
+  onNuuky: PhoneContact[];
+  notOnNuuky: PhoneContact[];
 }
 
 // Matched contact with user data

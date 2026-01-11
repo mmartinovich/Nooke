@@ -334,7 +334,7 @@ export default function LoginScreen() {
 
           {/* Title */}
           <View style={styles.header}>
-            <Text style={styles.title}>Nooke</Text>
+            <Text style={styles.title}>Nūūky</Text>
             <Text style={styles.subtitle}>
               Feel connected without{'\n'}the pressure of communicating
             </Text>

@@ -1,4 +1,4 @@
-# Nooke App - Phase 1 & 2 Implementation Complete! 🎉
+# Nūūky App - Phase 1 & 2 Implementation Complete! 🎉
 
 ## Overview
 
@@ -134,7 +134,7 @@ Follow the instructions in [SUPABASE_SETUP.md](SUPABASE_SETUP.md):
 
 ### 2. **Test the App** (10 minutes)
 ```bash
-cd /Users/crax/DEVELOPMENT/Nooke/nooke
+cd /Users/crax/DEVELOPMENT/Nūūky/nooke
 npx expo start
 ```
 

@@ -1,9 +1,9 @@
-# Nooke Design System
+# Nūūky Design System
 ## Soft Cosmic Aesthetic
 
 ### Design Philosophy
 
-Nooke uses a **soft cosmic aesthetic** to create a calm, meditative experience. Friends appear as luminous celestial bodies in your personal orbit, creating an ambient presence that feels peaceful and non-intrusive.
+Nūūky uses a **soft cosmic aesthetic** to create a calm, meditative experience. Friends appear as luminous celestial bodies in your personal orbit, creating an ambient presence that feels peaceful and non-intrusive.
 
 ---
 
@@ -104,7 +104,7 @@ Soft, organic corners throughout:
 ## Components
 
 ### Friend Orb
-The centerpiece of Nooke's design - luminous celestial bodies representing friends.
+The centerpiece of Nūūky's design - luminous celestial bodies representing friends.
 
 **Structure**:
 - Outer glow (90px) - Pulsing halo
@@ -199,7 +199,7 @@ Loop: Infinite
 
 ### Login Screen
 - Centered decorative orb with pulse
-- Large, spaced title "Nooke"
+- Large, spaced title "Nūūky"
 - Subtitle explaining concept
 - Single input with uppercase label
 - Prominent continue button
