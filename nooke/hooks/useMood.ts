@@ -4,6 +4,9 @@ import { supabase } from '../lib/supabase';
 import { useAppStore } from '../stores/appStore';
 import { User } from '../types';
 
+// MOCK MODE FLAG - should match useRoom.ts
+const USE_MOCK_DATA = true;
+
 export const useMood = () => {
   const { currentUser, updateUserMood } = useAppStore();
   const [loading, setLoading] = useState(false);
@@ -12,6 +15,12 @@ export const useMood = () => {
     if (!currentUser) {
       Alert.alert('Error', 'You must be logged in');
       return false;
+    }
+
+    // MOCK MODE: Skip Supabase query, just update local state
+    if (USE_MOCK_DATA) {
+      updateUserMood(mood);
+      return true;
     }
 
     setLoading(true);

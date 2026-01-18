@@ -13,6 +13,10 @@ let lastRoomsRefresh = 0;
 let lastParticipantsRefresh = 0;
 const REFRESH_THROTTLE_MS = 2000; // Only allow refresh every 2 seconds
 
+// Prevent multiple simultaneous joinRoom calls
+let isJoiningRoom = false;
+let lastJoinedRoomId: string | null = null;
+
 /**
  * TESTING MODE TOGGLE
  *
@@ -140,10 +144,13 @@ export const useRoom = () => {
     if (currentUser) {
       loadActiveRooms();
       loadMyRooms();
-      const cleanup = setupRealtimeSubscription();
-      return cleanup;
+      // Disable realtime subscriptions in mock mode to prevent accumulation issues
+      if (!USE_MOCK_DATA) {
+        const cleanup = setupRealtimeSubscription();
+        return cleanup;
+      }
     }
-  }, [currentUser]);
+  }, [currentUser?.id]); // Use id to avoid re-running on mood change
 
   useEffect(() => {
     if (currentRoom) {
@@ -153,6 +160,14 @@ export const useRoom = () => {
 
   const loadActiveRooms = async () => {
     if (!currentUser) return;
+
+    // MOCK MODE: Skip Supabase query, use myRooms as active rooms
+    if (USE_MOCK_DATA) {
+      const currentMyRooms = useAppStore.getState().myRooms;
+      setActiveRoomsList(currentMyRooms);
+      setActiveRooms(currentMyRooms);
+      return;
+    }
 
     try {
       const { data, error } = await supabase
@@ -177,18 +192,8 @@ export const useRoom = () => {
 
       if (error) throw error;
 
-      let rooms = data || [];
-
-      // Add mock participants to rooms if enabled
-      if (USE_MOCK_DATA && rooms.length > 0) {
-        rooms = rooms.map(room => ({
-          ...room,
-          participants: MOCK_PARTICIPANTS,
-        }));
-      }
-
-      setActiveRoomsList(rooms);
-      setActiveRooms(rooms);
+      setActiveRoomsList(data || []);
+      setActiveRooms(data || []);
     } catch (error: any) {
       console.error('Error loading active rooms:', error);
     }
@@ -305,10 +310,10 @@ export const useRoom = () => {
   const setupRealtimeSubscription = () => {
     if (!currentUser) return () => {};
 
-    // Prevent duplicate subscriptions across hook instances
+    // Prevent duplicate subscriptions across hook instances - return existing cleanup
     if (activeRoomSubscription && activeRoomSubscription.userId === currentUser.id) {
-      // Subscription already exists for this user, return no-op
-      return () => {};
+      // Subscription already exists for this user, return existing cleanup for proper unmount
+      return activeRoomSubscription.cleanup;
     }
 
     // Clean up any existing subscription for a different user
@@ -487,8 +492,33 @@ export const useRoom = () => {
       return false;
     }
 
+    // Prevent multiple simultaneous calls or rejoining the same room
+    if (isJoiningRoom) {
+      return false;
+    }
+    if (lastJoinedRoomId === roomId && currentRoom?.id === roomId) {
+      // Already in this room, no need to rejoin
+      return true;
+    }
+
+    isJoiningRoom = true;
     setLoading(true);
     try {
+      // MOCK MODE: Skip Supabase queries, just use local data
+      if (USE_MOCK_DATA) {
+        // Get latest myRooms from store (closure has stale value)
+        const currentMyRooms = useAppStore.getState().myRooms;
+        const room = currentMyRooms.find(r => r.id === roomId);
+        if (room) {
+          setCurrentRoom(room);
+          lastJoinedRoomId = roomId;
+          return true;
+        }
+        // Room not found - this shouldn't happen in mock mode
+        console.warn('Room not found in myRooms:', roomId);
+        return false;
+      }
+
       // Check if already in the room
       const { data: existing } = await supabase
         .from('room_participants')
@@ -509,6 +539,7 @@ export const useRoom = () => {
           // Load myRooms first to ensure we have fresh participant data
           await loadMyRooms();
           setCurrentRoom(room);
+          lastJoinedRoomId = roomId;
           return true;
         }
       }
@@ -536,6 +567,7 @@ export const useRoom = () => {
       // Load rooms data first to ensure we have fresh participant data
       await Promise.all([loadActiveRooms(), loadMyRooms()]);
       setCurrentRoom(room);
+      lastJoinedRoomId = roomId;
 
       return true;
     } catch (error: any) {
@@ -544,6 +576,7 @@ export const useRoom = () => {
       return false;
     } finally {
       setLoading(false);
+      isJoiningRoom = false;
     }
   };
 
@@ -593,6 +626,7 @@ export const useRoom = () => {
 
       setCurrentRoom(null);
       setRoomParticipants([]);
+      lastJoinedRoomId = null;
       await loadActiveRooms();
       await loadMyRooms();
     } catch (error: any) {
@@ -915,6 +949,11 @@ export const useRoom = () => {
     }
   };
 
+  // Clear the last joined room ID to allow rejoining
+  const clearLastJoinedRoom = () => {
+    lastJoinedRoomId = null;
+  };
+
   return {
     currentRoom,
     participants,
@@ -933,5 +972,6 @@ export const useRoom = () => {
     inviteFriendToRoom,
     loadActiveRooms,
     loadMyRooms,
+    clearLastJoinedRoom,
   };
 };

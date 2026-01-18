@@ -24,7 +24,11 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.nooke.app",
-      usesAppleSignIn: true
+      usesAppleSignIn: true,
+      infoPlist: {
+        NSMicrophoneUsageDescription: "Nūūky needs microphone access to let you talk with friends in rooms.",
+        UIBackgroundModes: ["audio"]
+      }
     },
     android: {
       adaptiveIcon: {
@@ -33,7 +37,11 @@ export default {
       },
       package: "com.nooke.app",
       edgeToEdgeEnabled: true,
-      predictiveBackGestureEnabled: false
+      predictiveBackGestureEnabled: false,
+      permissions: [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     web: {
       favicon: "./assets/favicon.png"
@@ -41,12 +49,14 @@ export default {
     plugins: [
       "expo-router",
       "expo-apple-authentication",
+      "expo-dev-client",
       [
         "expo-contacts",
         {
           contactsPermission: "Allow Nūūky to access your contacts to find friends who are already using the app."
         }
-      ]
+      ],
+      "@livekit/react-native-expo-plugin"
     ],
     extra: {
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://ezbamrqoewrbvdvbypyd.supabase.co',

@@ -21,11 +21,20 @@ export const useRoomInvites = () => {
       const cleanup = setupRealtimeSubscription();
       return cleanup;
     }
-  }, [currentUser]);
+  }, [currentUser?.id]); // Use id to avoid re-running on mood change
+
+  // MOCK MODE FLAG - should match useRoom.ts
+  const USE_MOCK_DATA = true;
 
   // Load pending invites for current user
   const loadMyInvites = async () => {
     if (!currentUser) return;
+
+    // MOCK MODE: Skip Supabase query, use empty invites
+    if (USE_MOCK_DATA) {
+      setRoomInvites([]);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -325,9 +334,9 @@ export const useRoomInvites = () => {
   const setupRealtimeSubscription = () => {
     if (!currentUser) return () => {};
 
-    // Prevent duplicate subscriptions
+    // Prevent duplicate subscriptions - return existing cleanup for proper unmount
     if (activeInvitesSubscription && activeInvitesSubscription.userId === currentUser.id) {
-      return () => {};
+      return activeInvitesSubscription.cleanup;
     }
 
     if (activeInvitesSubscription) {

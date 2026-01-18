@@ -21,7 +21,7 @@ export const useSafety = () => {
       checkGhostMode();
       checkBreakMode();
     }
-  }, [currentUser]);
+  }, [currentUser?.id]); // Use id to avoid re-running on mood change
 
   const loadBlocks = async () => {
     if (!currentUser) return;

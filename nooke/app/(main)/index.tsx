@@ -40,6 +40,7 @@ import { Asset } from "expo-asset";
 
 // Module-level subscription tracking to prevent duplicates
 let activePresenceSubscription: { cleanup: () => void; userId: string } | null = null;
+let presenceSubscriptionCounter = 0;
 
 // Throttle mechanism for presence updates
 let lastPresenceRefresh = 0;
@@ -51,11 +52,10 @@ import { usePresence } from "../../hooks/usePresence";
 import { useRoom } from "../../hooks/useRoom";
 import { useRoomInvites } from "../../hooks/useRoomInvites";
 import { useDefaultRoom } from "../../hooks/useDefaultRoom";
+import { useTheme } from "../../hooks/useTheme";
 import {
-  colors,
   getMoodColor,
   getVibeText,
-  gradients,
   spacing,
   radius,
   typography,
@@ -77,12 +77,13 @@ const CENTER_Y = height / 2;
 export default function QuantumOrbitScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { theme, isDark } = useTheme();
   const { currentUser, friends } = useAppStore();
   const { currentMood, changeMood } = useMood();
   const { sendNudge } = useNudge();
   const { sendFlare, activeFlares, myActiveFlare } = useFlare();
   const { updateActivity } = usePresence(); // Track presence while app is active
-  const { activeRooms, createRoom, joinRoom: joinRoomFn, updateRoomName, deleteRoom, inviteFriendToRoom, participants, removeParticipant } = useRoom();
+  const { activeRooms, createRoom, joinRoom: joinRoomFn, updateRoomName, deleteRoom, inviteFriendToRoom, participants, removeParticipant, myRooms, currentRoom } = useRoom();
   const { roomInvites } = useRoomInvites();
   const { defaultRoom, defaultRoomId, isDefaultRoom, setAsDefaultRoom } = useDefaultRoom();
   const [loading, setLoading] = useState(false); // Start with false - friends from Zustand show immediately
@@ -105,6 +106,22 @@ export default function QuantumOrbitScreen() {
   const lastTimeRef = useRef<number>(Date.now());
   const decayAnimationRef = useRef<RNAnimated.CompositeAnimation | null>(null);
   const decayListenerRef = useRef<string | null>(null); // Track decay listener for cleanup
+
+  // Cleanup animation listeners on unmount to prevent accumulation
+  useEffect(() => {
+    return () => {
+      // Stop any running animation
+      if (decayAnimationRef.current) {
+        decayAnimationRef.current.stop();
+        decayAnimationRef.current = null;
+      }
+      // Remove any active listener
+      if (decayListenerRef.current) {
+        orbitAngle.removeListener(decayListenerRef.current);
+        decayListenerRef.current = null;
+      }
+    };
+  }, []);
 
   // Pan gesture handler for drag-to-spin rotation
   const panResponder = useRef(
@@ -191,10 +208,25 @@ export default function QuantumOrbitScreen() {
   const friendList = friends.map((f) => f.friend as User).filter((f): f is User => f !== null && f !== undefined);
 
   // Get participant users from room (when in room mode)
+  // Derive directly from myRooms using defaultRoom.id to avoid stale currentRoom data
   const participantUsers: User[] = useMemo(() => {
     if (!defaultRoom) return [];
-    return participants.map(p => p.user).filter((u): u is User => u !== null && u !== undefined);
-  }, [defaultRoom, participants]);
+
+    // Get participants directly from myRooms - this is always up to date
+    const roomData = myRooms.find(r => r.id === defaultRoom.id);
+    if (roomData && roomData.participants && roomData.participants.length > 0) {
+      return roomData.participants.map(p => p.user).filter((u): u is User => u !== null && u !== undefined);
+    }
+
+    // Only use participants fallback if currentRoom matches defaultRoom
+    // This prevents showing stale data from the previous room during transitions
+    if (currentRoom?.id === defaultRoom.id && participants.length > 0) {
+      return participants.map(p => p.user).filter((u): u is User => u !== null && u !== undefined);
+    }
+
+    // Return empty array during room transitions - data will load shortly
+    return [];
+  }, [defaultRoom?.id, myRooms, participants, currentRoom?.id]);
 
   // Use participants when in room mode, friends otherwise
   const orbitUsers = defaultRoom ? participantUsers : friendList;
@@ -208,7 +240,7 @@ export default function QuantumOrbitScreen() {
       // Use silent mode so we don't show loading - friends will appear as soon as they're set
       loadFriends(true);
     }
-  }, [currentUser, friends.length, friendList.length]);
+  }, [currentUser?.id, friends.length, friendList.length]); // Use id to avoid re-running on mood change
 
   // Organic layout algorithm - calculate positions for friends
   // Ensures even distribution around central orb with no overlaps
@@ -343,7 +375,7 @@ export default function QuantumOrbitScreen() {
     if (defaultRoom && currentUser) {
       joinRoomFn(defaultRoom.id);
     }
-  }, [defaultRoom?.id, currentUser]);
+  }, [defaultRoom?.id, currentUser?.id]); // Use id to avoid re-running on mood change
 
   // Friends persist in Zustand store across navigation, so avatars show immediately
   // No need to reload on focus - friends are already in store and realtime updates them
@@ -373,7 +405,7 @@ export default function QuantumOrbitScreen() {
     } else {
       setLoading(false);
     }
-  }, [currentUser]); // Only depend on currentUser - friends from store are reactive
+  }, [currentUser?.id]); // Use id to avoid re-running on mood change
 
   const loadHintState = async () => {
     try {
@@ -549,15 +581,19 @@ export default function QuantumOrbitScreen() {
   const setupRealtimeSubscription = () => {
     if (!currentUser) return () => {};
 
-    // Prevent duplicate subscriptions
+    // Prevent duplicate subscriptions - return existing cleanup to properly cleanup on unmount
     if (activePresenceSubscription && activePresenceSubscription.userId === currentUser.id) {
-      return () => {};
+      return activePresenceSubscription.cleanup;
     }
 
     if (activePresenceSubscription) {
       activePresenceSubscription.cleanup();
       activePresenceSubscription = null;
     }
+
+    // Use unique channel name to prevent duplicate listeners
+    const subscriptionId = ++presenceSubscriptionCounter;
+    const channelName = `presence-changes-${subscriptionId}`;
 
     // Throttled refresh to prevent excessive API calls
     const throttledLoadFriends = () => {
@@ -569,7 +605,7 @@ export default function QuantumOrbitScreen() {
     };
 
     const channel = supabase
-      .channel("presence-changes")
+      .channel(channelName)
       .on(
         "postgres_changes",
         {
@@ -685,9 +721,9 @@ export default function QuantumOrbitScreen() {
   // Only show loading screen if we have no friends AND no user (initial auth)
   if (loading && friendList.length === 0 && !currentUser) {
     return (
-      <LinearGradient colors={gradients.background} style={styles.container}>
+      <LinearGradient colors={theme.gradients.background} style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>✨ loading your vibe...</Text>
+          <Text style={[styles.loadingText, { color: theme.colors.text.secondary }]}>✨ loading your vibe...</Text>
         </View>
       </LinearGradient>
     );
@@ -699,11 +735,11 @@ export default function QuantumOrbitScreen() {
   const userMoodColors = getMoodColor(currentUser?.mood || "neutral");
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <View style={[styles.container, { backgroundColor: theme.colors.bg.primary }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* Neon Cyber Background */}
-      <LinearGradient colors={gradients.background} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={theme.gradients.background} style={StyleSheet.absoluteFill} />
 
       {/* Animated Star Field */}
       <StarField />
@@ -756,18 +792,25 @@ export default function QuantumOrbitScreen() {
 
       {/* Top Header - Simple Text */}
       <View style={styles.topHeader} pointerEvents="box-none">
-        <Text style={styles.appTitle}>Nūūky</Text>
+        <Text style={[styles.appTitle, { color: theme.colors.text.primary }]}>Nūūky</Text>
         {defaultRoom ? (
           <TouchableOpacity
-            style={styles.roomPill}
+            style={[
+              styles.roomPill,
+              {
+                backgroundColor: theme.colors.glass.background,
+                borderColor: `rgba(0, 240, 255, 0.3)`,
+                shadowColor: theme.colors.neon.cyan,
+              },
+            ]}
             onPress={() => setShowRoomSettings(true)}
             activeOpacity={0.7}
           >
-            <Ionicons name="home" size={14} color={colors.neon.cyan} />
-            <Text style={styles.roomPillText}>{defaultRoom.name || 'Room'}</Text>
+            <Ionicons name="home" size={14} color={theme.colors.neon.cyan} />
+            <Text style={[styles.roomPillText, { color: theme.colors.text.primary }]}>{defaultRoom.name || 'Room'}</Text>
           </TouchableOpacity>
         ) : (
-          <Text style={styles.moodText}>{currentVibe}</Text>
+          <Text style={[styles.moodText, { color: theme.colors.text.secondary }]}>{currentVibe}</Text>
         )}
       </View>
 
@@ -815,8 +858,8 @@ export default function QuantumOrbitScreen() {
             <TouchableOpacity onPress={handleOpenRooms} activeOpacity={0.7} style={styles.navTab}>
               <Ionicons name="grid-outline" size={24} color="rgba(255, 255, 255, 0.85)" />
               {roomInvites.length > 0 && (
-                <View style={styles.roomBadge}>
-                  <Text style={styles.roomBadgeText}>{roomInvites.length}</Text>
+                <View style={[styles.roomBadge, { backgroundColor: theme.colors.mood.neutral.base }]}>
+                  <Text style={[styles.roomBadgeText, { color: theme.colors.text.primary }]}>{roomInvites.length}</Text>
                 </View>
               )}
               <Text style={styles.navLabel}>Rooms</Text>
@@ -833,18 +876,28 @@ export default function QuantumOrbitScreen() {
       {/* Active Flares Alert */}
       {activeFlares.length > 0 && (
         <View style={styles.flaresAlert}>
-          <BlurView intensity={50} tint="dark" style={styles.flaresBlur}>
+          <BlurView
+            intensity={isDark ? 50 : 30}
+            tint={theme.colors.blurTint}
+            style={[
+              styles.flaresBlur,
+              {
+                borderColor: theme.colors.neon.pink,
+                shadowColor: theme.colors.neon.pink,
+              },
+            ]}
+          >
             <LinearGradient
-              colors={gradients.neonPink}
+              colors={theme.gradients.neonPink}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.flaresGradient}
             >
-              <Text style={styles.flaresTitle}>
+              <Text style={[styles.flaresTitle, { color: theme.colors.text.primary }]}>
                 🚨 {activeFlares.length} friend{activeFlares.length > 1 ? "s" : ""} need u rn
               </Text>
               {activeFlares.slice(0, 2).map((flare: any) => (
-                <Text key={flare.id} style={styles.flaresText}>
+                <Text key={flare.id} style={[styles.flaresText, { color: theme.colors.text.secondary }]}>
                   💜 {flare.user.display_name}
                 </Text>
               ))}
@@ -933,7 +986,6 @@ export default function QuantumOrbitScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bg.primary,
   },
   loadingContainer: {
     flex: 1,
@@ -942,7 +994,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 18,
-    color: colors.text.secondary,
     fontWeight: "600",
   },
   topHeader: {
@@ -955,12 +1006,10 @@ const styles = StyleSheet.create({
   appTitle: {
     fontSize: 34,
     fontWeight: "700",
-    color: colors.text.primary,
     letterSpacing: -0.5,
   },
   moodText: {
     fontSize: 17,
-    color: colors.text.secondary,
     marginTop: 6,
     fontWeight: "500",
     letterSpacing: 0.2,
@@ -971,19 +1020,15 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
-    backgroundColor: colors.glass.background,
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: `rgba(0, 240, 255, 0.3)`,
     marginTop: 6,
-    shadowColor: colors.neon.cyan,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
   },
   roomPillText: {
     fontSize: typography.size.sm,
-    color: colors.text.secondary,
     fontWeight: typography.weight.medium as any,
   },
   // Bottom Navigation Bar
@@ -1049,7 +1094,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 8,
     right: 8,
-    backgroundColor: colors.mood.neutral.base,
     borderRadius: 10,
     minWidth: 20,
     height: 20,
@@ -1060,7 +1104,6 @@ const styles = StyleSheet.create({
   roomBadgeText: {
     fontSize: 11,
     fontWeight: "700",
-    color: colors.text.primary,
   },
   navLabel: {
     fontSize: 10,
@@ -1083,8 +1126,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: "hidden",
     borderWidth: 2,
-    borderColor: colors.neon.pink,
-    shadowColor: colors.neon.pink,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 16,
@@ -1096,13 +1137,11 @@ const styles = StyleSheet.create({
   flaresTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: colors.text.primary,
     marginBottom: 10,
     textTransform: "lowercase",
   },
   flaresText: {
     fontSize: 14,
-    color: colors.text.secondary,
     marginTop: 6,
     fontWeight: "600",
   },

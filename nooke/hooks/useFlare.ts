@@ -20,10 +20,20 @@ export const useFlare = () => {
       const cleanup = setupRealtimeSubscription();
       return cleanup;
     }
-  }, [currentUser]);
+  }, [currentUser?.id]); // Use id to avoid re-running on mood change
+
+  // MOCK MODE FLAG - should match useRoom.ts
+  const USE_MOCK_DATA = true;
 
   const loadActiveFlares = async () => {
     if (!currentUser) return;
+
+    // MOCK MODE: Skip Supabase queries, use empty flares
+    if (USE_MOCK_DATA) {
+      setActiveFlares([]);
+      setMyActiveFlare(null);
+      return;
+    }
 
     try {
       // Get active flares from friends
@@ -69,9 +79,9 @@ export const useFlare = () => {
   const setupRealtimeSubscription = () => {
     if (!currentUser) return () => {};
 
-    // Prevent duplicate subscriptions
+    // Prevent duplicate subscriptions - return existing cleanup for proper unmount
     if (activeFlareSubscription && activeFlareSubscription.userId === currentUser.id) {
-      return () => {};
+      return activeFlareSubscription.cleanup;
     }
 
     if (activeFlareSubscription) {

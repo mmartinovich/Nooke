@@ -16,7 +16,7 @@ export const useFirstTimeRoom = () => {
     if (currentUser) {
       checkAndCreateDefaultRoom();
     }
-  }, [currentUser]);
+  }, [currentUser?.id]); // Use id to avoid re-running on mood change
 
   const checkAndCreateDefaultRoom = async () => {
     if (!currentUser) return;

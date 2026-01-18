@@ -177,7 +177,7 @@ export const useFriends = () => {
       setInitialLoading(false);
       setFriends([]); // Clear friends when no user
     }
-  }, [currentUser]);
+  }, [currentUser?.id]); // Use id to avoid re-running on mood change
 
   const loadFriends = async (isInitial = false) => {
     if (!currentUser) return;
@@ -242,10 +242,10 @@ export const useFriends = () => {
   const setupRealtimeSubscription = () => {
     if (!currentUser) return () => {};
 
-    // Prevent duplicate subscriptions
+    // Prevent duplicate subscriptions - return existing cleanup to properly cleanup on unmount
     if (activeFriendsSubscription && activeFriendsSubscription.userId === currentUser.id) {
-      console.log('Realtime subscription already exists for this user, skipping');
-      return () => {};
+      console.log('Realtime subscription already exists for this user, returning existing cleanup');
+      return activeFriendsSubscription.cleanup;
     }
 
     if (activeFriendsSubscription) {

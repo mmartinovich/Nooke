@@ -1,5 +1,8 @@
 import { create } from 'zustand';
-import { User, Friendship, Room, RoomParticipant, RoomInvite } from '../types';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { User, Friendship, Room, RoomParticipant, RoomInvite, AudioConnectionStatus } from '../types';
+import { ThemeMode } from '../lib/theme';
 
 interface AppState {
   // Auth state
@@ -20,6 +23,14 @@ interface AppState {
   // Default room state
   defaultRoomId: string | null;
 
+  // Theme state
+  themeMode: ThemeMode;
+
+  // Audio state
+  audioConnectionStatus: AudioConnectionStatus;
+  audioError: string | null;
+  speakingParticipants: Set<string>;
+
   // Actions
   setCurrentUser: (user: User | null) => void;
   setFriends: (friends: Friendship[]) => void;
@@ -38,10 +49,18 @@ interface AppState {
   removeRoomInvite: (inviteId: string) => void;
   updateUserMood: (mood: User['mood']) => void;
   setDefaultRoomId: (roomId: string | null) => void;
+  setThemeMode: (mode: ThemeMode) => void;
+  setAudioConnectionStatus: (status: AudioConnectionStatus) => void;
+  setAudioError: (error: string | null) => void;
+  addSpeakingParticipant: (participantId: string) => void;
+  removeSpeakingParticipant: (participantId: string) => void;
+  clearSpeakingParticipants: () => void;
   logout: () => void;
 }
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
   // Initial state
   currentUser: null,
   isAuthenticated: false,
@@ -53,6 +72,10 @@ export const useAppStore = create<AppState>((set) => ({
   roomParticipants: [],
   roomInvites: [],
   defaultRoomId: null,
+  themeMode: 'system' as ThemeMode,
+  audioConnectionStatus: 'disconnected' as AudioConnectionStatus,
+  audioError: null,
+  speakingParticipants: new Set<string>(),
 
   // Actions
   setCurrentUser: (user) => set({ currentUser: user, isAuthenticated: !!user }),
@@ -118,7 +141,27 @@ export const useAppStore = create<AppState>((set) => ({
 
   setDefaultRoomId: (roomId) => set({ defaultRoomId: roomId }),
 
-  logout: () => set({
+  setThemeMode: (mode) => set({ themeMode: mode }),
+
+  setAudioConnectionStatus: (status) => set({ audioConnectionStatus: status }),
+
+  setAudioError: (error) => set({ audioError: error }),
+
+  addSpeakingParticipant: (participantId) => set((state) => {
+    const newSet = new Set(state.speakingParticipants);
+    newSet.add(participantId);
+    return { speakingParticipants: newSet };
+  }),
+
+  removeSpeakingParticipant: (participantId) => set((state) => {
+    const newSet = new Set(state.speakingParticipants);
+    newSet.delete(participantId);
+    return { speakingParticipants: newSet };
+  }),
+
+  clearSpeakingParticipants: () => set({ speakingParticipants: new Set<string>() }),
+
+  logout: () => set((state) => ({
     currentUser: null,
     isAuthenticated: false,
     friends: [],
@@ -128,6 +171,23 @@ export const useAppStore = create<AppState>((set) => ({
     isInRoom: false,
     roomParticipants: [],
     roomInvites: [],
-    defaultRoomId: null
-  })
-}));
+    defaultRoomId: null,
+    // Reset audio state
+    audioConnectionStatus: 'disconnected' as AudioConnectionStatus,
+    audioError: null,
+    speakingParticipants: new Set<string>(),
+    // Preserve theme preference on logout
+    themeMode: state.themeMode,
+  }))
+}),
+    {
+      name: 'nooke-storage',
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        currentUser: state.currentUser,
+        themeMode: state.themeMode,
+        defaultRoomId: state.defaultRoomId,
+      }),
+    }
+  )
+);

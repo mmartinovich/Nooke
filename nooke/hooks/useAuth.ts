@@ -74,7 +74,13 @@ export const useAuth = () => {
       }
 
       if (data) {
-        setCurrentUser(data as User);
+        // Preserve local mood if it exists (for mock mode)
+        const userProfile = data as User;
+        const existingUser = useAppStore.getState().currentUser;
+        if (existingUser?.mood) {
+          userProfile.mood = existingUser.mood;
+        }
+        setCurrentUser(userProfile);
         // Update online status
         await updateOnlineStatus(true);
         // Register for push notifications

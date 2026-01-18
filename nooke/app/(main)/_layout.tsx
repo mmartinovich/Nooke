@@ -1,19 +1,22 @@
 import { Stack } from 'expo-router';
+import { useTheme } from '../../hooks/useTheme';
 
 export default function MainLayout() {
+  const { theme } = useTheme();
+
   return (
     <Stack
       screenOptions={{
         headerShown: true,
         headerBackTitleVisible: false,
         headerStyle: {
-          backgroundColor: '#0a0a20',
+          backgroundColor: theme.colors.bg.secondary,
         },
-        headerTintColor: '#ffffff',
+        headerTintColor: theme.colors.text.primary,
         headerTitleStyle: {
           fontWeight: '600',
           fontSize: 20,
-          color: '#ffffff',
+          color: theme.colors.text.primary,
         },
         headerShadowVisible: false,
       }}
@@ -34,7 +37,7 @@ export default function MainLayout() {
       <Stack.Screen
         name="settings"
         options={{
-          title: 'Settings',
+          headerShown: false,
         }}
       />
       <Stack.Screen

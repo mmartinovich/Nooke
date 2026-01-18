@@ -2,15 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRoom } from '../../../hooks/useRoom';
+import { useAudio } from '../../../hooks/useAudio';
+import { useTheme } from '../../../hooks/useTheme';
 import { RoomView } from '../../../components/RoomView';
 import { RoomSettingsModal } from '../../../components/RoomSettingsModal';
 import { InviteFriendsModal } from '../../../components/InviteFriendsModal';
-import { colors } from '../../../lib/theme';
+import { MuteButton } from '../../../components/MuteButton';
+import { AudioConnectionBadge } from '../../../components/AudioConnectionBadge';
 import { useAppStore } from '../../../stores/appStore';
+import { supabase } from '../../../lib/supabase';
 
 export default function RoomScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { theme } = useTheme();
   const { currentUser, friends, setCurrentRoom, setRoomParticipants } = useAppStore();
   const {
     currentRoom,
@@ -21,9 +26,20 @@ export default function RoomScreen() {
     deleteRoom,
     inviteFriendToRoom,
     loading,
+    clearLastJoinedRoom,
   } = useRoom();
   const [showSettings, setShowSettings] = useState(false);
   const [showInviteFriends, setShowInviteFriends] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+
+  // Audio integration
+  const {
+    connectionStatus: audioConnectionStatus,
+    isConnecting: isAudioConnecting,
+    unmute: audioUnmute,
+    mute: audioMute,
+    disconnect: audioDisconnect,
+  } = useAudio(currentRoom?.id || null);
 
   useEffect(() => {
     if (id && currentUser) {
@@ -33,12 +49,15 @@ export default function RoomScreen() {
 
     // Clear current room when navigating away (but don't leave the room)
     return () => {
+      // Disconnect audio when navigating away
+      audioDisconnect();
       // Clear the current room state and participants when navigating away
       // Users should explicitly leave via the leave button
       setCurrentRoom(null);
       setRoomParticipants([]);
+      clearLastJoinedRoom();
     };
-  }, [id]);
+  }, [id, audioDisconnect]);
 
   const handleJoinRoom = async () => {
     if (!id) return;
@@ -55,8 +74,39 @@ export default function RoomScreen() {
   };
 
   const handleLeaveRoom = async () => {
+    // Disconnect audio before leaving
+    await audioDisconnect();
     await leaveRoom();
     router.back();
+  };
+
+  // Toggle mute - connects to audio on first unmute
+  const handleToggleMute = async () => {
+    if (!currentRoom || !currentUser) return;
+
+    if (isMuted) {
+      // User is unmuting - connect to audio
+      const success = await audioUnmute();
+      if (success) {
+        setIsMuted(false);
+        // Update database
+        await supabase
+          .from('room_participants')
+          .update({ is_muted: false })
+          .eq('room_id', currentRoom.id)
+          .eq('user_id', currentUser.id);
+      }
+    } else {
+      // User is muting
+      await audioMute();
+      setIsMuted(true);
+      // Update database
+      await supabase
+        .from('room_participants')
+        .update({ is_muted: true })
+        .eq('room_id', currentRoom.id)
+        .eq('user_id', currentUser.id);
+    }
   };
 
   const handleSettingsPress = () => {
@@ -90,7 +140,7 @@ export default function RoomScreen() {
   };
 
   if (!currentRoom || loading || !currentUser) {
-    return <View style={styles.container} />;
+    return <View style={[styles.container, { backgroundColor: theme.colors.bg.primary }]} />;
   }
 
   // Get friend users
@@ -98,7 +148,7 @@ export default function RoomScreen() {
   const participantIds = participants.map((p) => p.user_id);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.bg.primary }]}>
       <RoomView
         roomName={currentRoom.name}
         participants={participants}
@@ -106,6 +156,22 @@ export default function RoomScreen() {
         isCreator={currentRoom.creator_id === currentUser?.id}
         onSettingsPress={handleSettingsPress}
       />
+
+      {/* Audio Status Badge */}
+      {audioConnectionStatus !== 'disconnected' && (
+        <View style={styles.audioBadgeContainer}>
+          <AudioConnectionBadge status={audioConnectionStatus} />
+        </View>
+      )}
+
+      {/* Mute/Unmute Button */}
+      <View style={styles.muteButtonContainer}>
+        <MuteButton
+          isMuted={isMuted}
+          isConnecting={isAudioConnecting}
+          onPress={handleToggleMute}
+        />
+      </View>
 
       <RoomSettingsModal
         visible={showSettings}
@@ -133,6 +199,17 @@ export default function RoomScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bg.primary,
+  },
+  audioBadgeContainer: {
+    position: 'absolute',
+    top: 120,
+    alignSelf: 'center',
+    zIndex: 100,
+  },
+  muteButtonContainer: {
+    position: 'absolute',
+    bottom: 40,
+    alignSelf: 'center',
+    zIndex: 100,
   },
 });

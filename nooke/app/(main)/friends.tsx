@@ -18,12 +18,14 @@ import { useFriends } from '../../hooks/useFriends';
 import { useContactSync } from '../../hooks/useContactSync';
 import { useInvite } from '../../hooks/useInvite';
 import { useAppStore } from '../../stores/appStore';
-import { colors, gradients, typography, spacing, radius, getMoodColor } from '../../lib/theme';
+import { useTheme } from '../../hooks/useTheme';
+import { typography, spacing, radius, getMoodColor } from '../../lib/theme';
 import { User, MatchedContact } from '../../types';
 
 export default function FriendsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { theme, isDark } = useTheme();
 
   const {
     friends,
@@ -114,19 +116,19 @@ export default function FriendsScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      <LinearGradient colors={gradients.background} style={styles.gradient}>
+    <View style={[styles.container, { backgroundColor: theme.colors.bg.primary }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+      <LinearGradient colors={theme.gradients.background} style={styles.gradient}>
         {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.8}>
-            <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
+        <View style={[styles.header, { paddingTop: insets.top + spacing.md, borderBottomColor: theme.colors.glass.border }]}>
+          <TouchableOpacity style={[styles.backButton, { borderColor: theme.colors.glass.border }]} onPress={() => router.back()} activeOpacity={0.8}>
+            <Ionicons name="chevron-back" size={24} color={theme.colors.text.primary} />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>Friends</Text>
+          <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Friends</Text>
 
           <TouchableOpacity
-            style={styles.debugButton}
+            style={[styles.debugButton, { borderColor: theme.colors.glass.border }]}
             onPress={async () => {
               console.log('=== MANUAL REFRESH TRIGGERED ===');
               console.log('Current friends count before clear:', friends.length);
@@ -140,7 +142,7 @@ export default function FriendsScreen() {
             }}
             activeOpacity={0.8}
           >
-            <Ionicons name="refresh" size={20} color={colors.text.secondary} />
+            <Ionicons name="refresh" size={20} color={theme.colors.text.secondary} />
           </TouchableOpacity>
         </View>
 
@@ -152,13 +154,13 @@ export default function FriendsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor={colors.text.secondary}
+              tintColor={theme.colors.text.secondary}
             />
           }
         >
         {initialLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.text.secondary} />
+            <ActivityIndicator size="large" color={theme.colors.text.secondary} />
           </View>
         ) : (
           <>
@@ -166,12 +168,12 @@ export default function FriendsScreen() {
         {isMounted && hasLoadedOnce && !hasSynced && friends.length === 0 && !hasEverHadFriends.current && (
           <View style={styles.heroSection}>
             <View style={styles.heroIconContainer}>
-              <LinearGradient colors={gradients.neonCyan} style={styles.heroIconGradient}>
-                <Ionicons name="people" size={32} color={colors.text.primary} />
+              <LinearGradient colors={theme.gradients.neonCyan} style={styles.heroIconGradient}>
+                <Ionicons name="people" size={32} color={theme.colors.text.primary} />
               </LinearGradient>
             </View>
-            <Text style={styles.heroTitle}>Connect with Friends</Text>
-            <Text style={styles.heroSubtitle}>
+            <Text style={[styles.heroTitle, { color: theme.colors.text.primary }]}>Connect with Friends</Text>
+            <Text style={[styles.heroSubtitle, { color: theme.colors.text.secondary }]}>
               Find friends who are already on Nūūky or invite new ones to join
             </Text>
           </View>
@@ -187,19 +189,19 @@ export default function FriendsScreen() {
             style={styles.actionButtonWrapper}
           >
             <LinearGradient
-              colors={gradients.neonCyan}
+              colors={theme.gradients.neonCyan}
               style={[styles.primaryActionButton, syncLoading && styles.buttonDisabled]}
             >
               {syncLoading ? (
-                <ActivityIndicator size="small" color={colors.text.primary} />
+                <ActivityIndicator size="small" color={theme.colors.text.primary} />
               ) : (
-                <Ionicons name="search" size={22} color={colors.text.primary} />
+                <Ionicons name="search" size={22} color={theme.colors.text.primary} />
               )}
               <View style={styles.actionButtonTextContainer}>
-                <Text style={styles.actionButtonTitle}>
+                <Text style={[styles.actionButtonTitle, { color: theme.colors.text.primary }]}>
                   {syncLoading ? 'Searching...' : 'Find Friends'}
                 </Text>
-                <Text style={styles.actionButtonSubtitle}>
+                <Text style={[styles.actionButtonSubtitle, { color: theme.colors.text.tertiary }]}>
                   From your contacts
                 </Text>
               </View>
@@ -214,15 +216,15 @@ export default function FriendsScreen() {
             style={styles.actionButtonWrapper}
           >
             <LinearGradient
-              colors={['rgba(139, 92, 246, 0.2)', 'rgba(139, 92, 246, 0.1)']}
+              colors={isDark ? ['rgba(139, 92, 246, 0.2)', 'rgba(139, 92, 246, 0.1)'] : ['rgba(139, 92, 246, 0.15)', 'rgba(139, 92, 246, 0.08)']}
               style={[styles.secondaryActionButton, sending && styles.buttonDisabled]}
             >
-              <Ionicons name="share-social-outline" size={22} color="#A78BFA" />
+              <Ionicons name="share-social-outline" size={22} color={isDark ? "#A78BFA" : "#7c3aed"} />
               <View style={styles.actionButtonTextContainer}>
-                <Text style={styles.secondaryActionButtonTitle}>
+                <Text style={[styles.secondaryActionButtonTitle, { color: isDark ? '#A78BFA' : '#7c3aed' }]}>
                   Invite to Nūūky
                 </Text>
-                <Text style={styles.actionButtonSubtitle}>
+                <Text style={[styles.actionButtonSubtitle, { color: theme.colors.text.tertiary }]}>
                   Share with anyone
                 </Text>
               </View>
@@ -244,8 +246,8 @@ export default function FriendsScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
               <View>
-                <Text style={styles.sectionTitle}>People on Nūūky</Text>
-                <Text style={styles.sectionSubtitle}>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>People on Nūūky</Text>
+                <Text style={[styles.sectionSubtitle, { color: theme.colors.text.tertiary }]}>
                   {notYetAddedContacts.length} {notYetAddedContacts.length === 1 ? 'contact' : 'contacts'} found
                 </Text>
               </View>
@@ -256,19 +258,19 @@ export default function FriendsScreen() {
                 return (
                   <View key={contact.id} style={styles.contactCardWrapper}>
                     <LinearGradient
-                      colors={['rgba(255, 255, 255, 0.08)', 'rgba(255, 255, 255, 0.04)']}
-                      style={styles.contactCard}
+                      colors={isDark ? ['rgba(255, 255, 255, 0.08)', 'rgba(255, 255, 255, 0.04)'] : ['rgba(0, 0, 0, 0.06)', 'rgba(0, 0, 0, 0.02)']}
+                      style={[styles.contactCard, { borderColor: theme.colors.glass.border }]}
                     >
                       <View style={styles.contactInfo}>
                         <LinearGradient
-                          colors={gradients.neonCyan}
+                          colors={theme.gradients.neonCyan}
                           style={styles.contactAvatar}
                         >
-                          <Ionicons name="person" size={20} color={colors.text.primary} />
+                          <Ionicons name="person" size={20} color={theme.colors.text.primary} />
                         </LinearGradient>
                         <View style={styles.contactText}>
-                          <Text style={styles.contactName}>{contact.displayName || contact.name}</Text>
-                          <Text style={styles.contactPhone}>
+                          <Text style={[styles.contactName, { color: theme.colors.text.primary }]}>{contact.displayName || contact.name}</Text>
+                          <Text style={[styles.contactPhone, { color: theme.colors.text.tertiary }]}>
                             {contact.phoneNumbers[0]}
                           </Text>
                         </View>
@@ -281,10 +283,10 @@ export default function FriendsScreen() {
                         activeOpacity={0.7}
                       >
                         <LinearGradient
-                          colors={gradients.neonCyan}
+                          colors={theme.gradients.neonCyan}
                           style={styles.addContactButton}
                         >
-                          <Text style={styles.addButtonText}>Add</Text>
+                          <Text style={[styles.addButtonText, { color: theme.colors.text.primary }]}>Add</Text>
                         </LinearGradient>
                       </TouchableOpacity>
                     </LinearGradient>
@@ -300,20 +302,20 @@ export default function FriendsScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <View>
-              <Text style={styles.sectionTitle}>My Friends</Text>
-              <Text style={styles.sectionSubtitle}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>My Friends</Text>
+              <Text style={[styles.sectionSubtitle, { color: theme.colors.text.tertiary }]}>
                 {friends.length} {friends.length === 1 ? 'friend' : 'friends'}
               </Text>
             </View>
           </View>
 
           {friends.length === 0 ? (
-            <View style={styles.emptyState}>
+            <View style={[styles.emptyState, { borderColor: theme.colors.glass.border }]}>
               <View style={styles.emptyIconContainer}>
-                <Ionicons name="person-add-outline" size={40} color={colors.text.tertiary} />
+                <Ionicons name="person-add-outline" size={40} color={theme.colors.text.tertiary} />
               </View>
-              <Text style={styles.emptyText}>No friends yet</Text>
-              <Text style={styles.emptySubtext}>
+              <Text style={[styles.emptyText, { color: theme.colors.text.primary }]}>No friends yet</Text>
+              <Text style={[styles.emptySubtext, { color: theme.colors.text.tertiary }]}>
                 Find friends from your contacts to get started
               </Text>
             </View>
@@ -326,8 +328,8 @@ export default function FriendsScreen() {
                 return (
                   <View key={friendship.id} style={styles.friendCardWrapper}>
                     <LinearGradient
-                      colors={['rgba(255, 255, 255, 0.08)', 'rgba(255, 255, 255, 0.04)']}
-                      style={styles.friendCard}
+                      colors={isDark ? ['rgba(255, 255, 255, 0.08)', 'rgba(255, 255, 255, 0.04)'] : ['rgba(0, 0, 0, 0.06)', 'rgba(0, 0, 0, 0.02)']}
+                      style={[styles.friendCard, { borderColor: theme.colors.glass.border }]}
                     >
                       <View style={styles.friendInfo}>
                         {/* Friend orb */}
@@ -346,20 +348,23 @@ export default function FriendsScreen() {
                             ]}
                           />
                           {friend.is_online && (
-                            <View style={styles.onlineIndicator} />
+                            <View style={[styles.onlineIndicator, {
+                              backgroundColor: theme.colors.mood.good.base,
+                              borderColor: theme.colors.bg.primary
+                            }]} />
                           )}
                         </View>
 
                         <View style={styles.friendText}>
-                          <Text style={styles.friendName}>
+                          <Text style={[styles.friendName, { color: theme.colors.text.primary }]}>
                             {friend.display_name}
                           </Text>
                           <View style={styles.friendStatusRow}>
                             <View style={[
                               styles.statusDot,
-                              { backgroundColor: friend.is_online ? colors.mood.good.base : colors.text.tertiary }
+                              { backgroundColor: friend.is_online ? theme.colors.mood.good.base : theme.colors.text.tertiary }
                             ]} />
-                            <Text style={styles.friendStatus}>
+                            <Text style={[styles.friendStatus, { color: theme.colors.text.secondary }]}>
                               {friend.is_online ? 'Online' : 'Offline'}
                             </Text>
                           </View>
@@ -373,7 +378,7 @@ export default function FriendsScreen() {
                         activeOpacity={0.7}
                       >
                         <View style={styles.removeButton}>
-                          <Ionicons name="close" size={20} color={colors.text.tertiary} />
+                          <Ionicons name="close" size={20} color={theme.colors.text.tertiary} />
                         </View>
                       </TouchableOpacity>
                     </LinearGradient>
@@ -394,7 +399,6 @@ export default function FriendsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bg.primary,
   },
   gradient: {
     flex: 1,
@@ -406,7 +410,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.glass.border,
   },
   backButton: {
     width: 44,
@@ -416,12 +419,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
-    borderColor: colors.glass.border,
   },
   headerTitle: {
     fontSize: typography.size['2xl'],
     fontWeight: typography.weight.bold as any,
-    color: colors.text.primary,
     letterSpacing: -0.5,
   },
   placeholderButton: {
@@ -436,7 +437,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
-    borderColor: colors.glass.border,
   },
   scrollView: {
     flex: 1,
@@ -468,14 +468,12 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: typography.size['2xl'],
     fontWeight: typography.weight.bold as any,
-    color: colors.text.primary,
     marginBottom: spacing.sm,
     textAlign: 'center',
     letterSpacing: -0.5,
   },
   heroSubtitle: {
     fontSize: typography.size.base,
-    color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -512,20 +510,17 @@ const styles = StyleSheet.create({
   actionButtonTitle: {
     fontSize: typography.size.lg,
     fontWeight: typography.weight.semibold as any,
-    color: colors.text.primary,
     marginBottom: 2,
     letterSpacing: -0.3,
   },
   secondaryActionButtonTitle: {
     fontSize: typography.size.lg,
     fontWeight: typography.weight.semibold as any,
-    color: '#A78BFA',
     marginBottom: 2,
     letterSpacing: -0.3,
   },
   actionButtonSubtitle: {
     fontSize: typography.size.sm,
-    color: colors.text.tertiary,
   },
   // Section Headers
   section: {
@@ -540,13 +535,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: typography.size.xl,
     fontWeight: typography.weight.bold as any,
-    color: colors.text.primary,
     letterSpacing: -0.3,
     marginBottom: spacing.xs / 2,
   },
   sectionSubtitle: {
     fontSize: typography.size.sm,
-    color: colors.text.tertiary,
     fontWeight: typography.weight.medium as any,
   },
   buttonDisabled: {
@@ -566,7 +559,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: colors.glass.border,
   },
   contactInfo: {
     flexDirection: 'row',
@@ -587,13 +579,11 @@ const styles = StyleSheet.create({
   contactName: {
     fontSize: typography.size.base,
     fontWeight: typography.weight.semibold as any,
-    color: colors.text.primary,
     marginBottom: 2,
     letterSpacing: -0.2,
   },
   contactPhone: {
     fontSize: typography.size.sm,
-    color: colors.text.tertiary,
     fontWeight: typography.weight.medium as any,
   },
   addContactButtonWrapper: {
@@ -612,7 +602,6 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: typography.size.sm,
     fontWeight: typography.weight.semibold as any,
-    color: colors.text.primary,
     letterSpacing: -0.2,
   },
   addedBadge: {
@@ -628,7 +617,6 @@ const styles = StyleSheet.create({
   addedText: {
     fontSize: typography.size.sm,
     fontWeight: typography.weight.semibold as any,
-    color: colors.mood.good.base,
     letterSpacing: -0.2,
   },
   // Friends List
@@ -645,7 +633,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: colors.glass.border,
   },
   friendInfo: {
     flexDirection: 'row',
@@ -682,9 +669,7 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: colors.mood.good.base,
     borderWidth: 2,
-    borderColor: 'rgba(10, 10, 32, 1)',
   },
   friendText: {
     flex: 1,
@@ -692,7 +677,6 @@ const styles = StyleSheet.create({
   friendName: {
     fontSize: typography.size.base,
     fontWeight: typography.weight.semibold as any,
-    color: colors.text.primary,
     marginBottom: 4,
     letterSpacing: -0.2,
   },
@@ -708,7 +692,6 @@ const styles = StyleSheet.create({
   },
   friendStatus: {
     fontSize: typography.size.sm,
-    color: colors.text.secondary,
     fontWeight: typography.weight.medium as any,
   },
   removeButtonWrapper: {
@@ -731,7 +714,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.02)',
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.glass.border,
     borderStyle: 'dashed',
   },
   emptyIconContainer: {
@@ -746,12 +728,10 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: typography.size.lg,
     fontWeight: typography.weight.semibold as any,
-    color: colors.text.primary,
     marginBottom: spacing.xs,
   },
   emptySubtext: {
     fontSize: typography.size.sm,
-    color: colors.text.tertiary,
     textAlign: 'center',
     lineHeight: 20,
   },

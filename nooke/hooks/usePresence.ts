@@ -3,6 +3,9 @@ import { AppState, AppStateStatus } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../stores/appStore';
 
+// MOCK MODE FLAG - should match useRoom.ts
+const USE_MOCK_DATA = true;
+
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 const OFFLINE_TIMEOUT = 120000; // 2 minutes of inactivity = offline
 
@@ -14,6 +17,9 @@ export const usePresence = () => {
 
   const updatePresence = async (isOnline: boolean) => {
     if (!currentUser) return;
+
+    // MOCK MODE: Skip Supabase query
+    if (USE_MOCK_DATA) return;
 
     try {
       await supabase
@@ -89,7 +95,7 @@ export const usePresence = () => {
       }
       subscription.remove();
     };
-  }, [currentUser]);
+  }, [currentUser?.id]); // Use id to avoid re-running on mood change
 
   return {
     updateActivity: () => {

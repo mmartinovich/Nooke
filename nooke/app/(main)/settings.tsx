@@ -1,15 +1,19 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
-import { colors, spacing, radius, typography, gradients } from '../../lib/theme';
+import { useTheme } from '../../hooks/useTheme';
+import { spacing, radius, typography } from '../../lib/theme';
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { signOut } = useAuth();
+  const { theme, isDark } = useTheme();
 
   const handleLogout = async () => {
     Alert.alert(
@@ -27,115 +31,163 @@ export default function SettingsScreen() {
             } catch (error) {
               Alert.alert('Error', 'Failed to logout');
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
 
   return (
-    <View style={styles.container}>
-      <LinearGradient colors={gradients.background} style={StyleSheet.absoluteFill} />
+    <View style={[styles.container, { backgroundColor: theme.colors.bg.primary }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+      <LinearGradient
+        colors={theme.gradients.background as unknown as string[]}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: insets.top + spacing.md, borderBottomColor: theme.colors.glass.border }]}>
+        <TouchableOpacity
+          style={[styles.backButton, { borderColor: theme.colors.glass.border }]}
+          onPress={() => router.back()}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="chevron-back" size={24} color={theme.colors.text.primary} />
+        </TouchableOpacity>
+
+        <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Settings</Text>
+
+        <View style={styles.placeholderButton} />
+      </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>Privacy & Safety</Text>
+        {/* Privacy & Safety Section */}
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary, marginTop: spacing.lg }]}>
+          Privacy & Safety
+        </Text>
 
         <TouchableOpacity
-          style={styles.settingCard}
+          style={[styles.settingCard, { borderColor: theme.colors.glass.border }]}
           onPress={() => router.push('/(main)/safety')}
         >
-          <BlurView intensity={20} style={styles.cardBlur}>
+          <BlurView intensity={isDark ? 20 : 10} tint={theme.colors.blurTint} style={styles.cardBlur}>
             <View style={styles.cardContent}>
               <View style={styles.settingItem}>
                 <View style={styles.iconContainer}>
                   <Text style={styles.icon}>🛡️</Text>
                 </View>
-                <Text style={styles.settingLabel}>Safety & Privacy</Text>
-                <Feather name="chevron-right" size={20} color={colors.text.secondary} />
+                <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>
+                  Safety & Privacy
+                </Text>
+                <Feather name="chevron-right" size={20} color={theme.colors.text.secondary} />
               </View>
             </View>
           </BlurView>
         </TouchableOpacity>
 
-        <Text style={styles.sectionTitle}>Notifications</Text>
+        {/* Notifications Section */}
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+          Notifications
+        </Text>
 
-        <BlurView intensity={20} style={styles.settingCard}>
+        <BlurView
+          intensity={isDark ? 20 : 10}
+          tint={theme.colors.blurTint}
+          style={[styles.settingCard, { borderColor: theme.colors.glass.border }]}
+        >
           <View style={styles.cardContent}>
             <View style={styles.settingItem}>
               <View style={styles.iconContainer}>
                 <Text style={styles.icon}>👋</Text>
               </View>
-              <Text style={styles.settingLabel}>Nudges</Text>
-              <Text style={styles.settingValue}>Enabled</Text>
+              <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>Nudges</Text>
+              <Text style={[styles.settingValue, { color: theme.colors.text.secondary }]}>Enabled</Text>
             </View>
           </View>
         </BlurView>
 
-        <BlurView intensity={20} style={styles.settingCard}>
+        <BlurView
+          intensity={isDark ? 20 : 10}
+          tint={theme.colors.blurTint}
+          style={[styles.settingCard, { borderColor: theme.colors.glass.border }]}
+        >
           <View style={styles.cardContent}>
             <View style={styles.settingItem}>
               <View style={styles.iconContainer}>
                 <Text style={styles.icon}>🔥</Text>
               </View>
-              <Text style={styles.settingLabel}>Flares</Text>
-              <Text style={styles.settingValue}>Enabled</Text>
+              <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>Flares</Text>
+              <Text style={[styles.settingValue, { color: theme.colors.text.secondary }]}>Enabled</Text>
             </View>
           </View>
         </BlurView>
 
-        <Text style={styles.sectionTitle}>About</Text>
+        {/* About Section */}
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>About</Text>
 
-        <BlurView intensity={20} style={styles.settingCard}>
+        <BlurView
+          intensity={isDark ? 20 : 10}
+          tint={theme.colors.blurTint}
+          style={[styles.settingCard, { borderColor: theme.colors.glass.border }]}
+        >
           <View style={styles.cardContent}>
             <View style={styles.settingItem}>
               <View style={styles.iconContainer}>
                 <Text style={styles.icon}>ℹ️</Text>
               </View>
-              <Text style={styles.settingLabel}>Version</Text>
-              <Text style={styles.settingValue}>1.0.0</Text>
+              <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>Version</Text>
+              <Text style={[styles.settingValue, { color: theme.colors.text.secondary }]}>1.0.0</Text>
             </View>
           </View>
         </BlurView>
 
-        <TouchableOpacity style={styles.settingCard}>
-          <BlurView intensity={20} style={styles.cardBlur}>
+        <TouchableOpacity style={[styles.settingCard, { borderColor: theme.colors.glass.border }]}>
+          <BlurView intensity={isDark ? 20 : 10} tint={theme.colors.blurTint} style={styles.cardBlur}>
             <View style={styles.cardContent}>
               <View style={styles.settingItem}>
                 <View style={styles.iconContainer}>
                   <Text style={styles.icon}>📄</Text>
                 </View>
-                <Text style={styles.settingLabel}>Privacy Policy</Text>
-                <Feather name="chevron-right" size={20} color={colors.text.secondary} />
+                <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>
+                  Privacy Policy
+                </Text>
+                <Feather name="chevron-right" size={20} color={theme.colors.text.secondary} />
               </View>
             </View>
           </BlurView>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.settingCard}>
-          <BlurView intensity={20} style={styles.cardBlur}>
+        <TouchableOpacity style={[styles.settingCard, { borderColor: theme.colors.glass.border }]}>
+          <BlurView intensity={isDark ? 20 : 10} tint={theme.colors.blurTint} style={styles.cardBlur}>
             <View style={styles.cardContent}>
               <View style={styles.settingItem}>
                 <View style={styles.iconContainer}>
                   <Text style={styles.icon}>📋</Text>
                 </View>
-                <Text style={styles.settingLabel}>Terms of Service</Text>
-                <Feather name="chevron-right" size={20} color={colors.text.secondary} />
+                <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>
+                  Terms of Service
+                </Text>
+                <Feather name="chevron-right" size={20} color={theme.colors.text.secondary} />
               </View>
             </View>
           </BlurView>
         </TouchableOpacity>
 
-        <Text style={styles.sectionTitle}>Account</Text>
+        {/* Account Section */}
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Account</Text>
 
-        <TouchableOpacity style={styles.settingCard} onPress={handleLogout}>
-          <BlurView intensity={20} style={styles.cardBlur}>
+        <TouchableOpacity
+          style={[styles.settingCard, { borderColor: theme.colors.glass.border }]}
+          onPress={handleLogout}
+        >
+          <BlurView intensity={isDark ? 20 : 10} tint={theme.colors.blurTint} style={styles.cardBlur}>
             <View style={styles.cardContent}>
               <View style={styles.settingItem}>
                 <View style={styles.iconContainer}>
                   <Text style={styles.icon}>🚪</Text>
                 </View>
                 <Text style={[styles.settingLabel, styles.logoutText]}>Logout</Text>
-                <Feather name="log-out" size={20} color={colors.mood.reachOut.base} />
+                <Feather name="log-out" size={20} color="#EC4899" />
               </View>
             </View>
           </BlurView>
@@ -150,7 +202,32 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bg.primary,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+  },
+  headerTitle: {
+    fontSize: typography.sizes['2xl'],
+    fontWeight: typography.weights.bold as any,
+    letterSpacing: -0.5,
+  },
+  placeholderButton: {
+    width: 44,
+    height: 44,
   },
   content: {
     flex: 1,
@@ -159,8 +236,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.bold,
-    color: colors.text.primary,
+    fontWeight: typography.weights.bold as any,
     marginTop: spacing.xl,
     marginBottom: spacing.md,
   },
@@ -168,7 +244,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.glass.border,
     marginBottom: spacing.md,
   },
   cardBlur: {
@@ -190,15 +265,13 @@ const styles = StyleSheet.create({
   settingLabel: {
     flex: 1,
     fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold,
-    color: colors.text.primary,
+    fontWeight: typography.weights.semibold as any,
   },
   settingValue: {
     fontSize: typography.sizes.sm,
-    color: colors.text.secondary,
     marginRight: spacing.sm,
   },
   logoutText: {
-    color: colors.mood.reachOut.base,
+    color: '#EC4899',
   },
 });

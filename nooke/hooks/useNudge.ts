@@ -4,6 +4,9 @@ import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../stores/appStore';
 
+// MOCK MODE FLAG - should match useRoom.ts
+const USE_MOCK_DATA = true;
+
 export const useNudge = () => {
   const { currentUser } = useAppStore();
   const [loading, setLoading] = useState(false);
@@ -12,6 +15,17 @@ export const useNudge = () => {
     if (!currentUser) {
       Alert.alert('Error', 'You must be logged in');
       return false;
+    }
+
+    // MOCK MODE: Skip Supabase query, just show success
+    if (USE_MOCK_DATA) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(
+        'Nudge Sent! 👋',
+        `${friendName} will feel a gentle vibration`,
+        [{ text: 'OK', style: 'default' }]
+      );
+      return true;
     }
 
     setLoading(true);

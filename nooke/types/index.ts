@@ -133,3 +133,25 @@ export interface MatchedContact extends PhoneContact {
   displayName?: string;
   avatarUrl?: string;
 }
+
+// Audio types
+export type AudioConnectionStatus =
+  | 'disconnected'
+  | 'connecting'
+  | 'connected'
+  | 'reconnecting'
+  | 'error';
+
+export interface ParticipantAudioState {
+  participantId: string;
+  isSpeaking: boolean;
+  audioLevel: number;
+  isMuted: boolean;
+  hasAudioTrack: boolean;
+}
+
+export interface LiveKitTokenResponse {
+  token: string;
+  roomName: string;
+  serverUrl: string;
+}

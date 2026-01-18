@@ -27,7 +27,7 @@ export const useDefaultRoom = () => {
     if (currentUser) {
       initializeDefaultRoom();
     }
-  }, [currentUser]);
+  }, [currentUser?.id]); // Use id to avoid re-running on mood change
 
   // Handle invalid default room (deleted or left)
   useEffect(() => {

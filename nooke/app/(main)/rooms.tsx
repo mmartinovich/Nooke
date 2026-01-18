@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -19,16 +19,18 @@ import { useRoom } from "../../hooks/useRoom";
 import { useRoomInvites } from "../../hooks/useRoomInvites";
 import { useFirstTimeRoom } from "../../hooks/useFirstTimeRoom";
 import { useDefaultRoom } from "../../hooks/useDefaultRoom";
+import { useTheme } from "../../hooks/useTheme";
 import { RoomCard } from "../../components/RoomCard";
 import { InviteCard } from "../../components/InviteCard";
 import { CreateRoomModal } from "../../components/CreateRoomModal";
-import { colors, gradients, spacing, radius, typography } from "../../lib/theme";
+import { spacing, radius, typography } from "../../lib/theme";
 
 const { width } = Dimensions.get("window");
 
 export default function RoomsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { theme, isDark } = useTheme();
   const { currentUser, myRooms } = useAppStore();
   const { loadMyRooms, canCreateRoom, createRoom } = useRoom();
   const { roomInvites, loading: invitesLoading, loadMyInvites, acceptInvite, declineInvite } = useRoomInvites();
@@ -39,18 +41,26 @@ export default function RoomsScreen() {
   const [showInvites, setShowInvites] = useState(true);
   const [showCreateRoom, setShowCreateRoom] = useState(false);
 
+  // Track if initial load has happened to prevent double loading
+  const hasLoadedRef = useRef(false);
+
   useEffect(() => {
     // Wait for first-time room creation to complete before loading
-    if (!firstTimeLoading) {
+    if (!firstTimeLoading && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
       loadData();
     }
   }, [firstTimeLoading]);
 
-  // Refresh rooms list when screen comes into focus
+  // Refresh rooms list when screen comes into focus (only after initial load)
   useFocusEffect(
     React.useCallback(() => {
-      if (!firstTimeLoading) {
-        loadData();
+      // Skip if still in first-time loading or if this is the initial mount
+      if (firstTimeLoading) return;
+      // Only reload on subsequent focus events, not initial mount
+      if (hasLoadedRef.current) {
+        // Already loaded, this is a re-focus - skip duplicate load
+        // Data is already fresh from myRooms in Zustand
       }
     }, [firstTimeLoading])
   );
@@ -99,19 +109,19 @@ export default function RoomsScreen() {
   const hasRooms = myRooms.length > 0;
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      <LinearGradient colors={gradients.background} style={styles.gradient}>
+    <View style={[styles.container, { backgroundColor: theme.colors.bg.primary }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+      <LinearGradient colors={theme.gradients.background} style={styles.gradient}>
         {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.8}>
-            <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
+        <View style={[styles.header, { paddingTop: insets.top + spacing.md, borderBottomColor: theme.colors.glass.border }]}>
+          <TouchableOpacity style={[styles.backButton, { borderColor: theme.colors.glass.border }]} onPress={() => router.back()} activeOpacity={0.8}>
+            <Ionicons name="chevron-back" size={24} color={theme.colors.text.primary} />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>Rooms</Text>
+          <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Rooms</Text>
 
-          <TouchableOpacity style={styles.createButton} onPress={handleCreateRoom} activeOpacity={0.8}>
-            <Ionicons name="add" size={24} color={colors.text.primary} />
+          <TouchableOpacity style={[styles.createButton, { backgroundColor: theme.colors.mood.good.soft, borderColor: theme.colors.mood.good.base }]} onPress={handleCreateRoom} activeOpacity={0.8}>
+            <Ionicons name="add" size={24} color={theme.colors.text.primary} />
           </TouchableOpacity>
         </View>
 
@@ -121,7 +131,7 @@ export default function RoomsScreen() {
           contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + spacing.xl }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.text.secondary} />
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.colors.text.secondary} />
           }
         >
           {/* Invites Section */}
@@ -133,12 +143,12 @@ export default function RoomsScreen() {
                 activeOpacity={0.8}
               >
                 <View style={styles.sectionTitleRow}>
-                  <Text style={styles.sectionTitle}>INVITES</Text>
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{roomInvites.length}</Text>
+                  <Text style={[styles.sectionTitle, { color: theme.colors.text.secondary }]}>INVITES</Text>
+                  <View style={[styles.badge, { backgroundColor: theme.colors.mood.reachOut.soft, borderColor: theme.colors.mood.reachOut.base }]}>
+                    <Text style={[styles.badgeText, { color: theme.colors.mood.reachOut.base }]}>{roomInvites.length}</Text>
                   </View>
                 </View>
-                <Ionicons name={showInvites ? "chevron-up" : "chevron-down"} size={20} color={colors.text.secondary} />
+                <Ionicons name={showInvites ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.text.secondary} />
               </TouchableOpacity>
 
               {showInvites && (
@@ -159,7 +169,7 @@ export default function RoomsScreen() {
           {/* My Rooms Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>MY ROOMS</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text.secondary }]}>MY ROOMS</Text>
             </View>
 
             {hasRooms ? (
@@ -176,15 +186,15 @@ export default function RoomsScreen() {
               </View>
             ) : (
               <View style={styles.emptyState}>
-                <View style={styles.emptyIconContainer}>
-                  <Ionicons name="home-outline" size={48} color={colors.text.tertiary} />
+                <View style={[styles.emptyIconContainer, { borderColor: theme.colors.glass.border }]}>
+                  <Ionicons name="home-outline" size={48} color={theme.colors.text.tertiary} />
                 </View>
-                <Text style={styles.emptyTitle}>No Rooms Yet</Text>
-                <Text style={styles.emptyMessage}>Create your first room to hang with friends</Text>
+                <Text style={[styles.emptyTitle, { color: theme.colors.text.primary }]}>No Rooms Yet</Text>
+                <Text style={[styles.emptyMessage, { color: theme.colors.text.tertiary }]}>Create your first room to hang with friends</Text>
                 <TouchableOpacity style={styles.emptyButton} onPress={handleCreateRoom} activeOpacity={0.8}>
-                  <LinearGradient colors={gradients.neonCyan} style={styles.emptyButtonGradient}>
-                    <Ionicons name="add" size={20} color={colors.text.primary} />
-                    <Text style={styles.emptyButtonText}>Create Room</Text>
+                  <LinearGradient colors={theme.gradients.neonCyan} style={styles.emptyButtonGradient}>
+                    <Ionicons name="add" size={20} color={theme.colors.text.primary} />
+                    <Text style={[styles.emptyButtonText, { color: theme.colors.text.primary }]}>Create Room</Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
@@ -206,7 +216,6 @@ export default function RoomsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bg.primary,
   },
   gradient: {
     flex: 1,
@@ -218,7 +227,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.glass.border,
   },
   backButton: {
     width: 40,
@@ -228,12 +236,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderWidth: 1,
-    borderColor: colors.glass.border,
   },
   headerTitle: {
     fontSize: typography.size["2xl"],
     fontWeight: typography.weight.bold as any,
-    color: colors.text.primary,
   },
   createButton: {
     width: 40,
@@ -241,9 +247,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: colors.mood.good.soft,
     borderWidth: 1,
-    borderColor: colors.mood.good.base,
   },
   scrollView: {
     flex: 1,
@@ -268,13 +272,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: typography.size.sm,
     fontWeight: typography.weight.bold as any,
-    color: colors.text.secondary,
     letterSpacing: 1,
   },
   badge: {
-    backgroundColor: colors.mood.reachOut.soft,
     borderWidth: 1,
-    borderColor: colors.mood.reachOut.base,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: radius.sm,
@@ -282,7 +283,6 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: typography.size.xs,
     fontWeight: typography.weight.bold as any,
-    color: colors.mood.reachOut.base,
   },
   invitesList: {
     gap: spacing.sm,
@@ -302,7 +302,6 @@ const styles = StyleSheet.create({
     borderRadius: 48,
     backgroundColor: "rgba(255, 255, 255, 0.03)",
     borderWidth: 2,
-    borderColor: colors.glass.border,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: spacing.lg,
@@ -310,12 +309,10 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: typography.size.xl,
     fontWeight: typography.weight.bold as any,
-    color: colors.text.primary,
     marginBottom: spacing.xs,
   },
   emptyMessage: {
     fontSize: typography.size.md,
-    color: colors.text.tertiary,
     textAlign: "center",
     marginBottom: spacing.xl,
   },
@@ -333,6 +330,5 @@ const styles = StyleSheet.create({
   emptyButtonText: {
     fontSize: typography.size.md,
     fontWeight: typography.weight.semibold as any,
-    color: colors.text.primary,
   },
 });

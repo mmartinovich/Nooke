@@ -1,15 +1,21 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { ActivityIndicator, View } from 'react-native';
 import * as Linking from 'expo-linking';
 import { useAppStore } from '../stores/appStore';
 import { supabase } from '../lib/supabase';
+import { ThemeProvider } from '../context/ThemeContext';
+import { initializeLiveKit } from '../lib/livekit';
 
 export default function RootLayout() {
   const { setCurrentUser } = useAppStore();
   const router = useRouter();
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
+
     // Handle deep links for OAuth callback
     const handleDeepLink = async (url: string) => {
       const { queryParams } = Linking.parse(url);
@@ -52,6 +58,11 @@ export default function RootLayout() {
           }
 
           if (userData) {
+            // Preserve local mood if it exists (for mock mode)
+            const existingUser = useAppStore.getState().currentUser;
+            if (existingUser?.mood) {
+              userData.mood = existingUser.mood;
+            }
             setCurrentUser(userData);
             router.replace('/(main)');
           }
@@ -59,34 +70,48 @@ export default function RootLayout() {
       }
     };
 
-    // Listen for incoming deep links
-    const subscription = Linking.addEventListener('url', (event) => {
-      handleDeepLink(event.url);
-    });
+    const initialize = async () => {
+      // Initialize LiveKit WebRTC globals
+      initializeLiveKit();
 
-    // Check if app was opened from a deep link
-    Linking.getInitialURL().then((url) => {
+      // Listen for incoming deep links
+      const subscription = Linking.addEventListener('url', (event) => {
+        handleDeepLink(event.url);
+      });
+
+      // Check if app was opened from a deep link
+      const url = await Linking.getInitialURL();
       if (url) {
-        handleDeepLink(url);
+        await handleDeepLink(url);
       }
-    });
 
-    // Check for existing session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
+      // Check for existing session on mount
+      const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         // Fetch user profile
-        supabase
+        const { data, error } = await supabase
           .from('users')
           .select('*')
           .eq('id', session.user.id)
-          .single()
-          .then(({ data, error }) => {
-            if (data && !error) {
-              setCurrentUser(data);
-            }
-          });
+          .single();
+
+        if (data && !error) {
+          // Preserve local mood if it exists (for mock mode)
+          const existingUser = useAppStore.getState().currentUser;
+          if (existingUser?.mood) {
+            data.mood = existingUser.mood;
+          }
+          setCurrentUser(data);
+        }
       }
-    });
+
+      // Mark app as ready after initialization
+      if (mounted) {
+        setIsReady(true);
+      }
+
+      return subscription;
+    };
 
     // Listen for auth changes
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
@@ -99,6 +124,11 @@ export default function RootLayout() {
             .single();
 
           if (data && !error) {
+            // Preserve local mood if it exists (for mock mode)
+            const existingUser = useAppStore.getState().currentUser;
+            if (existingUser?.mood) {
+              data.mood = existingUser.mood;
+            }
             setCurrentUser(data);
           }
         } else if (event === 'SIGNED_OUT') {
@@ -107,22 +137,40 @@ export default function RootLayout() {
       }
     );
 
+    // Start initialization and get subscription
+    let linkingSubscription: ReturnType<typeof Linking.addEventListener> | undefined;
+    initialize().then(subscription => {
+      linkingSubscription = subscription;
+    });
+
     return () => {
-      subscription.remove();
+      mounted = false;
+      linkingSubscription?.remove();
       authSubscription.unsubscribe();
     };
   }, []);
 
+  // Show loading screen while initializing
+  if (!isReady) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
+        <ActivityIndicator size="large" color="#fff" />
+      </View>
+    );
+  }
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(main)" />
-      </Stack>
-    </GestureHandlerRootView>
+    <ThemeProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(main)" />
+        </Stack>
+      </GestureHandlerRootView>
+    </ThemeProvider>
   );
 }
