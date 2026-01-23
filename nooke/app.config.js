@@ -63,7 +63,7 @@ export default {
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6YmFtcnFvZXdyYnZkdmJ5cHlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyNzgwNDYsImV4cCI6MjA4Mjg1NDA0Nn0.MHznUKhEAI9223Vr3ZlDR2sIy0Sqnvyip5-Gx6jN2R4',
       livekitUrl: process.env.EXPO_PUBLIC_LIVEKIT_URL,
       eas: {
-        projectId: "your-eas-project-id"
+        projectId: "28e1e910-a2df-4e2c-8205-ca5abdffc155"
       }
     }
   }

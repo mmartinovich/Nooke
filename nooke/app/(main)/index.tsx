@@ -54,14 +54,7 @@ import { useRoomInvites } from "../../hooks/useRoomInvites";
 import { useDefaultRoom } from "../../hooks/useDefaultRoom";
 import { useTheme } from "../../hooks/useTheme";
 import { useAudio } from "../../hooks/useAudio";
-import {
-  getMoodColor,
-  getVibeText,
-  spacing,
-  radius,
-  typography,
-  getAllMoodImages,
-} from "../../lib/theme";
+import { getMoodColor, getVibeText, spacing, radius, typography, getAllMoodImages } from "../../lib/theme";
 import { CentralOrb } from "../../components/CentralOrb";
 import { FriendParticle } from "../../components/FriendParticle";
 import { StarField } from "../../components/StarField";
@@ -80,12 +73,23 @@ export default function QuantumOrbitScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
-  const { currentUser, friends } = useAppStore();
+  const { currentUser, friends, speakingParticipants } = useAppStore();
   const { currentMood, changeMood } = useMood();
   const { sendNudge } = useNudge();
   const { sendFlare, activeFlares, myActiveFlare } = useFlare();
   const { updateActivity } = usePresence(); // Track presence while app is active
-  const { activeRooms, createRoom, joinRoom: joinRoomFn, updateRoomName, deleteRoom, inviteFriendToRoom, participants, removeParticipant, myRooms, currentRoom } = useRoom();
+  const {
+    activeRooms,
+    createRoom,
+    joinRoom: joinRoomFn,
+    updateRoomName,
+    deleteRoom,
+    inviteFriendToRoom,
+    participants,
+    removeParticipant,
+    myRooms,
+    currentRoom,
+  } = useRoom();
   const { roomInvites } = useRoomInvites();
   const { defaultRoom, defaultRoomId, isDefaultRoom, setAsDefaultRoom } = useDefaultRoom();
 
@@ -108,6 +112,23 @@ export default function QuantumOrbitScreen() {
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [showRoomSettings, setShowRoomSettings] = useState(false);
   const [showInviteFriendsFromDefault, setShowInviteFriendsFromDefault] = useState(false);
+  const [testSpeaking, setTestSpeaking] = useState(false); // Manual test override
+
+  // Audio-reactive button animation
+  const isCurrentUserSpeaking = testSpeaking || (currentUser?.id ? speakingParticipants.has(currentUser.id) : false);
+  // Separate animated values: scale uses native driver, glow uses JS driver
+  const buttonScaleAnim = useRef(new RNAnimated.Value(1)).current;
+  const buttonGlowAnim = useRef(new RNAnimated.Value(1)).current;
+
+  // Debug logging for speaking state
+  useEffect(() => {
+    console.log("[Orbit] 🎤 Speaking state update:");
+    console.log("[Orbit] - isMuted:", isMuted);
+    console.log("[Orbit] - isCurrentUserSpeaking:", isCurrentUserSpeaking);
+    console.log("[Orbit] - currentUser.id:", currentUser?.id);
+    console.log("[Orbit] - speakingParticipants:", Array.from(speakingParticipants));
+    console.log("[Orbit] - Animation should be active:", !isMuted && isCurrentUserSpeaking);
+  }, [isMuted, isCurrentUserSpeaking, speakingParticipants]);
 
   // Shared orbit angle for roulette rotation - all friends rotate together
   // Using React Native Animated API (works in Expo Go, can upgrade to Reanimated later)
@@ -225,15 +246,15 @@ export default function QuantumOrbitScreen() {
     if (!defaultRoom) return [];
 
     // Get participants directly from myRooms - this is always up to date
-    const roomData = myRooms.find(r => r.id === defaultRoom.id);
+    const roomData = myRooms.find((r) => r.id === defaultRoom.id);
     if (roomData && roomData.participants && roomData.participants.length > 0) {
-      return roomData.participants.map(p => p.user).filter((u): u is User => u !== null && u !== undefined);
+      return roomData.participants.map((p) => p.user).filter((u): u is User => u !== null && u !== undefined);
     }
 
     // Only use participants fallback if currentRoom matches defaultRoom
     // This prevents showing stale data from the previous room during transitions
     if (currentRoom?.id === defaultRoom.id && participants.length > 0) {
-      return participants.map(p => p.user).filter((u): u is User => u !== null && u !== undefined);
+      return participants.map((p) => p.user).filter((u): u is User => u !== null && u !== undefined);
     }
 
     // Return empty array during room transitions - data will load shortly
@@ -381,6 +402,53 @@ export default function QuantumOrbitScreen() {
     };
     preloadImages();
   }, []);
+
+  // Audio-reactive button pulsing animation
+  useEffect(() => {
+    if (!isMuted && isCurrentUserSpeaking) {
+      // Create breathing-like pulse animation
+      const pulseAnimation = RNAnimated.loop(
+        RNAnimated.sequence([
+          // Expand phase
+          RNAnimated.parallel([
+            RNAnimated.timing(buttonScaleAnim, {
+              toValue: 1.12,
+              duration: 800,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: false, // Use JS driver for all to avoid conflicts
+            }),
+            RNAnimated.timing(buttonGlowAnim, {
+              toValue: 1.6,
+              duration: 800,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: false,
+            }),
+          ]),
+          // Contract phase
+          RNAnimated.parallel([
+            RNAnimated.timing(buttonScaleAnim, {
+              toValue: 1,
+              duration: 800,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: false, // Use JS driver for all to avoid conflicts
+            }),
+            RNAnimated.timing(buttonGlowAnim, {
+              toValue: 1,
+              duration: 800,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: false,
+            }),
+          ]),
+        ])
+      );
+      pulseAnimation.start();
+      return () => pulseAnimation.stop();
+    } else {
+      // Reset to normal state when not speaking or muted
+      buttonScaleAnim.setValue(1);
+      buttonGlowAnim.setValue(1);
+    }
+  }, [isMuted, isCurrentUserSpeaking]);
 
   // Join default room when it's set
   useEffect(() => {
@@ -712,7 +780,7 @@ export default function QuantumOrbitScreen() {
   };
 
   const handleOpenRooms = () => {
-    router.push('/(main)/rooms');
+    router.push("/(main)/rooms");
   };
 
   const handleCreateRoom = async (name?: string, isPrivate?: boolean) => {
@@ -819,16 +887,41 @@ export default function QuantumOrbitScreen() {
             activeOpacity={0.7}
           >
             <Ionicons name="home" size={14} color={theme.colors.neon.cyan} />
-            <Text style={[styles.roomPillText, { color: theme.colors.text.primary }]}>{defaultRoom.name || 'Room'}</Text>
+            <Text style={[styles.roomPillText, { color: theme.colors.text.primary }]}>
+              {defaultRoom.name || "Room"}
+            </Text>
           </TouchableOpacity>
         ) : (
           <Text style={[styles.moodText, { color: theme.colors.text.secondary }]}>{currentVibe}</Text>
         )}
 
         {/* Audio Status Badge */}
-        {audioConnectionStatus !== 'disconnected' && defaultRoom && (
+        {audioConnectionStatus !== "disconnected" && defaultRoom && (
           <View style={{ marginTop: 8 }}>
             <AudioConnectionBadge status={audioConnectionStatus} />
+          </View>
+        )}
+
+        {/* Debug: Speaking Status Indicator */}
+        {!isMuted && defaultRoom && (
+          <View
+            style={{ marginTop: 8, backgroundColor: "rgba(0,0,0,0.7)", padding: 8, borderRadius: 8, maxWidth: 220 }}
+          >
+            <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>
+              {isCurrentUserSpeaking ? "🎙️ SPEAKING" : "🔇 Silent"}
+            </Text>
+            <Text style={{ color: "#aaa", fontSize: 10, marginTop: 4 }}>
+              Active: {Array.from(speakingParticipants).length || "0"}
+            </Text>
+            {testSpeaking && <Text style={{ color: "#ff0", fontSize: 10, marginTop: 4 }}>⚠️ TEST MODE</Text>}
+            <TouchableOpacity
+              onPress={() => setTestSpeaking(!testSpeaking)}
+              style={{ marginTop: 8, backgroundColor: "rgba(0,240,255,0.3)", padding: 6, borderRadius: 4 }}
+            >
+              <Text style={{ color: "#00f0ff", fontSize: 11, fontWeight: "600", textAlign: "center" }}>
+                {testSpeaking ? "Stop Test" : "Test Animation"}
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -837,45 +930,62 @@ export default function QuantumOrbitScreen() {
       <View style={[styles.bottomNav, { paddingBottom: Math.max(insets.bottom, 8) }]} pointerEvents="box-none">
         {/* Floating center button wrapper */}
         <View style={styles.floatingButtonWrapper} pointerEvents="box-none">
-          <TouchableOpacity
-            onPress={async () => {
-              console.log('[Orbit] Mic button pressed', { isMuted, hasDefaultRoom: !!defaultRoom });
-
-              if (!defaultRoom) {
-                Alert.alert('No Room', 'Please join or create a room first to use voice chat.');
-                return;
-              }
-
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-              if (isMuted) {
-                // User is unmuting - connect to audio
-                console.log('[Orbit] Unmuting, calling audioUnmute()');
-                const success = await audioUnmute();
-                console.log('[Orbit] audioUnmute result:', success);
-                if (success) {
-                  setIsMuted(false);
-                }
-              } else {
-                // User is muting
-                console.log('[Orbit] Muting, calling audioMute()');
-                await audioMute();
-                setIsMuted(true);
-              }
-            }}
-            activeOpacity={0.85}
+          <RNAnimated.View
             style={[
               styles.floatingButton,
+              {
+                transform: [{ scale: buttonScaleAnim }],
+                backgroundColor: isMuted ? theme.colors.neon.purple : theme.colors.neon.cyan,
+                shadowColor: isMuted ? theme.colors.neon.purple : theme.colors.neon.cyan,
+                shadowOpacity: buttonGlowAnim.interpolate({
+                  inputRange: [1, 1.6],
+                  outputRange: [0.5, 0.8],
+                }),
+                shadowRadius: buttonGlowAnim.interpolate({
+                  inputRange: [1, 1.6],
+                  outputRange: [12, 20],
+                }),
+              },
               isAudioConnecting && { opacity: 0.7 },
             ]}
-            disabled={isAudioConnecting}
           >
-            {isAudioConnecting ? (
-              <Ionicons name="hourglass" size={28} color="#FFFFFF" />
-            ) : (
-              <Ionicons name={isMuted ? "mic-off" : "mic"} size={28} color="#FFFFFF" />
-            )}
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={async () => {
+                console.log("[Orbit] Mic button pressed", { isMuted, hasDefaultRoom: !!defaultRoom });
+
+                if (!defaultRoom) {
+                  Alert.alert("No Room", "Please join or create a room first to use voice chat.");
+                  return;
+                }
+
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+                if (isMuted) {
+                  // User is unmuting - connect to audio
+                  console.log("[Orbit] Unmuting, calling audioUnmute()");
+                  const success = await audioUnmute();
+                  console.log("[Orbit] audioUnmute result:", success);
+                  if (success) {
+                    setIsMuted(false);
+                  }
+                } else {
+                  // User is muting
+                  console.log("[Orbit] Muting, calling audioMute()");
+                  await audioMute();
+                  setIsMuted(true);
+                }
+              }}
+              activeOpacity={0.85}
+              style={styles.floatingButtonInner}
+              disabled={isAudioConnecting}
+            >
+              {isAudioConnecting ? (
+                <Ionicons name="hourglass" size={28} color="#FFFFFF" />
+              ) : (
+                <Ionicons name={isMuted ? "mic-off" : "mic"} size={28} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
+          </RNAnimated.View>
         </View>
 
         {/* Navigation bar */}
@@ -975,33 +1085,29 @@ export default function QuantumOrbitScreen() {
       />
 
       {/* Create Room Modal */}
-      <CreateRoomModal
-        visible={showCreateRoom}
-        onClose={() => setShowCreateRoom(false)}
-        onCreate={handleCreateRoom}
-      />
+      <CreateRoomModal visible={showCreateRoom} onClose={() => setShowCreateRoom(false)} onCreate={handleCreateRoom} />
 
       {/* Room Settings Modal (for default room) */}
       {defaultRoom && (
         <RoomSettingsModal
           visible={showRoomSettings}
-          roomName={defaultRoom.name || 'Room'}
+          roomName={defaultRoom.name || "Room"}
           roomId={defaultRoom.id}
           isCreator={defaultRoom.creator_id === currentUser?.id}
           creatorId={defaultRoom.creator_id}
           participants={participants}
-          currentUserId={currentUser?.id || ''}
+          currentUserId={currentUser?.id || ""}
           onClose={() => setShowRoomSettings(false)}
           onRename={async (name) => {
             const success = await updateRoomName(defaultRoom.id, name);
             if (!success) {
-              throw new Error('Failed to rename room');
+              throw new Error("Failed to rename room");
             }
           }}
           onDelete={async () => await deleteRoom(defaultRoom.id)}
           onLeave={() => {
             // Can't leave default room - would need to set another as default first
-            Alert.alert('Cannot Leave', 'Set another room as default before leaving this room.');
+            Alert.alert("Cannot Leave", "Set another room as default before leaving this room.");
           }}
           onInviteFriends={() => {
             setShowRoomSettings(false);
@@ -1018,7 +1124,7 @@ export default function QuantumOrbitScreen() {
         <InviteFriendsModal
           visible={showInviteFriendsFromDefault}
           friends={friendList}
-          participantIds={participants.map(p => p.user_id)}
+          participantIds={participants.map((p) => p.user_id)}
           onClose={() => setShowInviteFriendsFromDefault(false)}
           onInvite={async (friendId) => await inviteFriendToRoom(defaultRoom.id, friendId)}
         />
@@ -1062,8 +1168,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   roomPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.xs,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
@@ -1120,16 +1226,17 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#A855F7",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#A855F7",
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
     elevation: 10,
     borderWidth: 4,
     borderColor: "#0d0d1a",
+  },
+  floatingButtonInner: {
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 32,
   },
   navTab: {
     alignItems: "center",

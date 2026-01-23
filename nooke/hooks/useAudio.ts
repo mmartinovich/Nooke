@@ -53,10 +53,15 @@ export const useAudio = (roomId: string | null) => {
         setAudioConnectionStatus(status as AudioConnectionStatus);
       },
       onParticipantSpeaking: (participantId: string, isSpeaking: boolean) => {
+        console.log(`[useAudio] 📣 Participant speaking callback: ${participantId} - ${isSpeaking ? 'SPEAKING' : 'STOPPED'}`);
+        console.log(`[useAudio] Current user ID: ${currentUser?.id}`);
+        console.log(`[useAudio] IDs match: ${participantId === currentUser?.id}`);
         if (isSpeaking) {
           addSpeakingParticipant(participantId);
+          console.log('[useAudio] Added to speaking participants');
         } else {
           removeSpeakingParticipant(participantId);
+          console.log('[useAudio] Removed from speaking participants');
         }
       },
       onError: (error: string) => {
@@ -69,7 +74,7 @@ export const useAudio = (roomId: string | null) => {
         handleDisconnect();
       },
     });
-  }, []);
+  }, [currentUser?.id]);
 
   // Clean up on room change or unmount
   useEffect(() => {

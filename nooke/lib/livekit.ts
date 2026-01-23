@@ -187,6 +187,15 @@ export const connectToAudioRoom = async (roomId: string): Promise<boolean> => {
     // Enable microphone (unmuted state)
     await currentRoom.localParticipant.setMicrophoneEnabled(true);
     console.log('[LiveKit] Microphone enabled');
+    console.log('[LiveKit] Local participant identity:', currentRoom.localParticipant.identity);
+    console.log('[LiveKit] Local participant audio tracks:',
+      Array.from(currentRoom.localParticipant.audioTrackPublications.values()).map(pub => ({
+        trackSid: pub.trackSid,
+        isMuted: pub.isMuted,
+        trackName: pub.trackName,
+        kind: pub.kind
+      }))
+    );
 
     // Start silence timer
     resetSilenceTimer();
@@ -286,20 +295,28 @@ const setupRoomEventListeners = (room: Room) => {
   room.on(
     RoomEvent.ActiveSpeakersChanged,
     (speakers: Participant[]) => {
+      console.log('[LiveKit] 🎤 ActiveSpeakersChanged event fired!');
+      console.log('[LiveKit] Number of active speakers:', speakers.length);
+      console.log('[LiveKit] Speaker identities:', speakers.map(s => s.identity));
+      console.log('[LiveKit] Local participant identity:', room.localParticipant?.identity);
+
       // Notify about all current speakers
       const speakerIds = new Set(speakers.map((s) => s.identity));
 
       // Update speaking state for all remote participants
       room.remoteParticipants.forEach((participant) => {
+        const isSpeaking = speakerIds.has(participant.identity);
+        console.log(`[LiveKit] Remote participant ${participant.identity} speaking:`, isSpeaking);
         eventCallbacks?.onParticipantSpeaking(
           participant.identity,
-          speakerIds.has(participant.identity)
+          isSpeaking
         );
       });
 
       // Check local participant speaking
       if (room.localParticipant) {
         const localSpeaking = speakerIds.has(room.localParticipant.identity);
+        console.log(`[LiveKit] 🎙️ Local participant ${room.localParticipant.identity} speaking:`, localSpeaking);
         eventCallbacks?.onParticipantSpeaking(
           room.localParticipant.identity,
           localSpeaking
