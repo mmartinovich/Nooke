@@ -1,4 +1,4 @@
-# Nooke App - Complete Testing Guide
+# Nūūky App - Complete Testing Guide
 
 ## Pre-Testing Setup
 
@@ -34,7 +34,7 @@ Follow [SUPABASE_SETUP.md](SUPABASE_SETUP.md) or use the quick steps below:
 ## 🚀 Starting the App
 
 ```bash
-cd /Users/crax/DEVELOPMENT/Nooke/nooke
+cd /Users/crax/DEVELOPMENT/Nūūky/nooke
 npx expo start
 ```
 
@@ -53,7 +53,7 @@ npx expo start
 
 1. **Launch app**
    - Should show login screen with orb animation
-   - Should see "Nooke" title and subtitle
+   - Should see "Nūūky" title and subtitle
 
 2. **Enter phone number**
    - Format: `+1234567890` (include country code)

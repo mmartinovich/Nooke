@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Nooke Supabase Deployment Script
+ * Nūūky Supabase Deployment Script
  *
  * This script deploys the complete database schema to Supabase
  * including tables, RLS policies, triggers, and functions.
@@ -46,7 +46,7 @@ if (!SUPABASE_SERVICE_KEY) {
 const migrationPath = path.join(__dirname, 'nooke', 'supabase', 'migrations', '001_initial_schema.sql');
 const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
 
-console.log('🚀 Nooke Supabase Deployment');
+console.log('🚀 Nūūky Supabase Deployment');
 console.log('================================\n');
 console.log(`📡 Supabase URL: ${SUPABASE_URL}`);
 console.log(`📄 Migration file: ${migrationPath}`);

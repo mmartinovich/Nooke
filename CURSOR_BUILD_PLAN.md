@@ -1,7 +1,7 @@
-# Nooke App - Cursor Implementation Plan
+# Nūūky App - Cursor Implementation Plan
 
 ## Project Overview
-**App Name:** Nooke (ambient presence app for close friends)  
+**App Name:** Nūūky (ambient presence app for close friends)  
 **Core Concept:** Feel connected without the pressure of communicating  
 **Tech Stack:** React Native (Expo), Supabase, LiveKit/Agora
 
@@ -470,6 +470,6 @@ FIREBASE_PROJECT_ID=your_firebase_project_id
 
 ---
 
-**Good luck building Nooke! 🚀**
+**Good luck building Nūūky! 🚀**
 
 This is everything you need to give to Cursor to start building. Focus on Phase 1 first, then iterate.

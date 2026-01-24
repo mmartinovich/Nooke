@@ -1,4 +1,4 @@
-Nookē
+Nūūky
 A Calm Way to Feel Close to Friends
 An app that helps you feel connected without having to talk, post, or perform.
 
