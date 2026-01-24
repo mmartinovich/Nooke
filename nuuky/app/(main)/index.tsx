@@ -112,10 +112,8 @@ export default function QuantumOrbitScreen() {
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [showRoomSettings, setShowRoomSettings] = useState(false);
   const [showInviteFriendsFromDefault, setShowInviteFriendsFromDefault] = useState(false);
-  const [testSpeaking, setTestSpeaking] = useState(false); // Manual test override
-
   // Audio-reactive button animation
-  const isCurrentUserSpeaking = testSpeaking || (currentUser?.id ? speakingParticipants.has(currentUser.id) : false);
+  const isCurrentUserSpeaking = currentUser?.id ? speakingParticipants.has(currentUser.id) : false;
   // Separate animated values: scale uses native driver, glow uses JS driver
   const buttonScaleAnim = useRef(new RNAnimated.Value(1)).current;
   const buttonGlowAnim = useRef(new RNAnimated.Value(1)).current;
@@ -902,28 +900,6 @@ export default function QuantumOrbitScreen() {
           </View>
         )}
 
-        {/* Debug: Speaking Status Indicator */}
-        {!isMuted && defaultRoom && (
-          <View
-            style={{ marginTop: 8, backgroundColor: "rgba(0,0,0,0.7)", padding: 8, borderRadius: 8, maxWidth: 220 }}
-          >
-            <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>
-              {isCurrentUserSpeaking ? "🎙️ SPEAKING" : "🔇 Silent"}
-            </Text>
-            <Text style={{ color: "#aaa", fontSize: 10, marginTop: 4 }}>
-              Active: {Array.from(speakingParticipants).length || "0"}
-            </Text>
-            {testSpeaking && <Text style={{ color: "#ff0", fontSize: 10, marginTop: 4 }}>⚠️ TEST MODE</Text>}
-            <TouchableOpacity
-              onPress={() => setTestSpeaking(!testSpeaking)}
-              style={{ marginTop: 8, backgroundColor: "rgba(0,240,255,0.3)", padding: 6, borderRadius: 4 }}
-            >
-              <Text style={{ color: "#00f0ff", fontSize: 11, fontWeight: "600", textAlign: "center" }}>
-                {testSpeaking ? "Stop Test" : "Test Animation"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
 
       {/* Bottom Navigation Bar */}
