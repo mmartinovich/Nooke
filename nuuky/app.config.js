@@ -58,6 +58,13 @@ export default {
           contactsPermission: "Allow Nūūky to access your contacts to find friends who are already using the app."
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          photosPermission: "Nūūky needs access to your photos so you can set your profile picture.",
+          cameraPermission: "Nūūky needs access to your camera so you can take a profile picture."
+        }
+      ],
       "@livekit/react-native-expo-plugin"
     ],
     owner: "mmartinovich",
