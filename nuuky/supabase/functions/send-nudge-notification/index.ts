@@ -61,6 +61,24 @@ serve(async (req) => {
       );
     }
 
+    // Check if receiver has nudges enabled
+    const { data: preferences } = await supabase
+      .from('user_preferences')
+      .select('nudges_enabled')
+      .eq('user_id', receiver_id)
+      .single();
+
+    // Default to enabled if no preferences found
+    const nudgesEnabled = preferences?.nudges_enabled ?? true;
+
+    if (!nudgesEnabled) {
+      console.log(`Receiver ${receiver.display_name} has nudges disabled`);
+      return new Response(
+        JSON.stringify({ message: 'Receiver has nudges disabled', sent: false }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (!receiver.fcm_token) {
       console.log(`Receiver ${receiver.display_name} has no push token`);
       return new Response(

@@ -284,21 +284,29 @@ export const getMoodColor = (mood: 'good' | 'neutral' | 'not_great' | 'reach_out
   }
 };
 
-// Pre-load all mood images at module initialization for instant switching
-const MOOD_IMAGES = {
-  good: require('../assets/good.png'),
-  neutral: require('../assets/chill.png'),
-  not_great: require('../assets/down.png'),
-  reach_out: require('../assets/help.png'),
-} as const;
-
-// Helper to get mood image (uses pre-loaded images for instant access)
+// Helper to get mood image - uses inline requires for New Architecture compatibility
 export const getMoodImage = (mood: 'good' | 'neutral' | 'not_great' | 'reach_out') => {
-  return MOOD_IMAGES[mood] || MOOD_IMAGES.neutral;
+  switch (mood) {
+    case 'good':
+      return require('../assets/good.png');
+    case 'neutral':
+      return require('../assets/chill.png');
+    case 'not_great':
+      return require('../assets/down.png');
+    case 'reach_out':
+      return require('../assets/help.png');
+    default:
+      return require('../assets/chill.png');
+  }
 };
 
 // Export all mood images for pre-caching if needed
-export const getAllMoodImages = () => Object.values(MOOD_IMAGES);
+export const getAllMoodImages = () => [
+  require('../assets/good.png'),
+  require('../assets/chill.png'),
+  require('../assets/down.png'),
+  require('../assets/help.png'),
+];
 
 // Vibe words for each mood
 const vibeWords = {

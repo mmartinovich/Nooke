@@ -14,17 +14,20 @@ export const usePresence = () => {
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const isMountedRef = useRef(true);
 
   const updatePresence = async (isOnline: boolean) => {
-    if (!currentUser) return;
+    // Get fresh user from store to avoid stale closure
+    const user = useAppStore.getState().currentUser;
+    if (!user) return;
 
     // MOCK MODE: Skip Supabase query
     if (USE_MOCK_DATA) return;
 
     // Force offline if ghost mode or break mode is active
     const now = new Date();
-    const ghostActive = currentUser.ghost_mode_until && new Date(currentUser.ghost_mode_until) > now;
-    const breakActive = currentUser.take_break_until && new Date(currentUser.take_break_until) > now;
+    const ghostActive = user.ghost_mode_until && new Date(user.ghost_mode_until) > now;
+    const breakActive = user.take_break_until && new Date(user.take_break_until) > now;
 
     const effectiveOnlineStatus = (ghostActive || breakActive) ? false : isOnline;
 
@@ -35,7 +38,7 @@ export const usePresence = () => {
           is_online: effectiveOnlineStatus,
           last_seen_at: new Date().toISOString(),
         })
-        .eq('id', currentUser.id);
+        .eq('id', user.id);
     } catch (error) {
       console.error('Error updating presence:', error);
     }
@@ -61,6 +64,8 @@ export const usePresence = () => {
   useEffect(() => {
     if (!currentUser) return;
 
+    isMountedRef.current = true;
+
     // Mark as online when component mounts
     updatePresence(true);
     lastActivityRef.current = Date.now();
@@ -70,6 +75,8 @@ export const usePresence = () => {
 
     // Track app state changes
     const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (!isMountedRef.current) return;
+      
       if (appStateRef.current.match(/inactive|background/) && nextAppState === 'active') {
         // App came to foreground - mark as online
         updatePresence(true);
@@ -82,19 +89,12 @@ export const usePresence = () => {
     });
 
     // Track user activity (touch/interaction)
-    const activityHandler = () => {
-      lastActivityRef.current = Date.now();
-      // Update presence on activity
-      if (appStateRef.current === 'active') {
-        updatePresence(true);
-      }
-    };
-
-    // Listen for any user interaction
     // Note: In React Native, we can't easily track all touches globally
     // So we rely on the heartbeat and app state changes
 
     return () => {
+      // Mark as unmounted to prevent state updates after cleanup
+      isMountedRef.current = false;
       // Cleanup: mark as offline when component unmounts
       updatePresence(false);
       if (heartbeatIntervalRef.current) {
@@ -106,7 +106,7 @@ export const usePresence = () => {
 
   // Immediately update presence when ghost/break mode changes
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || !isMountedRef.current) return;
 
     const now = new Date();
     const ghostActive = currentUser.ghost_mode_until && new Date(currentUser.ghost_mode_until) > now;

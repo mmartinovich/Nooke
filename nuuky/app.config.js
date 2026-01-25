@@ -9,7 +9,7 @@ export default {
   expo: {
     name: "Nūūky",
     slug: "nuuky",
-    version: "1.0.2",
+    version: "1.0.4h",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "dark",

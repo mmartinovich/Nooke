@@ -117,7 +117,7 @@ export default function QuantumOrbitScreen() {
   const [showRoomSettings, setShowRoomSettings] = useState(false);
   const [showInviteFriendsFromDefault, setShowInviteFriendsFromDefault] = useState(false);
   // Audio-reactive button animation
-  const isCurrentUserSpeaking = currentUser?.id ? speakingParticipants.has(currentUser.id) : false;
+  const isCurrentUserSpeaking = currentUser?.id ? speakingParticipants.includes(currentUser.id) : false;
   // Separate animated values: scale uses native driver, glow uses JS driver
   const buttonScaleAnim = useRef(new RNAnimated.Value(1)).current;
   const buttonGlowAnim = useRef(new RNAnimated.Value(1)).current;
@@ -601,29 +601,29 @@ export default function QuantumOrbitScreen() {
     return cleanup;
   };
 
-  const handleFriendPress = (friend: User, friendIndex: number) => {
+  const handleFriendPress = useCallback((friend: User, friendIndex: number) => {
     // Calculate friend's current position based on orbit angle
     const baseAngle = orbitBaseAngles[friendIndex] || 0;
-    const radius = orbitRadii[friendIndex] || 150;
+    const radiusVal = orbitRadii[friendIndex] || 150;
     const currentAngle = baseAngle + orbitAngleValueRef.current;
-    const friendX = CENTER_X + Math.cos(currentAngle) * radius;
-    const friendY = CENTER_Y + Math.sin(currentAngle) * radius;
+    const friendX = CENTER_X + Math.cos(currentAngle) * radiusVal;
+    const friendY = CENTER_Y + Math.sin(currentAngle) * radiusVal;
 
     setBubblePosition({ x: friendX, y: friendY });
     setSelectedFriend(friend);
-  };
+  }, [orbitBaseAngles, orbitRadii]);
 
-  const handleDismissBubble = () => {
+  const handleDismissBubble = useCallback(() => {
     setSelectedFriend(null);
-  };
+  }, []);
 
-  const handleNudge = async () => {
+  const handleNudge = useCallback(async () => {
     if (selectedFriend) {
       await sendNudge(selectedFriend.id, selectedFriend.display_name);
     }
-  };
+  }, [selectedFriend, sendNudge]);
 
-  const handleCallMe = async () => {
+  const handleCallMe = useCallback(async () => {
     if (selectedFriend) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       // TODO: Integrate with Supabase to send notification to friend to call
@@ -632,17 +632,17 @@ export default function QuantumOrbitScreen() {
         { text: "OK", style: "default" },
       ]);
     }
-  };
+  }, [selectedFriend]);
 
-  const handleHeart = async () => {
+  const handleHeart = useCallback(async () => {
     if (!selectedFriend) return;
 
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     // Could integrate with Supabase to store heart reactions
     // Animation is handled in FriendActionBubble component
-  };
+  }, [selectedFriend]);
 
-  const getMoodLabel = (mood: User["mood"]) => {
+  const getMoodLabel = useCallback((mood: User["mood"]) => {
     switch (mood) {
       case "good":
         return "Feeling good";
@@ -655,41 +655,41 @@ export default function QuantumOrbitScreen() {
       default:
         return "Neutral";
     }
-  };
+  }, []);
 
-  const handleOrbPress = () => {
+  const handleOrbPress = useCallback(() => {
     // Hide hint on first interaction
     if (showHint) {
       saveInteractionState();
     }
     setShowMoodPicker(true);
-  };
+  }, [showHint]);
 
-  const handleFlarePress = async () => {
+  const handleFlarePress = useCallback(async () => {
     if (myActiveFlare) {
       Alert.alert("Flare Active", "You already have an active flare. Only one flare can be active at a time.");
       return;
     }
     await sendFlare();
-  };
+  }, [myActiveFlare, sendFlare]);
 
-  const handleOpenRooms = () => {
+  const handleOpenRooms = useCallback(() => {
     router.push("/(main)/rooms");
-  };
+  }, [router]);
 
-  const handleCreateRoom = async (name?: string, isPrivate?: boolean) => {
-    const room = await createRoom(name, isPrivate);
+  const handleCreateRoom = useCallback(async (name?: string, isPrivate?: boolean) => {
+    const room = await createRoom(name, isPrivate ? [] : undefined);
     if (room) {
       setShowCreateRoom(false);
       router.push(`/(main)/room/${room.id}`);
     }
-  };
+  }, [createRoom, router]);
 
-  const handleJoinRoom = async (roomId: string) => {
+  const handleJoinRoom = useCallback(async (roomId: string) => {
     setShowRoomList(false);
     await joinRoomFn(roomId);
     router.push(`/(main)/room/${roomId}`);
-  };
+  }, [joinRoomFn, router]);
 
   // NEVER show loading if we have friends - friends from Zustand always render immediately
   // Only show loading screen if we have no friends AND no user (initial auth)
@@ -990,7 +990,7 @@ export default function QuantumOrbitScreen() {
               throw new Error("Failed to rename room");
             }
           }}
-          onDelete={async () => await deleteRoom(defaultRoom.id)}
+          onDelete={async () => { await deleteRoom(defaultRoom.id); }}
           onLeave={() => {
             // Can't leave default room - would need to set another as default first
             Alert.alert("Cannot Leave", "Set another room as default before leaving this room.");
@@ -1012,7 +1012,7 @@ export default function QuantumOrbitScreen() {
           friends={friendList}
           participantIds={participants.map((p) => p.user_id)}
           onClose={() => setShowInviteFriendsFromDefault(false)}
-          onInvite={async (friendId) => await inviteFriendToRoom(defaultRoom.id, friendId)}
+          onInvite={async (friendId) => { await inviteFriendToRoom(defaultRoom.id, friendId); }}
         />
       )}
 

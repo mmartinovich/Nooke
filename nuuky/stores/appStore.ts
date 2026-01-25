@@ -29,7 +29,8 @@ interface AppState {
   // Audio state
   audioConnectionStatus: AudioConnectionStatus;
   audioError: string | null;
-  speakingParticipants: Set<string>;
+  // Using array instead of Set for proper JSON serialization
+  speakingParticipants: string[];
 
   // Custom moods state
   customMoods: CustomMood[];
@@ -93,7 +94,7 @@ export const useAppStore = create<AppState>()(
   themeMode: 'dark' as ThemeMode,
   audioConnectionStatus: 'disconnected' as AudioConnectionStatus,
   audioError: null,
-  speakingParticipants: new Set<string>(),
+  speakingParticipants: [],
   customMoods: [],
   activeCustomMood: null,
   notifications: [],
@@ -174,10 +175,12 @@ export const useAppStore = create<AppState>()(
     activeCustomMood: state.activeCustomMood?.id === id ? null : state.activeCustomMood
   })),
 
-  setActiveCustomMood: (mood) => set({
+  setActiveCustomMood: (mood) => set((state) => ({
     activeCustomMood: mood,
-    currentUser: mood ? { ...useAppStore.getState().currentUser!, custom_mood_id: mood.id } : useAppStore.getState().currentUser
-  }),
+    currentUser: mood && state.currentUser
+      ? { ...state.currentUser, custom_mood_id: mood.id }
+      : state.currentUser
+  })),
 
   setNotifications: (notifications) => set({
     notifications,
@@ -223,19 +226,17 @@ export const useAppStore = create<AppState>()(
 
   setAudioError: (error) => set({ audioError: error }),
 
-  addSpeakingParticipant: (participantId) => set((state) => {
-    const newSet = new Set(state.speakingParticipants);
-    newSet.add(participantId);
-    return { speakingParticipants: newSet };
-  }),
+  addSpeakingParticipant: (participantId) => set((state) => ({
+    speakingParticipants: state.speakingParticipants.includes(participantId)
+      ? state.speakingParticipants
+      : [...state.speakingParticipants, participantId]
+  })),
 
-  removeSpeakingParticipant: (participantId) => set((state) => {
-    const newSet = new Set(state.speakingParticipants);
-    newSet.delete(participantId);
-    return { speakingParticipants: newSet };
-  }),
+  removeSpeakingParticipant: (participantId) => set((state) => ({
+    speakingParticipants: state.speakingParticipants.filter(id => id !== participantId)
+  })),
 
-  clearSpeakingParticipants: () => set({ speakingParticipants: new Set<string>() }),
+  clearSpeakingParticipants: () => set({ speakingParticipants: [] }),
 
   logout: () => set((state) => ({
     currentUser: null,
@@ -251,7 +252,7 @@ export const useAppStore = create<AppState>()(
     // Reset audio state
     audioConnectionStatus: 'disconnected' as AudioConnectionStatus,
     audioError: null,
-    speakingParticipants: new Set<string>(),
+    speakingParticipants: [],
     // Reset custom moods
     customMoods: [],
     activeCustomMood: null,

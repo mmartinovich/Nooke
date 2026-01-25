@@ -39,9 +39,9 @@ export const useAudio = (roomId: string | null) => {
     }
   }, []);
 
-  // Set up event callbacks
+  // Set up event callbacks with proper cleanup
   useEffect(() => {
-    setAudioEventCallbacks({
+    const callbacks = {
       onConnectionStatusChange: (status: string) => {
         setAudioConnectionStatus(status as AudioConnectionStatus);
       },
@@ -60,8 +60,15 @@ export const useAudio = (roomId: string | null) => {
         // Disconnect after 30 seconds of silence
         handleDisconnect();
       },
-    });
-  }, [currentUser?.id]);
+    };
+    
+    setAudioEventCallbacks(callbacks);
+    
+    // Cleanup: clear callbacks on unmount to prevent stale closures
+    return () => {
+      setAudioEventCallbacks(null);
+    };
+  }, [currentUser?.id, handleDisconnect, setAudioConnectionStatus, setAudioError, addSpeakingParticipant, removeSpeakingParticipant]);
 
   // Clean up on room change or unmount
   useEffect(() => {
@@ -171,7 +178,7 @@ export const useAudio = (roomId: string | null) => {
   // Check if a participant is speaking
   const isParticipantSpeaking = useCallback(
     (userId: string): boolean => {
-      return speakingParticipants.has(userId);
+      return speakingParticipants.includes(userId);
     },
     [speakingParticipants]
   );

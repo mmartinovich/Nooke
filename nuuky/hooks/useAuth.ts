@@ -95,7 +95,9 @@ export const useAuth = () => {
   };
 
   const updateOnlineStatus = async (isOnline: boolean) => {
-    if (!currentUser) return;
+    // Get fresh user from store to avoid stale closure
+    const user = useAppStore.getState().currentUser;
+    if (!user) return;
 
     try {
       await supabase
@@ -104,7 +106,7 @@ export const useAuth = () => {
           is_online: isOnline,
           last_seen_at: new Date().toISOString(),
         })
-        .eq('id', currentUser.id);
+        .eq('id', user.id);
     } catch (error) {
       console.error('Error updating online status:', error);
     }

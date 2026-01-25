@@ -1,18 +1,12 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Image, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { PresetMood } from '../types';
 import { colors, gradients, getMoodImage, typography, spacing, radius } from '../lib/theme';
 
-interface MoodPickerProps {
-  visible: boolean;
-  currentMood: PresetMood;
-  onSelectMood: (mood: PresetMood) => void;
-  onClose: () => void;
-}
-
-const MOODS: Array<{ mood: PresetMood; label: string; description: string }> = [
+// Moved outside component to prevent recreation on each render
+const MOODS: ReadonlyArray<{ mood: PresetMood; label: string; description: string }> = [
   {
     mood: 'good',
     label: 'Feeling good',
@@ -33,7 +27,14 @@ const MOODS: Array<{ mood: PresetMood; label: string; description: string }> = [
     label: 'Need support',
     description: 'Could use some company',
   },
-];
+] as const;
+
+interface MoodPickerProps {
+  visible: boolean;
+  currentMood: PresetMood;
+  onSelectMood: (mood: PresetMood) => void;
+  onClose: () => void;
+}
 
 export const MoodPicker: React.FC<MoodPickerProps> = ({
   visible,
@@ -41,10 +42,10 @@ export const MoodPicker: React.FC<MoodPickerProps> = ({
   onSelectMood,
   onClose,
 }) => {
-  const handleSelectMood = (mood: PresetMood) => {
+  const handleSelectMood = useCallback((mood: PresetMood) => {
     onSelectMood(mood);
     onClose();
-  };
+  }, [onSelectMood, onClose]);
 
   return (
     <Modal
@@ -52,12 +53,15 @@ export const MoodPicker: React.FC<MoodPickerProps> = ({
       transparent
       animationType="fade"
       onRequestClose={onClose}
+      accessibilityViewIsModal={true}
     >
       <BlurView intensity={20} style={styles.overlay} tint="dark">
         <TouchableOpacity
           style={styles.backdrop}
           activeOpacity={1}
           onPress={onClose}
+          accessibilityLabel="Close mood picker"
+          accessibilityRole="button"
         >
           <View
             style={styles.container}
@@ -86,6 +90,9 @@ export const MoodPicker: React.FC<MoodPickerProps> = ({
                         key={mood}
                         activeOpacity={0.7}
                         onPress={() => handleSelectMood(mood)}
+                        accessibilityLabel={`${label}: ${description}`}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: isSelected }}
                       >
                         <LinearGradient
                           colors={isSelected ? gradients.button : gradients.card}
@@ -99,7 +106,6 @@ export const MoodPicker: React.FC<MoodPickerProps> = ({
                             <Image
                               source={getMoodImage(mood)}
                               style={styles.moodImage}
-                              fadeDuration={0}
                             />
                           </View>
 
@@ -124,7 +130,12 @@ export const MoodPicker: React.FC<MoodPickerProps> = ({
                 </View>
 
                 {/* Cancel button */}
-                <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
+                <TouchableOpacity
+                  onPress={onClose}
+                  style={styles.cancelButton}
+                  accessibilityLabel="Cancel"
+                  accessibilityRole="button"
+                >
                   <Text style={styles.cancelText}>Cancel</Text>
                 </TouchableOpacity>
               </ScrollView>

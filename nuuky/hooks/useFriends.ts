@@ -103,13 +103,59 @@ export const useFriends = () => {
     }
 
     // Throttled refresh to prevent excessive API calls
-    const throttledLoadFriends = (_payload?: any) => {
+    // Use a function that captures the user ID to avoid stale closures
+    const throttledLoadFriends = async (_payload?: any) => {
       const now = Date.now();
       if (now - lastFriendsRefresh < FRIENDS_REFRESH_THROTTLE_MS) {
         return;
       }
       lastFriendsRefresh = now;
-      loadFriends();
+      
+      // Get fresh user from store
+      const user = useAppStore.getState().currentUser;
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('friendships')
+          .select(`
+            *,
+            friend:friend_id (
+              id,
+              display_name,
+              mood,
+              custom_mood_id,
+              is_online,
+              last_seen_at,
+              avatar_url,
+              custom_mood:custom_mood_id (
+                id,
+                emoji,
+                text,
+                color
+              )
+            )
+          `)
+          .eq('user_id', user.id)
+          .eq('status', 'accepted');
+
+        if (error) throw error;
+
+        // Fetch blocks to filter out blocked users
+        const { data: blocks } = await supabase
+          .from('blocks')
+          .select('blocked_id')
+          .eq('blocker_id', user.id);
+
+        const blockedIds = new Set(blocks?.map(b => b.blocked_id) || []);
+
+        // Filter out blocked friends
+        const filteredFriends = data?.filter(f => !blockedIds.has(f.friend_id)) || [];
+
+        useAppStore.getState().setFriends(filteredFriends);
+      } catch (error: any) {
+        console.error('Error refreshing friends via realtime:', error);
+      }
     };
 
     const channel = supabase
