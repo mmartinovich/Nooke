@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { User, Friendship, Room, RoomParticipant, RoomInvite, AudioConnectionStatus, CustomMood, PresetMood } from '../types';
+import { User, Friendship, Room, RoomParticipant, RoomInvite, AudioConnectionStatus, CustomMood, PresetMood, AppNotification } from '../types';
 import { ThemeMode } from '../lib/theme';
 
 interface AppState {
@@ -35,6 +35,10 @@ interface AppState {
   customMoods: CustomMood[];
   activeCustomMood: CustomMood | null;
 
+  // Notifications state
+  notifications: AppNotification[];
+  unreadNotificationCount: number;
+
   // Actions
   setCurrentUser: (user: User | null) => void;
   setFriends: (friends: Friendship[]) => void;
@@ -57,6 +61,11 @@ interface AppState {
   updateCustomMood: (id: string, updates: Partial<CustomMood>) => void;
   deleteCustomMood: (id: string) => void;
   setActiveCustomMood: (mood: CustomMood | null) => void;
+  setNotifications: (notifications: AppNotification[]) => void;
+  addNotification: (notification: AppNotification) => void;
+  markNotificationRead: (notificationId: string) => void;
+  markAllNotificationsRead: () => void;
+  removeNotification: (notificationId: string) => void;
   setDefaultRoomId: (roomId: string | null) => void;
   setThemeMode: (mode: ThemeMode) => void;
   setAudioConnectionStatus: (status: AudioConnectionStatus) => void;
@@ -87,6 +96,8 @@ export const useAppStore = create<AppState>()(
   speakingParticipants: new Set<string>(),
   customMoods: [],
   activeCustomMood: null,
+  notifications: [],
+  unreadNotificationCount: 0,
 
   // Actions
   setCurrentUser: (user) => set({ currentUser: user, isAuthenticated: !!user }),
@@ -168,6 +179,42 @@ export const useAppStore = create<AppState>()(
     currentUser: mood ? { ...useAppStore.getState().currentUser!, custom_mood_id: mood.id } : useAppStore.getState().currentUser
   }),
 
+  setNotifications: (notifications) => set({
+    notifications,
+    unreadNotificationCount: notifications.filter(n => !n.is_read).length
+  }),
+
+  addNotification: (notification) => set((state) => ({
+    notifications: [notification, ...state.notifications],
+    unreadNotificationCount: state.unreadNotificationCount + (notification.is_read ? 0 : 1)
+  })),
+
+  markNotificationRead: (notificationId) => set((state) => {
+    const notification = state.notifications.find(n => n.id === notificationId);
+    if (!notification || notification.is_read) return state;
+    return {
+      notifications: state.notifications.map(n =>
+        n.id === notificationId ? { ...n, is_read: true } : n
+      ),
+      unreadNotificationCount: Math.max(0, state.unreadNotificationCount - 1)
+    };
+  }),
+
+  markAllNotificationsRead: () => set((state) => ({
+    notifications: state.notifications.map(n => ({ ...n, is_read: true })),
+    unreadNotificationCount: 0
+  })),
+
+  removeNotification: (notificationId) => set((state) => {
+    const notification = state.notifications.find(n => n.id === notificationId);
+    return {
+      notifications: state.notifications.filter(n => n.id !== notificationId),
+      unreadNotificationCount: notification && !notification.is_read
+        ? Math.max(0, state.unreadNotificationCount - 1)
+        : state.unreadNotificationCount
+    };
+  }),
+
   setDefaultRoomId: (roomId) => set({ defaultRoomId: roomId }),
 
   setThemeMode: (mode) => set({ themeMode: mode }),
@@ -208,6 +255,9 @@ export const useAppStore = create<AppState>()(
     // Reset custom moods
     customMoods: [],
     activeCustomMood: null,
+    // Reset notifications
+    notifications: [],
+    unreadNotificationCount: 0,
     // Preserve theme preference on logout
     themeMode: state.themeMode,
   }))

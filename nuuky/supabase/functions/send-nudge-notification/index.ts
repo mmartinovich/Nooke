@@ -84,6 +84,23 @@ serve(async (req) => {
 
     const sent = await sendExpoNotification(receiver.fcm_token, notification);
 
+    // Insert notification into database for persistence
+    const { error: notificationError } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: receiver_id,
+        type: 'nudge',
+        title: notification.title,
+        body: notification.body,
+        data: notification.data,
+        source_id: sender_id,
+        source_type: 'nudge',
+      });
+
+    if (notificationError) {
+      console.error('Failed to insert notification:', notificationError);
+    }
+
     if (sent) {
       console.log(`✓ Nudge notification sent to ${receiver.display_name}`);
       return new Response(

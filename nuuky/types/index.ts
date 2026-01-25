@@ -171,3 +171,32 @@ export interface LiveKitTokenResponse {
   roomName: string;
   serverUrl: string;
 }
+
+// Notification types
+export type NotificationType = 'nudge' | 'flare' | 'friend_request' | 'friend_accepted' | 'room_invite';
+
+export interface NotificationData {
+  sender_id?: string;
+  sender_name?: string;
+  sender_avatar_url?: string;
+  friend_id?: string;
+  friend_name?: string;
+  friend_avatar_url?: string;
+  friendship_id?: string;
+  room_id?: string;
+  room_name?: string;
+  invite_id?: string;
+}
+
+export interface AppNotification {
+  id: string;
+  user_id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  data: NotificationData;
+  is_read: boolean;
+  created_at: string;
+  source_id?: string;
+  source_type?: string;
+}

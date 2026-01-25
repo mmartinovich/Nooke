@@ -17,106 +17,6 @@ const REFRESH_THROTTLE_MS = 2000; // Only allow refresh every 2 seconds
 let isJoiningRoom = false;
 let lastJoinedRoomId: string | null = null;
 
-/**
- * TESTING MODE TOGGLE
- *
- * Set to true to use mocked room participants for testing/development
- * Set to false to use real data from Supabase
- *
- * Mock data includes:
- * - Mock participants in the current room (using mock friends)
- */
-const USE_MOCK_DATA = false;
-
-// Mock room participants (matching the friends from index.tsx with avatars)
-const MOCK_PARTICIPANTS: RoomParticipant[] = [
-  {
-    id: 'mock-participant-1',
-    room_id: 'current-room',
-    user_id: 'friend-1',
-    is_muted: false,
-    joined_at: new Date().toISOString(),
-    user: {
-      id: 'friend-1',
-      phone: '+1234567890',
-      display_name: 'Alex',
-      mood: 'good',
-      is_online: true,
-      last_seen_at: new Date().toISOString(),
-      avatar_url: 'https://i.pravatar.cc/150?img=1',
-      created_at: new Date().toISOString(),
-    },
-  },
-  {
-    id: 'mock-participant-2',
-    room_id: 'current-room',
-    user_id: 'friend-2',
-    is_muted: true,
-    joined_at: new Date().toISOString(),
-    user: {
-      id: 'friend-2',
-      phone: '+1234567891',
-      display_name: 'Sam',
-      mood: 'neutral',
-      is_online: false,
-      last_seen_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-      avatar_url: 'https://i.pravatar.cc/150?img=5',
-      created_at: new Date().toISOString(),
-    },
-  },
-  {
-    id: 'mock-participant-3',
-    room_id: 'current-room',
-    user_id: 'friend-3',
-    is_muted: false,
-    joined_at: new Date().toISOString(),
-    user: {
-      id: 'friend-3',
-      phone: '+1234567892',
-      display_name: 'Jordan',
-      mood: 'not_great',
-      is_online: true,
-      last_seen_at: new Date().toISOString(),
-      avatar_url: 'https://i.pravatar.cc/150?img=12',
-      created_at: new Date().toISOString(),
-    },
-  },
-  {
-    id: 'mock-participant-4',
-    room_id: 'current-room',
-    user_id: 'friend-4',
-    is_muted: false,
-    joined_at: new Date().toISOString(),
-    user: {
-      id: 'friend-4',
-      phone: '+1234567893',
-      display_name: 'Taylor',
-      mood: 'reach_out',
-      is_online: false,
-      last_seen_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      avatar_url: 'https://i.pravatar.cc/150?img=47',
-      created_at: new Date().toISOString(),
-    },
-  },
-  {
-    id: 'mock-participant-5',
-    room_id: 'current-room',
-    user_id: 'friend-5',
-    is_muted: true,
-    joined_at: new Date().toISOString(),
-    user: {
-      id: 'friend-5',
-      phone: '+1234567894',
-      display_name: 'Riley',
-      mood: 'good',
-      is_online: true,
-      last_seen_at: new Date().toISOString(),
-      avatar_url: 'https://i.pravatar.cc/150?img=33',
-      created_at: new Date().toISOString(),
-    },
-  },
-];
-
 export const useRoom = () => {
   const { currentUser, currentRoom, setCurrentRoom, setActiveRooms, myRooms, setMyRooms, addMyRoom, updateMyRoom, removeMyRoom, setRoomParticipants, roomParticipants } = useAppStore();
   const [activeRooms, setActiveRoomsList] = useState<Room[]>([]);
@@ -127,28 +27,15 @@ export const useRoom = () => {
   // Memoized to prevent recalculation on every render
   const participants: RoomParticipant[] = useMemo(() => {
     if (!currentRoom) return [];
-
-    if (USE_MOCK_DATA) {
-      const room = myRooms.find(r => r.id === currentRoom.id);
-      if (room && room.participants && room.participants.length > 0) {
-        return room.participants;
-      }
-      return MOCK_PARTICIPANTS;
-    }
-
-    // For real data, use the global store
     return roomParticipants;
-  }, [currentRoom?.id, myRooms, roomParticipants]);
+  }, [currentRoom?.id, roomParticipants]);
 
   useEffect(() => {
     if (currentUser) {
       loadActiveRooms();
       loadMyRooms();
-      // Disable realtime subscriptions in mock mode to prevent accumulation issues
-      if (!USE_MOCK_DATA) {
-        const cleanup = setupRealtimeSubscription();
-        return cleanup;
-      }
+      const cleanup = setupRealtimeSubscription();
+      return cleanup;
     }
   }, [currentUser?.id]); // Use id to avoid re-running on mood change
 
@@ -160,14 +47,6 @@ export const useRoom = () => {
 
   const loadActiveRooms = async () => {
     if (!currentUser) return;
-
-    // MOCK MODE: Skip Supabase query, use myRooms as active rooms
-    if (USE_MOCK_DATA) {
-      const currentMyRooms = useAppStore.getState().myRooms;
-      setActiveRoomsList(currentMyRooms);
-      setActiveRooms(currentMyRooms);
-      return;
-    }
 
     try {
       const { data, error } = await supabase
@@ -203,26 +82,6 @@ export const useRoom = () => {
     if (!currentUser) return;
 
     try {
-      // Use mocked data if enabled - add mock participants to existing rooms
-      if (USE_MOCK_DATA && myRooms.length > 0) {
-        // Check if any room needs mock participants added
-        const needsUpdate = myRooms.some(room =>
-          room.participants === undefined || room.participants.length <= 1
-        );
-
-        // Only update state if something actually needs to change
-        if (needsUpdate) {
-          const roomsWithMockParticipants = myRooms.map(room => ({
-            ...room,
-            participants: (room.participants === undefined || room.participants.length <= 1)
-              ? MOCK_PARTICIPANTS
-              : room.participants,
-          }));
-          setMyRooms(roomsWithMockParticipants);
-        }
-        return;
-      }
-
       // Get rooms where user is creator or participant
       const { data: participantData } = await supabase
         .from('room_participants')
@@ -270,20 +129,6 @@ export const useRoom = () => {
     if (!currentRoom) return;
 
     try {
-      // Use mocked data if enabled
-      if (USE_MOCK_DATA) {
-        // In mock mode, participants are derived from myRooms
-        // Only update myRooms if the room doesn't have participants yet
-        const room = myRooms.find(r => r.id === currentRoom.id);
-
-        if (!room || !room.participants || room.participants.length <= 1) {
-          // Initialize with mock data only if needed
-          updateMyRoom(currentRoom.id, { participants: MOCK_PARTICIPANTS });
-        }
-        // No need to call setRoomParticipants - participants are derived from myRooms
-        return;
-      }
-
       const { data, error } = await supabase
         .from('room_participants')
         .select(`
@@ -468,7 +313,20 @@ export const useRoom = () => {
         }));
 
         await supabase.from('room_invites').insert(invites);
-        // TODO: Send push notifications
+
+        // Send push notifications to invited friends
+        try {
+          await supabase.functions.invoke('send-room-invite-notification', {
+            body: {
+              room_id: room.id,
+              sender_id: currentUser.id,
+              receiver_ids: friendIds,
+            },
+          });
+        } catch (notificationError) {
+          // Don't fail room creation if notifications fail
+          console.error('Failed to send room invite notifications:', notificationError);
+        }
       }
 
       setCurrentRoom(room);
@@ -504,21 +362,6 @@ export const useRoom = () => {
     isJoiningRoom = true;
     setLoading(true);
     try {
-      // MOCK MODE: Skip Supabase queries, just use local data
-      if (USE_MOCK_DATA) {
-        // Get latest myRooms from store (closure has stale value)
-        const currentMyRooms = useAppStore.getState().myRooms;
-        const room = currentMyRooms.find(r => r.id === roomId);
-        if (room) {
-          setCurrentRoom(room);
-          lastJoinedRoomId = roomId;
-          return true;
-        }
-        // Room not found - this shouldn't happen in mock mode
-        console.warn('Room not found in myRooms:', roomId);
-        return false;
-      }
-
       // Check if already in the room
       const { data: existing } = await supabase
         .from('room_participants')
@@ -772,21 +615,6 @@ export const useRoom = () => {
 
     try {
       setLoading(true);
-
-      // MOCK MODE: Handle removal locally
-      if (USE_MOCK_DATA) {
-        // Get current participants from the room in myRooms
-        const room = myRooms.find(r => r.id === roomId);
-        const currentParticipants = room?.participants || participants;
-        const updatedParticipants = currentParticipants.filter(p => p.user_id !== userId);
-
-        // Update the room in myRooms - this will automatically update derived participants
-        updateMyRoom(roomId, { participants: updatedParticipants });
-        // Also update global store for components that use it directly
-        setRoomParticipants(updatedParticipants);
-
-        return true;
-      }
 
       // Verify user is creator
       const { data: room } = await supabase

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Alert } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../stores/appStore';
 import { User } from '../types';
@@ -37,6 +38,7 @@ export const useAuth = () => {
       }
     } catch (error) {
       console.error('Error checking session:', error);
+      Alert.alert('Session Error', 'Failed to restore your session. Please sign in again.');
     } finally {
       setLoading(false);
     }
@@ -67,6 +69,7 @@ export const useAuth = () => {
                         user.user_metadata?.picture,
             auth_provider: user.app_metadata?.provider || 'google',
             is_online: true,
+            mood: 'neutral',
           })
           .select()
           .single();
@@ -74,11 +77,10 @@ export const useAuth = () => {
       }
 
       if (data) {
-        // Preserve local mood if it exists (for mock mode)
         const userProfile = data as User;
-        const existingUser = useAppStore.getState().currentUser;
-        if (existingUser?.mood) {
-          userProfile.mood = existingUser.mood;
+        // Ensure mood defaults to neutral if not set
+        if (!userProfile.mood) {
+          userProfile.mood = 'neutral';
         }
         setCurrentUser(userProfile);
         // Update online status
@@ -88,6 +90,7 @@ export const useAuth = () => {
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
+      Alert.alert('Profile Error', 'Failed to load your profile. Please try again.');
     }
   };
 

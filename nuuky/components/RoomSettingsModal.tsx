@@ -265,12 +265,12 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
                           <View style={styles.participantDetails}>
                             <View style={styles.nameRow}>
                               <Text style={styles.participantName} numberOfLines={1}>
-                                {user.display_name}
+                                {user.display_name}{isCurrentUser ? ' (You)' : ''}
                               </Text>
                               {isRoomCreator && (
                                 <View style={styles.creatorBadge}>
                                   <Ionicons name="star" size={12} color={colors.neon.cyan} />
-                                  <Text style={styles.creatorBadgeText}>Creator</Text>
+                                  <Text style={styles.creatorBadgeText}>Owner</Text>
                                 </View>
                               )}
                             </View>
