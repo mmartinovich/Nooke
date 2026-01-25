@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Alert, StatusBar } from "react-native";
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Alert, StatusBar, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
@@ -227,7 +227,7 @@ export default function QuantumOrbitScreen() {
         }
         lastAngleRef.current = null;
       },
-    })
+    }),
   ).current;
 
   // All hooks must be called before any conditional returns
@@ -437,7 +437,7 @@ export default function QuantumOrbitScreen() {
               useNativeDriver: false,
             }),
           ]),
-        ])
+        ]),
       );
       pulseAnimation.start();
       return () => pulseAnimation.stop();
@@ -531,7 +531,7 @@ export default function QuantumOrbitScreen() {
             last_seen_at,
             avatar_url
           )
-        `
+        `,
         )
         .eq("user_id", currentUser.id)
         .eq("status", "accepted");
@@ -691,7 +691,7 @@ export default function QuantumOrbitScreen() {
           schema: "public",
           table: "users",
         },
-        throttledLoadFriends
+        throttledLoadFriends,
       )
       .subscribe();
 
@@ -868,9 +868,9 @@ export default function QuantumOrbitScreen() {
         />
       )}
 
-      {/* Top Header - Simple Text */}
+      {/* Top Header - Wordmark Logo */}
       <View style={styles.topHeader} pointerEvents="box-none">
-        <Text style={[styles.appTitle, { color: theme.colors.text.primary }]}>Nūūky</Text>
+        <Image source={require("../../assets/wordmark.png")} style={styles.wordmarkSmall} resizeMode="contain" />
         {defaultRoom ? (
           <TouchableOpacity
             style={[
@@ -899,7 +899,6 @@ export default function QuantumOrbitScreen() {
             <AudioConnectionBadge status={audioConnectionStatus} />
           </View>
         )}
-
       </View>
 
       {/* Bottom Navigation Bar */}
@@ -1136,6 +1135,10 @@ const styles = StyleSheet.create({
     fontSize: 34,
     fontWeight: "700",
     letterSpacing: -0.5,
+  },
+  wordmarkSmall: {
+    width: 120,
+    height: 40,
   },
   moodText: {
     fontSize: 17,

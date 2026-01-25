@@ -201,11 +201,39 @@ export const useProfile = () => {
     }
   };
 
+  const completeProfile = async (): Promise<boolean> => {
+    if (!currentUser) {
+      Alert.alert('Error', 'You must be logged in');
+      return false;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ profile_completed: true })
+        .eq('id', currentUser.id);
+
+      if (error) throw error;
+
+      // Update store
+      setCurrentUser({ ...currentUser, profile_completed: true });
+      return true;
+    } catch (error: any) {
+      console.error('Error completing profile:', error);
+      Alert.alert('Error', 'Failed to complete profile setup');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     loading,
     uploadProgress,
     updateDisplayName,
     pickAndUploadAvatar,
     deleteAvatar,
+    completeProfile,
   };
 };

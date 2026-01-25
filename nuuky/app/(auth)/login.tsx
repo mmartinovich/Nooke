@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,22 +9,23 @@ import {
   Alert,
   Animated,
   TextInput,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import * as AppleAuthentication from 'expo-apple-authentication';
-import * as WebBrowser from 'expo-web-browser';
-import * as Crypto from 'expo-crypto';
-import { supabase } from '../../lib/supabase';
-import { useAppStore } from '../../stores/appStore';
-import { colors, gradients, typography, spacing, radius } from '../../lib/theme';
+  Image,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import * as AppleAuthentication from "expo-apple-authentication";
+import * as WebBrowser from "expo-web-browser";
+import * as Crypto from "expo-crypto";
+import { supabase } from "../../lib/supabase";
+import { useAppStore } from "../../stores/appStore";
+import { colors, gradients, typography, spacing, radius } from "../../lib/theme";
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showDevLogin, setShowDevLogin] = useState(false);
   const router = useRouter();
   const { setCurrentUser } = useAppStore();
@@ -46,7 +47,7 @@ export default function LoginScreen() {
           duration: 2000,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     );
     pulseAnimation.start();
 
@@ -57,29 +58,25 @@ export default function LoginScreen() {
   }, []);
 
   const fetchUserProfile = async (userId: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    let { data: userData, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    let { data: userData, error } = await supabase.from("users").select("*").eq("id", userId).single();
 
     if (!userData && user) {
       // Create profile for OAuth user (fallback if trigger doesn't work)
       const { data: newUser } = await supabase
-        .from('users')
+        .from("users")
         .insert({
           id: userId,
           email: user.email!,
-          display_name: user.user_metadata?.full_name ||
-                        user.user_metadata?.name ||
-                        user.email?.split('@')[0] ||
-                        'User',
-          avatar_url: user.user_metadata?.avatar_url ||
-                      user.user_metadata?.picture,
-          auth_provider: user.app_metadata?.provider || 'google',
+          display_name:
+            user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "User",
+          avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture,
+          auth_provider: user.app_metadata?.provider || "google",
           is_online: true,
+          profile_completed: false, // New users need onboarding
         })
         .select()
         .single();
@@ -97,14 +94,14 @@ export default function LoginScreen() {
       // Check if Apple Authentication is available
       const isAvailable = await AppleAuthentication.isAvailableAsync();
       if (!isAvailable) {
-        Alert.alert('Not Available', 'Sign in with Apple is not available on this device.');
+        Alert.alert("Not Available", "Sign in with Apple is not available on this device.");
         return;
       }
 
       // Generate nonce for security
       const nonce = await Crypto.digestStringAsync(
         Crypto.CryptoDigestAlgorithm.SHA256,
-        Crypto.getRandomBytes(32).toString()
+        Crypto.getRandomBytes(32).toString(),
       );
 
       const credential = await AppleAuthentication.signInAsync({
@@ -116,7 +113,7 @@ export default function LoginScreen() {
       });
 
       const { data, error } = await supabase.auth.signInWithIdToken({
-        provider: 'apple',
+        provider: "apple",
         token: credential.identityToken!,
         nonce,
       });
@@ -125,14 +122,15 @@ export default function LoginScreen() {
 
       // Fetch or create user profile
       await fetchUserProfile(data.user.id);
-      router.replace('/(main)');
+      // Check profile completion status - navigation handled by index.tsx
+      router.replace("/");
     } catch (error: any) {
-      if (error.code === 'ERR_REQUEST_CANCELED') {
+      if (error.code === "ERR_REQUEST_CANCELED") {
         // User cancelled the sign-in
         return;
       }
-      console.error('Apple Sign-In Error:', error);
-      Alert.alert('Sign In Failed', error.message || 'Failed to sign in with Apple');
+      console.error("Apple Sign-In Error:", error);
+      Alert.alert("Sign In Failed", error.message || "Failed to sign in with Apple");
     } finally {
       setLoading(false);
     }
@@ -142,9 +140,9 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+        provider: "google",
         options: {
-          redirectTo: 'nooke://auth/callback',
+          redirectTo: "nooke://auth/callback",
           skipBrowserRedirect: false,
         },
       });
@@ -154,8 +152,8 @@ export default function LoginScreen() {
       // Note: The actual session will be handled by the OAuth callback
       // which is set up in your app configuration
     } catch (error: any) {
-      console.error('Google Sign-In Error:', error);
-      Alert.alert('Sign In Failed', error.message || 'Failed to sign in with Google');
+      console.error("Google Sign-In Error:", error);
+      Alert.alert("Sign In Failed", error.message || "Failed to sign in with Google");
     } finally {
       setLoading(false);
     }
@@ -163,12 +161,12 @@ export default function LoginScreen() {
 
   const handleDevLogin = async () => {
     if (!email.trim()) {
-      Alert.alert('Email Required', 'Please enter an email address');
+      Alert.alert("Email Required", "Please enter an email address");
       return;
     }
 
     if (!password.trim()) {
-      Alert.alert('Password Required', 'Please enter a password');
+      Alert.alert("Password Required", "Please enter a password");
       return;
     }
 
@@ -182,29 +180,29 @@ export default function LoginScreen() {
 
       if (error) {
         // If user doesn't exist, create them
-        if (error.message.includes('Invalid login credentials')) {
+        if (error.message.includes("Invalid login credentials")) {
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: email.trim(),
             password: password.trim(),
             options: {
               emailRedirectTo: undefined,
               data: {
-                display_name: email.split('@')[0],
+                display_name: email.split("@")[0],
               },
             },
           });
 
           if (signUpError) {
             // Check if it's the email confirmation error
-            if (signUpError.message.includes('Database error')) {
+            if (signUpError.message.includes("Database error")) {
               Alert.alert(
-                'Setup Required',
-                'Please disable email confirmation in Supabase:\n\n' +
-                '1. Go to Authentication → Settings\n' +
-                '2. Disable "Confirm email"\n' +
-                '3. Save and try again\n\n' +
-                'See configure-dev-auth.md for details',
-                [{ text: 'OK' }]
+                "Setup Required",
+                "Please disable email confirmation in Supabase:\n\n" +
+                  "1. Go to Authentication → Settings\n" +
+                  '2. Disable "Confirm email"\n' +
+                  "3. Save and try again\n\n" +
+                  "See configure-dev-auth.md for details",
+                [{ text: "OK" }],
               );
               return;
             }
@@ -214,17 +212,17 @@ export default function LoginScreen() {
           // Check if user was created successfully
           if (signUpData.user && !signUpData.session) {
             Alert.alert(
-              'Email Confirmation Required',
-              'Email confirmation is enabled. Please check configure-dev-auth.md to disable it for dev mode.',
-              [{ text: 'OK' }]
+              "Email Confirmation Required",
+              "Email confirmation is enabled. Please check configure-dev-auth.md to disable it for dev mode.",
+              [{ text: "OK" }],
             );
             return;
           }
 
           if (signUpData.user) {
             await fetchUserProfile(signUpData.user.id);
-            Alert.alert('Success', 'Account created and logged in!');
-            router.replace('/(main)');
+            Alert.alert("Success", "Account created and logged in!");
+            router.replace("/");
             return;
           }
         }
@@ -233,13 +231,13 @@ export default function LoginScreen() {
 
       if (data.user) {
         await fetchUserProfile(data.user.id);
-        router.replace('/(main)');
+        router.replace("/");
       }
     } catch (error: any) {
-      console.error('Dev Login Error:', error);
+      console.error("Dev Login Error:", error);
       Alert.alert(
-        'Sign In Failed',
-        error.message || 'Failed to sign in. Check configure-dev-auth.md for setup instructions.'
+        "Sign In Failed",
+        error.message || "Failed to sign in. Check configure-dev-auth.md for setup instructions.",
       );
     } finally {
       setLoading(false);
@@ -249,8 +247,8 @@ export default function LoginScreen() {
   const handleQuickDevLogin = async () => {
     setLoading(true);
     try {
-      const testEmail = 'dev@nooke.app';
-      const testPassword = 'devpass123';
+      const testEmail = "dev@nooke.app";
+      const testPassword = "devpass123";
 
       // Try to sign in
       let { data, error } = await supabase.auth.signInWithPassword({
@@ -259,29 +257,29 @@ export default function LoginScreen() {
       });
 
       // If user doesn't exist, create them
-      if (error?.message.includes('Invalid login credentials')) {
+      if (error?.message.includes("Invalid login credentials")) {
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: testEmail,
           password: testPassword,
           options: {
             emailRedirectTo: undefined,
             data: {
-              display_name: 'Dev User',
+              display_name: "Dev User",
             },
           },
         });
 
         if (signUpError) {
           // Check if it's the email confirmation error
-          if (signUpError.message.includes('Database error')) {
+          if (signUpError.message.includes("Database error")) {
             Alert.alert(
-              'Setup Required',
-              'Please disable email confirmation in Supabase:\n\n' +
-              '1. Go to Authentication → Settings\n' +
-              '2. Disable "Confirm email"\n' +
-              '3. Save and try again\n\n' +
-              'See configure-dev-auth.md for details',
-              [{ text: 'OK' }]
+              "Setup Required",
+              "Please disable email confirmation in Supabase:\n\n" +
+                "1. Go to Authentication → Settings\n" +
+                '2. Disable "Confirm email"\n' +
+                "3. Save and try again\n\n" +
+                "See configure-dev-auth.md for details",
+              [{ text: "OK" }],
             );
             return;
           }
@@ -291,9 +289,9 @@ export default function LoginScreen() {
         // Check if user was created successfully
         if (signUpData.user && !signUpData.session) {
           Alert.alert(
-            'Email Confirmation Required',
-            'Email confirmation is enabled. Please check configure-dev-auth.md to disable it for dev mode.',
-            [{ text: 'OK' }]
+            "Email Confirmation Required",
+            "Email confirmation is enabled. Please check configure-dev-auth.md to disable it for dev mode.",
+            [{ text: "OK" }],
           );
           return;
         }
@@ -305,13 +303,13 @@ export default function LoginScreen() {
 
       if (data.user) {
         await fetchUserProfile(data.user.id);
-        router.replace('/(main)');
+        router.replace("/");
       }
     } catch (error: any) {
-      console.error('Quick Dev Login Error:', error);
+      console.error("Quick Dev Login Error:", error);
       Alert.alert(
-        'Sign In Failed',
-        error.message || 'Failed to sign in. Check configure-dev-auth.md for setup instructions.'
+        "Sign In Failed",
+        error.message || "Failed to sign in. Check configure-dev-auth.md for setup instructions.",
       );
     } finally {
       setLoading(false);
@@ -320,10 +318,7 @@ export default function LoginScreen() {
 
   return (
     <LinearGradient colors={gradients.background} style={styles.gradient}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <View style={styles.content}>
           {/* Decorative orb with glow */}
           <View style={styles.orbContainer}>
@@ -340,10 +335,8 @@ export default function LoginScreen() {
 
           {/* Title */}
           <View style={styles.header}>
-            <Text style={styles.title}>Nūūky</Text>
-            <Text style={styles.subtitle}>
-              Feel connected without{'\n'}the pressure of communicating
-            </Text>
+            <Image source={require("../../assets/wordmark.png")} style={styles.wordmark} resizeMode="contain" />
+            <Text style={styles.subtitle}>Feel connected without{"\n"}the pressure of communicating</Text>
           </View>
 
           {/* OAuth Buttons */}
@@ -369,20 +362,13 @@ export default function LoginScreen() {
             >
               <View style={[styles.googleButton, loading && styles.buttonDisabled]}>
                 <Text style={styles.googleIcon}>G</Text>
-                <Text style={styles.googleButtonText}>
-                  {loading ? 'Signing in...' : 'Continue with Google'}
-                </Text>
+                <Text style={styles.googleButtonText}>{loading ? "Signing in..." : "Continue with Google"}</Text>
               </View>
             </TouchableOpacity>
 
             {/* Development Login Toggle */}
-            <TouchableOpacity
-              onPress={() => setShowDevLogin(!showDevLogin)}
-              style={styles.devToggle}
-            >
-              <Text style={styles.devToggleText}>
-                {showDevLogin ? '− Hide Dev Login' : '+ Dev Login (Testing)'}
-              </Text>
+            <TouchableOpacity onPress={() => setShowDevLogin(!showDevLogin)} style={styles.devToggle}>
+              <Text style={styles.devToggleText}>{showDevLogin ? "− Hide Dev Login" : "+ Dev Login (Testing)"}</Text>
             </TouchableOpacity>
 
             {/* Development Email Login */}
@@ -394,9 +380,7 @@ export default function LoginScreen() {
                   disabled={loading}
                   style={[styles.quickLoginButton, loading && styles.buttonDisabled]}
                 >
-                  <Text style={styles.quickLoginButtonText}>
-                    {loading ? 'Logging in...' : '⚡ Quick Dev Login'}
-                  </Text>
+                  <Text style={styles.quickLoginButtonText}>{loading ? "Logging in..." : "⚡ Quick Dev Login"}</Text>
                 </TouchableOpacity>
 
                 <View style={styles.divider}>
@@ -436,17 +420,13 @@ export default function LoginScreen() {
                   disabled={loading}
                   style={[styles.devLoginButton, loading && styles.buttonDisabled]}
                 >
-                  <Text style={styles.devLoginButtonText}>
-                    {loading ? 'Signing in...' : 'Sign In / Sign Up'}
-                  </Text>
+                  <Text style={styles.devLoginButtonText}>{loading ? "Signing in..." : "Sign In / Sign Up"}</Text>
                 </TouchableOpacity>
               </View>
             )}
           </View>
 
-          <Text style={styles.privacyText}>
-            By continuing, you agree to our terms and privacy policy
-          </Text>
+          <Text style={styles.privacyText}>By continuing, you agree to our terms and privacy policy</Text>
         </View>
 
         {/* Subtle grain texture overlay */}
@@ -466,11 +446,11 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: spacing.xl,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   orbContainer: {
-    alignItems: 'center',
-    marginBottom: spacing['2xl'],
+    alignItems: "center",
+    marginBottom: spacing["2xl"],
   },
   orb: {
     width: 80,
@@ -479,7 +459,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.mood.reachOut.base,
   },
   orbGlow: {
-    position: 'absolute',
+    position: "absolute",
     width: 120,
     height: 120,
     borderRadius: 60,
@@ -487,11 +467,16 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   header: {
-    marginBottom: spacing['2xl'],
-    alignItems: 'center',
+    marginBottom: spacing["2xl"],
+    alignItems: "center",
+  },
+  wordmark: {
+    width: 200,
+    height: 80,
+    marginBottom: spacing.sm,
   },
   title: {
-    fontSize: typography.size['5xl'],
+    fontSize: typography.size["5xl"],
     fontWeight: typography.weight.bold,
     color: colors.text.primary,
     marginBottom: spacing.sm,
@@ -500,7 +485,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: typography.size.base,
     color: colors.text.secondary,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 24,
   },
   authButtons: {
@@ -508,17 +493,17 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   appleButton: {
-    width: '100%',
+    width: "100%",
     height: 56,
   },
   googleButtonContainer: {
-    width: '100%',
+    width: "100%",
   },
   googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
     borderRadius: parseInt(radius.lg),
     height: 56,
     borderWidth: 1,
@@ -528,19 +513,19 @@ const styles = StyleSheet.create({
   googleIcon: {
     fontSize: 20,
     fontWeight: typography.weight.bold,
-    color: '#4285F4',
+    color: "#4285F4",
   },
   googleButtonText: {
     fontSize: typography.size.base,
     fontWeight: typography.weight.semibold,
-    color: '#000000',
+    color: "#000000",
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   devToggle: {
     paddingVertical: spacing.sm,
-    alignItems: 'center',
+    alignItems: "center",
   },
   devToggleText: {
     fontSize: typography.size.sm,
@@ -548,7 +533,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.weight.medium,
   },
   devLoginContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderRadius: parseInt(radius.lg),
     padding: spacing.lg,
     borderWidth: 1,
@@ -575,28 +560,28 @@ const styles = StyleSheet.create({
     backgroundColor: colors.mood.reachOut.base,
     borderRadius: parseInt(radius.md),
     paddingVertical: spacing.sm,
-    alignItems: 'center',
+    alignItems: "center",
   },
   devLoginButtonText: {
     fontSize: typography.size.base,
     fontWeight: typography.weight.semibold,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   quickLoginButton: {
-    backgroundColor: '#00D9FF',
+    backgroundColor: "#00D9FF",
     borderRadius: parseInt(radius.md),
     paddingVertical: spacing.md,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: spacing.md,
   },
   quickLoginButtonText: {
     fontSize: typography.size.base,
     fontWeight: typography.weight.bold,
-    color: '#000000',
+    color: "#000000",
   },
   divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginVertical: spacing.md,
   },
   dividerLine: {
@@ -612,16 +597,16 @@ const styles = StyleSheet.create({
   privacyText: {
     fontSize: typography.size.xs,
     color: colors.text.tertiary,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: spacing.md,
   },
   grain: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.01)',
+    backgroundColor: "rgba(255, 255, 255, 0.01)",
     opacity: 0.5,
   },
 });
