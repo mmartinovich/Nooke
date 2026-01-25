@@ -24,7 +24,7 @@ export const useRoomInvites = () => {
   }, [currentUser?.id]); // Use id to avoid re-running on mood change
 
   // MOCK MODE FLAG - should match useRoom.ts
-  const USE_MOCK_DATA = true;
+  const USE_MOCK_DATA = false;
 
   // Load pending invites for current user
   const loadMyInvites = async () => {

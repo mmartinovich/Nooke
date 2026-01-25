@@ -1,18 +1,16 @@
 import { useState } from 'react';
-import { Alert, Platform } from 'react-native';
+import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../stores/appStore';
 
-interface ImagePickerResult {
-  cancelled: boolean;
-  uri?: string;
-}
-
 export const useProfile = () => {
-  const { currentUser, setCurrentUser } = useAppStore();
+  const currentUser = useAppStore((state) => state.currentUser);
+  const setCurrentUser = useAppStore((state) => state.setCurrentUser);
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
 
   const updateDisplayName = async (name: string): Promise<boolean> => {
     if (!currentUser) {
@@ -44,8 +42,7 @@ export const useProfile = () => {
       setCurrentUser({ ...currentUser, display_name: trimmedName });
       Alert.alert('Success', 'Display name updated');
       return true;
-    } catch (error: any) {
-      console.error('Error updating display name:', error);
+    } catch (_error: any) {
       Alert.alert('Error', 'Failed to update display name');
       return false;
     } finally {
@@ -101,28 +98,63 @@ export const useProfile = () => {
       }
 
       const imageUri = result.assets[0].uri;
-      
-      // Upload image
+
+      // Show preview immediately for instant feedback
+      setPreviewUri(imageUri);
       setLoading(true);
       setUploadProgress(0);
 
-      // Create file path
-      const fileExt = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
+      // Check if file exists
+      const fileInfo = await FileSystem.getInfoAsync(imageUri);
+      if (!fileInfo.exists) {
+        throw new Error('Selected image file not found');
+      }
+
+      // Create file path - handle camera URIs that may not have extension
+      let fileExt = imageUri.split('.').pop()?.toLowerCase();
+      // If no valid extension or it looks like a path component, default to jpg
+      if (!fileExt || fileExt.length > 5 || fileExt.includes('/')) {
+        fileExt = 'jpg';
+      }
       const fileName = `${currentUser.id}/${Date.now()}.${fileExt}`;
 
-      // Fetch the image
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
+      // Determine content type based on extension
+      const contentType = fileExt === 'png' ? 'image/png' : 'image/jpeg';
 
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, blob, {
-          contentType: `image/${fileExt}`,
-          upsert: true,
-        });
+      // Verify auth session before upload
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session) {
+        throw new Error('Session expired - please log in again');
+      }
 
-      if (uploadError) throw uploadError;
+      // For React Native, use FormData approach
+      const formData = new FormData();
+      formData.append('file', {
+        uri: imageUri,
+        name: fileName.split('/').pop(),
+        type: contentType,
+      } as any);
+
+      // Get the storage URL and auth token
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+      const accessToken = sessionData.session.access_token;
+
+      const uploadResponse = await fetch(
+        `${supabaseUrl}/storage/v1/object/avatars/${fileName}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'x-upsert': 'true',
+          },
+          body: formData,
+        }
+      );
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        throw new Error(`Upload failed: ${uploadResponse.status} - ${errorText}`);
+      }
 
       // Get public URL
       const { data: urlData } = supabase.storage
@@ -131,22 +163,29 @@ export const useProfile = () => {
 
       const avatarUrl = urlData.publicUrl;
 
-      // Update user profile in database
+      // Update user profile in database (without cache-busting param)
       const { error: updateError } = await supabase
         .from('users')
         .update({ avatar_url: avatarUrl })
         .eq('id', currentUser.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        throw updateError;
+      }
 
-      // Update store
-      setCurrentUser({ ...currentUser, avatar_url: avatarUrl });
-      
-      Alert.alert('Success', 'Profile picture updated');
+      // Update store with the URL - get fresh state to avoid stale closures
+      const freshUser = useAppStore.getState().currentUser;
+      if (freshUser) {
+        setCurrentUser({ ...freshUser, avatar_url: avatarUrl });
+      }
+
+      // Don't clear preview - it will naturally clear when user navigates away
+      // This prevents the glitchy transition between preview and loaded image
+
       return true;
     } catch (error: any) {
-      console.error('Error uploading avatar:', error);
-      Alert.alert('Error', 'Failed to upload profile picture');
+      Alert.alert('Error', `Failed to upload profile picture: ${error?.message || 'Unknown error'}`);
+      setPreviewUri(null); // Clear preview on error
       return false;
     } finally {
       setLoading(false);
@@ -166,6 +205,7 @@ export const useProfile = () => {
     }
 
     setLoading(true);
+    setPreviewUri(null);
     try {
       // Extract file path from URL
       const url = new URL(currentUser.avatar_url);
@@ -189,11 +229,9 @@ export const useProfile = () => {
 
       // Update store
       setCurrentUser({ ...currentUser, avatar_url: undefined });
-      
-      Alert.alert('Success', 'Profile picture deleted');
+
       return true;
-    } catch (error: any) {
-      console.error('Error deleting avatar:', error);
+    } catch (_error: any) {
       Alert.alert('Error', 'Failed to delete profile picture');
       return false;
     } finally {
@@ -219,8 +257,7 @@ export const useProfile = () => {
       // Update store
       setCurrentUser({ ...currentUser, profile_completed: true });
       return true;
-    } catch (error: any) {
-      console.error('Error completing profile:', error);
+    } catch (_error: any) {
       Alert.alert('Error', 'Failed to complete profile setup');
       return false;
     } finally {
@@ -231,6 +268,7 @@ export const useProfile = () => {
   return {
     loading,
     uploadProgress,
+    previewUri,
     updateDisplayName,
     pickAndUploadAvatar,
     deleteAvatar,

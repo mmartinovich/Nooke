@@ -49,9 +49,7 @@ export default function FriendsScreen() {
   const hasEverHadFriends = useRef(friends.length > 0);
 
   useEffect(() => {
-    console.log("[Friends Screen] Friends changed, count:", friends.length);
     if (friends.length > 0) {
-      console.log("[Friends Screen] First friend ID:", friends[0].friend_id);
       hasEverHadFriends.current = true;
     }
   }, [friends.length]);
@@ -66,18 +64,11 @@ export default function FriendsScreen() {
   };
 
   const handleAddFromContacts = async (contact: MatchedContact) => {
-    console.log("=== ADD FRIEND CLICKED ===");
-    console.log("Contact:", contact.name, "UserId:", contact.userId);
     if (contact.userId) {
-      console.log("Calling addFriendHook with userId:", contact.userId);
       const success = await addFriendHook(contact.userId);
-      console.log("addFriendHook returned:", success);
       if (success) {
-        console.log("Adding to addedContacts set");
         setAddedContacts((prev) => new Set(prev).add(contact.userId!));
       }
-    } else {
-      console.log("ERROR: contact.userId is missing!");
     }
   };
 
@@ -126,15 +117,8 @@ export default function FriendsScreen() {
           <TouchableOpacity
             style={[styles.debugButton, { borderColor: theme.colors.glass.border }]}
             onPress={async () => {
-              console.log("=== MANUAL REFRESH TRIGGERED ===");
-              console.log("Current friends count before clear:", friends.length);
-              if (friends.length > 0) {
-                console.log("First friend before clear:", JSON.stringify(friends[0], null, 2));
-              }
               setFriends([]);
-              console.log("Friends cleared, now calling refreshFriends");
               await refreshFriends();
-              console.log("=== MANUAL REFRESH COMPLETED ===");
             }}
             activeOpacity={0.8}
           >

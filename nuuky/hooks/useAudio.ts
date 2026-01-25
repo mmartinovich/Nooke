@@ -31,13 +31,6 @@ export const useAudio = (roomId: string | null) => {
   const currentRoomId = useRef<string | null>(null);
   const [micEnabled, setMicEnabled] = useState(false);
 
-  console.log('[useAudio] Hook initialized/re-rendered', {
-    roomId,
-    hasCurrentUser: !!currentUser,
-    currentUserId: currentUser?.id,
-    micEnabled,
-  });
-
   // Initialize LiveKit on first use
   useEffect(() => {
     if (!isInitialized.current) {
@@ -53,15 +46,10 @@ export const useAudio = (roomId: string | null) => {
         setAudioConnectionStatus(status as AudioConnectionStatus);
       },
       onParticipantSpeaking: (participantId: string, isSpeaking: boolean) => {
-        console.log(`[useAudio] 📣 Participant speaking callback: ${participantId} - ${isSpeaking ? 'SPEAKING' : 'STOPPED'}`);
-        console.log(`[useAudio] Current user ID: ${currentUser?.id}`);
-        console.log(`[useAudio] IDs match: ${participantId === currentUser?.id}`);
         if (isSpeaking) {
           addSpeakingParticipant(participantId);
-          console.log('[useAudio] Added to speaking participants');
         } else {
           removeSpeakingParticipant(participantId);
-          console.log('[useAudio] Removed from speaking participants');
         }
       },
       onError: (error: string) => {
@@ -70,7 +58,6 @@ export const useAudio = (roomId: string | null) => {
       },
       onAllMuted: () => {
         // Disconnect after 30 seconds of silence
-        console.log('[useAudio] All muted callback - disconnecting');
         handleDisconnect();
       },
     });
@@ -80,7 +67,6 @@ export const useAudio = (roomId: string | null) => {
   useEffect(() => {
     return () => {
       if (currentRoomId.current) {
-        console.log('[useAudio] Cleaning up audio for room:', currentRoomId.current);
         disconnectFromAudioRoom();
         currentRoomId.current = null;
         clearSpeakingParticipants();
@@ -92,7 +78,6 @@ export const useAudio = (roomId: string | null) => {
   const requestMicrophonePermission = async (): Promise<boolean> => {
     // Return cached result if available
     if (permissionGranted !== null) {
-      console.log('[useAudio] Using cached permission:', permissionGranted);
       return permissionGranted;
     }
 
@@ -130,30 +115,20 @@ export const useAudio = (roomId: string | null) => {
 
   // Connect to audio when unmuting
   const handleUnmute = useCallback(async (): Promise<boolean> => {
-    console.log('[useAudio] handleUnmute called', {
-      roomId,
-      hasCurrentUser: !!currentUser,
-      currentUserId: currentUser?.id,
-    });
-
     if (!roomId || !currentUser) {
-      console.warn('[useAudio] Cannot unmute: no room or user', { roomId, currentUser: !!currentUser });
+      console.warn('[useAudio] Cannot unmute: no room or user');
       return false;
     }
 
     // OPTIMIZATION: Check if already connected FIRST (before permission check)
     if (isConnected()) {
-      console.log('[useAudio] Already connected, enabling mic immediately');
       await setLocalMicrophoneEnabled(true);
       setMicEnabled(true);
-      console.log('[useAudio] Mic state after enabling:', isMicrophoneEnabled());
       return true;
     }
 
     // Only request permission if not already connected
-    console.log('[useAudio] Requesting microphone permission...');
     const hasPermission = await requestMicrophonePermission();
-    console.log('[useAudio] Permission result:', hasPermission);
     if (!hasPermission) {
       Alert.alert(
         'Microphone Permission Required',
@@ -163,10 +138,8 @@ export const useAudio = (roomId: string | null) => {
     }
 
     // Connect to audio room
-    console.log('[useAudio] Connecting to audio room:', roomId);
     currentRoomId.current = roomId;
     const success = await connectToAudioRoom(roomId);
-    console.log('[useAudio] Connection result:', success);
 
     if (!success) {
       currentRoomId.current = null;
@@ -175,7 +148,6 @@ export const useAudio = (roomId: string | null) => {
 
     // After successful connection, mic should be enabled
     setMicEnabled(isMicrophoneEnabled());
-    console.log('[useAudio] Mic state after connection:', isMicrophoneEnabled());
 
     return true;
   }, [roomId, currentUser]);
@@ -183,16 +155,13 @@ export const useAudio = (roomId: string | null) => {
   // Mute (but stay connected for now)
   const handleMute = useCallback(async (): Promise<void> => {
     if (isConnected()) {
-      console.log('[useAudio] Muting microphone');
       await setLocalMicrophoneEnabled(false);
       setMicEnabled(false);
-      console.log('[useAudio] Mic state after muting:', isMicrophoneEnabled());
     }
   }, []);
 
   // Disconnect from audio
   const handleDisconnect = useCallback(async (): Promise<void> => {
-    console.log('[useAudio] Disconnecting from audio');
     await disconnectFromAudioRoom();
     currentRoomId.current = null;
     setMicEnabled(false);

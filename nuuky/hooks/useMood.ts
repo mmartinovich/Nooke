@@ -5,7 +5,7 @@ import { useAppStore } from '../stores/appStore';
 import { PresetMood } from '../types';
 
 // MOCK MODE FLAG - should match useRoom.ts
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 export const useMood = () => {
   const { currentUser, updateUserMood, setActiveCustomMood } = useAppStore();

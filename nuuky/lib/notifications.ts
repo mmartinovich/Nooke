@@ -34,14 +34,10 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
     }
 
     if (finalStatus !== 'granted') {
-      console.log('Failed to get push token for push notification!');
       return;
     }
 
     token = (await Notifications.getExpoPushTokenAsync()).data;
-    console.log('Push token:', token);
-  } else {
-    console.log('Must use physical device for Push Notifications');
   }
 
   return token;
@@ -55,8 +51,8 @@ export async function savePushTokenToUser(userId: string, token: string) {
       .eq('id', userId);
 
     if (error) throw error;
-  } catch (error) {
-    console.error('Error saving push token:', error);
+  } catch (_error) {
+    // Silently fail
   }
 }
 
@@ -102,7 +98,6 @@ export function setupNotificationListeners(
   // Handler for notifications received while app is foregrounded
   const notificationListener = Notifications.addNotificationReceivedListener(
     (notification) => {
-      console.log('Notification received:', notification);
       onNotificationReceived?.(notification);
     }
   );
@@ -110,7 +105,6 @@ export function setupNotificationListeners(
   // Handler for when user taps on notification
   const responseListener = Notifications.addNotificationResponseReceivedListener(
     (response) => {
-      console.log('Notification tapped:', response);
       onNotificationResponse?.(response);
     }
   );

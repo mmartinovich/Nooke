@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAppStore } from '../stores/appStore';
 
 // MOCK MODE FLAG - should match useRoom.ts
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 const OFFLINE_TIMEOUT = 120000; // 2 minutes of inactivity = offline

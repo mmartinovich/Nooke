@@ -92,10 +92,6 @@ export const useAppStore = create<AppState>()(
   setCurrentUser: (user) => set({ currentUser: user, isAuthenticated: !!user }),
 
   setFriends: (friends) => {
-    console.log(`[Store] setFriends called with ${friends.length} friends`);
-    if (friends.length > 0) {
-      console.log('[Store] First friend:', JSON.stringify(friends[0], null, 2));
-    }
     set({ friends });
   },
 

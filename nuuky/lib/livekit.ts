@@ -27,7 +27,6 @@ export const initializeLiveKit = () => {
     }
 
     globalsRegistered = true;
-    console.log('[LiveKit] WebRTC globals registered');
   }
 };
 
@@ -41,7 +40,6 @@ export let SILENCE_TIMEOUT_MS = 30000;
 // Function to update timeout at runtime
 export const setSilenceTimeout = (milliseconds: number) => {
   SILENCE_TIMEOUT_MS = milliseconds;
-  console.log('[LiveKit] Silence timeout updated to', milliseconds / 1000, 'seconds');
 };
 
 // Presets for easy configuration
@@ -63,7 +61,6 @@ export const invalidateTokenCache = () => {
   cachedToken = null;
   tokenExpiryTime = 0;
   cachedRoomId = null;
-  console.log('[LiveKit] Token cache invalidated');
 };
 
 // Event callbacks
@@ -96,8 +93,6 @@ export const requestLiveKitToken = async (
     if (cachedToken &&
         cachedRoomId === roomId &&
         now < tokenExpiryTime) {
-      console.log('[LiveKit] Using cached token (expires in',
-        Math.round((tokenExpiryTime - now) / 1000), 'seconds)');
       return cachedToken;
     }
 
@@ -108,9 +103,6 @@ export const requestLiveKitToken = async (
       console.error('[LiveKit] No active session found');
       throw new Error('No active session');
     }
-
-    console.log('[LiveKit] Requesting new token for room:', roomId);
-    console.log('[LiveKit] Session user:', session.user?.id);
 
     // Explicitly pass the authorization header
     const { data, error } = await supabase.functions.invoke('livekit-token', {
@@ -130,7 +122,6 @@ export const requestLiveKitToken = async (
     cachedRoomId = roomId;
     tokenExpiryTime = now + TOKEN_CACHE_TTL;
 
-    console.log('[LiveKit] Token received and cached for 1 hour');
     return data;
   } catch (error) {
     console.error('[LiveKit] Failed to get token:', error);
@@ -145,13 +136,10 @@ export const connectToAudioRoom = async (roomId: string): Promise<boolean> => {
     eventCallbacks?.onConnectionStatusChange('connecting');
 
     // OPTIMIZATION: Run audio session and token request in parallel
-    console.log('[LiveKit] Starting audio session and requesting token in parallel');
     const [, tokenData] = await Promise.all([
       AudioSession.startAudioSession(),
       requestLiveKitToken(roomId),
     ]);
-
-    console.log('[LiveKit] Audio session started and token received');
 
     if (!tokenData) {
       eventCallbacks?.onConnectionStatusChange('error');
@@ -160,7 +148,6 @@ export const connectToAudioRoom = async (roomId: string): Promise<boolean> => {
 
     // OPTIMIZATION: Reuse room instance if exists, create new one if not
     if (!currentRoom) {
-      console.log('[LiveKit] Creating new Room instance');
       currentRoom = new Room({
         adaptiveStream: true,
         dynacast: true,
@@ -173,29 +160,15 @@ export const connectToAudioRoom = async (roomId: string): Promise<boolean> => {
 
       // Set up event listeners only once
       setupRoomEventListeners(currentRoom);
-    } else {
-      console.log('[LiveKit] Reusing existing Room instance');
     }
 
     // Connect
-    console.log('[LiveKit] Connecting to room:', tokenData.roomName);
     await currentRoom.connect(tokenData.serverUrl, tokenData.token);
 
-    console.log('[LiveKit] Connected successfully');
     eventCallbacks?.onConnectionStatusChange('connected');
 
     // Enable microphone (unmuted state)
     await currentRoom.localParticipant.setMicrophoneEnabled(true);
-    console.log('[LiveKit] Microphone enabled');
-    console.log('[LiveKit] Local participant identity:', currentRoom.localParticipant.identity);
-    console.log('[LiveKit] Local participant audio tracks:',
-      Array.from(currentRoom.localParticipant.audioTrackPublications.values()).map(pub => ({
-        trackSid: pub.trackSid,
-        isMuted: pub.isMuted,
-        trackName: pub.trackName,
-        kind: pub.kind
-      }))
-    );
 
     // Start silence timer
     resetSilenceTimer();
@@ -211,7 +184,6 @@ export const connectToAudioRoom = async (roomId: string): Promise<boolean> => {
 
 // Disconnect from LiveKit room
 export const disconnectFromAudioRoom = async (): Promise<void> => {
-  console.log('[LiveKit] Disconnecting from audio room');
   clearSilenceTimer();
 
   if (currentRoom) {
@@ -222,7 +194,6 @@ export const disconnectFromAudioRoom = async (): Promise<void> => {
 
   await AudioSession.stopAudioSession();
   eventCallbacks?.onConnectionStatusChange('disconnected');
-  console.log('[LiveKit] Disconnected (room instance preserved for reuse)');
 };
 
 // Toggle local microphone
@@ -234,19 +205,7 @@ export const setLocalMicrophoneEnabled = async (
     return;
   }
 
-  console.log('[LiveKit] Setting microphone enabled:', enabled);
-  console.log('[LiveKit] Current mic state BEFORE:', currentRoom.localParticipant.isMicrophoneEnabled);
-
   await currentRoom.localParticipant.setMicrophoneEnabled(enabled);
-
-  console.log('[LiveKit] Current mic state AFTER:', currentRoom.localParticipant.isMicrophoneEnabled);
-  console.log('[LiveKit] Microphone tracks:',
-    Array.from(currentRoom.localParticipant.audioTrackPublications.values()).map(pub => ({
-      trackSid: pub.trackSid,
-      isMuted: pub.isMuted,
-      trackName: pub.trackName
-    }))
-  );
 
   if (enabled) {
     // Reset silence timer when unmuting
@@ -279,7 +238,6 @@ export const isAnyoneUnmuted = (): boolean => {
 // Set up room event listeners
 const setupRoomEventListeners = (room: Room) => {
   room.on(RoomEvent.ConnectionStateChanged, (state: ConnectionState) => {
-    console.log('[LiveKit] Connection state changed:', state);
     const statusMap: Record<ConnectionState, string> = {
       [ConnectionState.Disconnected]: 'disconnected',
       [ConnectionState.Connecting]: 'connecting',
@@ -295,18 +253,12 @@ const setupRoomEventListeners = (room: Room) => {
   room.on(
     RoomEvent.ActiveSpeakersChanged,
     (speakers: Participant[]) => {
-      console.log('[LiveKit] 🎤 ActiveSpeakersChanged event fired!');
-      console.log('[LiveKit] Number of active speakers:', speakers.length);
-      console.log('[LiveKit] Speaker identities:', speakers.map(s => s.identity));
-      console.log('[LiveKit] Local participant identity:', room.localParticipant?.identity);
-
       // Notify about all current speakers
       const speakerIds = new Set(speakers.map((s) => s.identity));
 
       // Update speaking state for all remote participants
       room.remoteParticipants.forEach((participant) => {
         const isSpeaking = speakerIds.has(participant.identity);
-        console.log(`[LiveKit] Remote participant ${participant.identity} speaking:`, isSpeaking);
         eventCallbacks?.onParticipantSpeaking(
           participant.identity,
           isSpeaking
@@ -316,7 +268,6 @@ const setupRoomEventListeners = (room: Room) => {
       // Check local participant speaking
       if (room.localParticipant) {
         const localSpeaking = speakerIds.has(room.localParticipant.identity);
-        console.log(`[LiveKit] 🎙️ Local participant ${room.localParticipant.identity} speaking:`, localSpeaking);
         eventCallbacks?.onParticipantSpeaking(
           room.localParticipant.identity,
           localSpeaking
@@ -330,34 +281,30 @@ const setupRoomEventListeners = (room: Room) => {
     }
   );
 
-  room.on(RoomEvent.ParticipantConnected, (participant: RemoteParticipant) => {
-    console.log('[LiveKit] Participant connected:', participant.identity);
+  room.on(RoomEvent.ParticipantConnected, (_participant: RemoteParticipant) => {
+    // Participant connected
   });
 
   room.on(
     RoomEvent.ParticipantDisconnected,
     (participant: RemoteParticipant) => {
-      console.log('[LiveKit] Participant disconnected:', participant.identity);
       eventCallbacks?.onParticipantSpeaking(participant.identity, false);
     }
   );
 
-  room.on(RoomEvent.TrackMuted, (publication, participant) => {
+  room.on(RoomEvent.TrackMuted, (publication, _participant) => {
     if (publication.kind === Track.Kind.Audio) {
-      console.log('[LiveKit] Track muted:', participant.identity);
       checkAllMuted();
     }
   });
 
-  room.on(RoomEvent.TrackUnmuted, (publication, participant) => {
+  room.on(RoomEvent.TrackUnmuted, (publication, _participant) => {
     if (publication.kind === Track.Kind.Audio) {
-      console.log('[LiveKit] Track unmuted:', participant.identity);
       resetSilenceTimer();
     }
   });
 
   room.on(RoomEvent.Disconnected, () => {
-    console.log('[LiveKit] Room disconnected');
     eventCallbacks?.onConnectionStatusChange('disconnected');
   });
 };
@@ -367,9 +314,7 @@ const resetSilenceTimer = () => {
   clearSilenceTimer();
 
   silenceTimer = setTimeout(() => {
-    console.log('[LiveKit] Silence timer expired, checking if all muted');
     if (!isAnyoneUnmuted()) {
-      console.log('[LiveKit] All muted for 30s, triggering disconnect');
       eventCallbacks?.onAllMuted();
     }
   }, SILENCE_TIMEOUT_MS);
@@ -384,7 +329,6 @@ const clearSilenceTimer = () => {
 
 const checkAllMuted = () => {
   if (!isAnyoneUnmuted()) {
-    console.log('[LiveKit] All participants muted, starting silence timer');
     resetSilenceTimer();
   }
 };

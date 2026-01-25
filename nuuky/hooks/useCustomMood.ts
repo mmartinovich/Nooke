@@ -21,13 +21,11 @@ export const useCustomMood = () => {
   // Fetch user's custom moods from database
   const fetchCustomMoods = async (): Promise<CustomMood[]> => {
     if (!currentUser) {
-      console.log('[useCustomMood] No current user');
       return [];
     }
 
     // MOCK MODE: Return empty array
     if (USE_MOCK_DATA) {
-      console.log('[useCustomMood] Mock mode: returning empty custom moods');
       return [];
     }
 
@@ -43,8 +41,7 @@ export const useCustomMood = () => {
       const moods = data as CustomMood[];
       setCustomMoods(moods);
       return moods;
-    } catch (error: any) {
-      console.error('Error fetching custom moods:', error);
+    } catch (_error: any) {
       return [];
     }
   };
@@ -132,8 +129,7 @@ export const useCustomMood = () => {
       // Automatically set as active since we only allow 1 custom mood
       setActiveCustomMood(newMood);
       return newMood;
-    } catch (error: any) {
-      console.error('Error creating custom mood:', error);
+    } catch (_error: any) {
       Alert.alert('Error', 'Failed to save custom mood. Try again.');
       return null;
     } finally {
@@ -176,8 +172,7 @@ export const useCustomMood = () => {
       // Update local state
       setActiveCustomMood(customMood);
       return true;
-    } catch (error: any) {
-      console.error('Error selecting custom mood:', error);
+    } catch (_error: any) {
       Alert.alert('Error', 'Failed to set custom mood');
       return false;
     } finally {
@@ -230,8 +225,7 @@ export const useCustomMood = () => {
       }
 
       return true;
-    } catch (error: any) {
-      console.error('Error deleting custom mood:', error);
+    } catch (_error: any) {
       Alert.alert('Error', 'Failed to delete custom mood');
       return false;
     } finally {

@@ -26,7 +26,7 @@ let lastJoinedRoomId: string | null = null;
  * Mock data includes:
  * - Mock participants in the current room (using mock friends)
  */
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 // Mock room participants (matching the friends from index.tsx with avatars)
 const MOCK_PARTICIPANTS: RoomParticipant[] = [
