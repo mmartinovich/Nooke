@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useAppStore } from '../stores/appStore';
 
 // MOCK MODE FLAG - should match useRoom.ts
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 export const useNudge = () => {
   const { currentUser } = useAppStore();

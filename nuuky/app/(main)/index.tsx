@@ -118,16 +118,6 @@ export default function QuantumOrbitScreen() {
   const buttonScaleAnim = useRef(new RNAnimated.Value(1)).current;
   const buttonGlowAnim = useRef(new RNAnimated.Value(1)).current;
 
-  // Debug logging for speaking state
-  useEffect(() => {
-    console.log("[Orbit] 🎤 Speaking state update:");
-    console.log("[Orbit] - isMuted:", isMuted);
-    console.log("[Orbit] - isCurrentUserSpeaking:", isCurrentUserSpeaking);
-    console.log("[Orbit] - currentUser.id:", currentUser?.id);
-    console.log("[Orbit] - speakingParticipants:", Array.from(speakingParticipants));
-    console.log("[Orbit] - Animation should be active:", !isMuted && isCurrentUserSpeaking);
-  }, [isMuted, isCurrentUserSpeaking, speakingParticipants]);
-
   // Shared orbit angle for roulette rotation - all friends rotate together
   // Using React Native Animated API (works in Expo Go, can upgrade to Reanimated later)
   const orbitAngle = useRef(new RNAnimated.Value(0)).current;
@@ -394,8 +384,8 @@ export default function QuantumOrbitScreen() {
       try {
         const images = getAllMoodImages();
         await Asset.loadAsync(images);
-      } catch (error) {
-        console.error("Error preloading mood images:", error);
+      } catch (_error) {
+        // Silently fail preloading
       }
     };
     preloadImages();
@@ -491,8 +481,7 @@ export default function QuantumOrbitScreen() {
       if (hasInteracted === "true") {
         setShowHint(false);
       }
-    } catch (error) {
-      console.error("Error loading hint state:", error);
+    } catch (_error) {
       // Default to showing hint if there's an error
     }
   };
@@ -501,8 +490,8 @@ export default function QuantumOrbitScreen() {
     try {
       await AsyncStorage.setItem("hasInteractedWithOrb", "true");
       setShowHint(false);
-    } catch (error) {
-      console.error("Error saving interaction state:", error);
+    } catch (_error) {
+      // Silently fail
     }
   };
 
@@ -643,8 +632,7 @@ export default function QuantumOrbitScreen() {
 
       // Ensure loading is false after setting friends
       setLoading(false);
-    } catch (error: any) {
-      console.error("Error loading friends:", error);
+    } catch (_error: any) {
       // DISABLED: Using useFriends hook instead
       // Don't set mock friends on error - let useFriends hook handle friends data
       setLoading(false);
@@ -930,8 +918,6 @@ export default function QuantumOrbitScreen() {
           >
             <TouchableOpacity
               onPress={async () => {
-                console.log("[Orbit] Mic button pressed", { isMuted, hasDefaultRoom: !!defaultRoom });
-
                 if (!defaultRoom) {
                   Alert.alert("No Room", "Please join or create a room first to use voice chat.");
                   return;
@@ -941,15 +927,12 @@ export default function QuantumOrbitScreen() {
 
                 if (isMuted) {
                   // User is unmuting - connect to audio
-                  console.log("[Orbit] Unmuting, calling audioUnmute()");
                   const success = await audioUnmute();
-                  console.log("[Orbit] audioUnmute result:", success);
                   if (success) {
                     setIsMuted(false);
                   }
                 } else {
                   // User is muting
-                  console.log("[Orbit] Muting, calling audioMute()");
                   await audioMute();
                   setIsMuted(true);
                 }

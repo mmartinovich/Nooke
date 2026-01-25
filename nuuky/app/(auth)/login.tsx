@@ -13,14 +13,13 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import * as AppleAuthentication from "expo-apple-authentication";
-import * as WebBrowser from "expo-web-browser";
 import * as Crypto from "expo-crypto";
+import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { AntDesign } from "@expo/vector-icons";
 import { supabase } from "../../lib/supabase";
 import { useAppStore } from "../../stores/appStore";
 import { colors, gradients, typography, spacing, radius } from "../../lib/theme";
-
-WebBrowser.maybeCompleteAuthSession();
+import Constants from "expo-constants";
 
 export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
@@ -31,6 +30,15 @@ export default function LoginScreen() {
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    // Configure Google Sign-In
+    const webClientId = Constants.expoConfig?.extra?.googleWebClientId;
+    if (webClientId) {
+      GoogleSignin.configure({
+        webClientId: webClientId,
+        iosClientId: Constants.expoConfig?.extra?.googleIosClientId, // Optional, for iOS
+      });
+    }
+
     // Start pulse animation
     const pulseAnimation = Animated.loop(
       Animated.sequence([
@@ -133,7 +141,6 @@ export default function LoginScreen() {
         // User cancelled the sign-in
         return;
       }
-      console.error("Apple Sign-In Error:", error);
       Alert.alert("Sign In Failed", error.message || "Failed to sign in with Apple");
     } finally {
       setLoading(false);
@@ -143,38 +150,40 @@ export default function LoginScreen() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      console.log("[Google OAuth] Initiating sign-in...");
+      // Check if Google Play Services are available (Android)
+      await GoogleSignin.hasPlayServices();
 
-      // Generate the OAuth URL
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      // Sign in with Google
+      const userInfo = await GoogleSignin.signIn();
+
+      if (!userInfo.data?.idToken) {
+        throw new Error("No ID token received from Google");
+      }
+
+      // Sign in to Supabase with the Google ID token
+      const { data, error } = await supabase.auth.signInWithIdToken({
         provider: "google",
-        options: {
-          redirectTo: "nuuky://",
-          skipBrowserRedirect: true, // We'll handle the redirect manually
-        },
+        token: userInfo.data.idToken,
       });
 
       if (error) throw error;
 
-      console.log("[Google OAuth] Opening browser:", data.url);
-
-      // Open browser for OAuth
-      const result = await WebBrowser.openAuthSessionAsync(
-        data.url,
-        "nuuky://"
-      );
-
-      console.log("[Google OAuth] Browser result:", result);
-
-      if (result.type === "success") {
-        console.log("[Google OAuth] Success! URL:", result.url);
-        // The deep link handler in _layout.tsx will handle the session
-      } else if (result.type === "cancel") {
-        console.log("[Google OAuth] User cancelled");
-      }
+      // Fetch or create user profile
+      await fetchUserProfile(data.user.id);
+      // Check profile completion status - navigation handled by index.tsx
+      router.replace("/");
     } catch (error: any) {
-      console.error("[Google OAuth] Error:", error);
-      Alert.alert("Sign In Failed", error.message || "Failed to sign in with Google");
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // User cancelled the sign-in
+        return;
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        // Sign-in is in progress
+        Alert.alert("Please wait", "Sign in is already in progress");
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert("Error", "Google Play Services not available or outdated");
+      } else {
+        Alert.alert("Sign In Failed", error.message || "Failed to sign in with Google");
+      }
     } finally {
       setLoading(false);
     }

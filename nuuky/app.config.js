@@ -2,15 +2,14 @@
 try {
   require("dotenv").config();
 } catch (e) {
-  // dotenv not installed or .env file not found - using fallback values in config
-  console.log("Note: .env file not loaded, using fallback values from app.config.js");
+  // dotenv not installed or .env file not found - environment variables must be set
 }
 
 export default {
   expo: {
     name: "Nūūky",
     slug: "nuuky",
-    version: "1.0.0",
+    version: "1.0.2",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "dark",
@@ -43,6 +42,12 @@ export default {
             CFBundleIconFiles: ["icon-light"],
           },
         },
+        // Google Sign-In URL scheme (reversed client ID format)
+        CFBundleURLTypes: [
+          {
+            CFBundleURLSchemes: ["com.googleusercontent.apps.53605023018-3sce2ejdg5ihm53nslbjcmq1896nshdn"],
+          },
+        ],
       },
     },
     android: {
@@ -76,14 +81,15 @@ export default {
         },
       ],
       "@livekit/react-native-expo-plugin",
+      "@react-native-google-signin/google-signin",
     ],
     owner: "mmartinovich",
     extra: {
-      supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL || "https://ezbamrqoewrbvdvbypyd.supabase.co",
-      supabaseAnonKey:
-        process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6YmFtcnFvZXdyYnZkdmJ5cHlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyNzgwNDYsImV4cCI6MjA4Mjg1NDA0Nn0.MHznUKhEAI9223Vr3ZlDR2sIy0Sqnvyip5-Gx6jN2R4",
+      supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
+      supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
       livekitUrl: process.env.EXPO_PUBLIC_LIVEKIT_URL,
+      googleWebClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      googleIosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID, // Optional
       eas: {
         projectId: "3f5531ab-d0f2-44e9-84c2-fd4767070371",
       },

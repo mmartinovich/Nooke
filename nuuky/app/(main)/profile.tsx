@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -6,11 +6,12 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
-  Image,
   ScrollView,
   ActionSheetIOS,
   Platform,
   StatusBar,
+  Animated,
+  Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
@@ -27,10 +28,16 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
   const { currentUser } = useAppStore();
-  const { loading, pickAndUploadAvatar, updateDisplayName, deleteAvatar } = useProfile();
+  const { loading, previewUri, pickAndUploadAvatar, updateDisplayName, deleteAvatar } = useProfile();
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(currentUser?.display_name || "");
+  const [imageKey, setImageKey] = useState(Date.now());
+
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const spinValue = useRef(new Animated.Value(0)).current;
 
   // Sync editedName when currentUser changes
   useEffect(() => {
@@ -38,6 +45,49 @@ export default function ProfileScreen() {
       setEditedName(currentUser.display_name);
     }
   }, [currentUser?.display_name, isEditingName]);
+
+  // Force image refresh when avatar URL changes
+  useEffect(() => {
+    if (currentUser?.avatar_url) {
+      setImageKey(Date.now());
+    }
+  }, [currentUser?.avatar_url]);
+
+  // Entrance animation
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  // Loading spinner animation
+  useEffect(() => {
+    if (loading) {
+      spinValue.setValue(0);
+      Animated.loop(
+        Animated.timing(spinValue, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        })
+      ).start();
+    }
+  }, [loading]);
+
+  const spin = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   const handleAvatarPress = () => {
     if (Platform.OS === "ios") {
@@ -128,31 +178,69 @@ export default function ProfileScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
       >
         {/* Avatar Section */}
-        <View style={styles.avatarSection}>
+        <Animated.View
+          style={[
+            styles.avatarSection,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }],
+            },
+          ]}
+        >
           <TouchableOpacity
             onPress={handleAvatarPress}
             disabled={loading}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
             style={styles.avatarWrapper}
           >
-            <View style={[styles.avatarContainer, { borderColor: theme.colors.glass.border }]}>
-              {currentUser?.avatar_url ? (
-                <Image source={{ uri: currentUser.avatar_url }} style={styles.avatar} />
+            <View style={styles.avatarContainer}>
+              {/* Show preview while uploading, then uploaded image */}
+              {previewUri ? (
+                <Image
+                  key={`preview-${previewUri}`}
+                  source={{ uri: previewUri }}
+                  style={styles.avatar}
+                  resizeMode="cover"
+                />
+              ) : currentUser?.avatar_url ? (
+                <Image
+                  key={`avatar-${imageKey}`}
+                  source={{ uri: currentUser.avatar_url, cache: 'reload' }}
+                  style={styles.avatar}
+                  resizeMode="cover"
+                />
               ) : (
                 <LinearGradient colors={theme.gradients.neonPurple as any} style={styles.avatar}>
                   <Text style={styles.avatarInitial}>{currentUser?.display_name?.[0]?.toUpperCase() || "?"}</Text>
                 </LinearGradient>
               )}
 
-              {/* Camera badge */}
-              <View style={[styles.cameraBadge, { backgroundColor: theme.colors.mood.neutral.base }]}>
-                <Feather name="camera" size={14} color="#fff" />
-              </View>
+              {/* Loading overlay with spinner */}
+              {loading && (
+                <View style={styles.loadingOverlay}>
+                  <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill}>
+                    <View style={styles.spinnerContainer}>
+                      <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                        <Ionicons name="sync" size={32} color="#fff" />
+                      </Animated.View>
+                    </View>
+                  </BlurView>
+                </View>
+              )}
             </View>
+
+            {/* Camera badge - outside container to avoid clipping */}
+            {!loading && (
+              <View style={[styles.cameraBadge, { backgroundColor: theme.colors.mood.neutral.base }]}>
+                <Feather name="camera" size={16} color="#fff" />
+              </View>
+            )}
           </TouchableOpacity>
 
-          <Text style={[styles.tapToChange, { color: theme.colors.text.tertiary }]}>Tap to change photo</Text>
-        </View>
+          <Text style={[styles.tapToChange, { color: theme.colors.text.tertiary }]}>
+            {loading ? "Uploading..." : "Tap to change photo"}
+          </Text>
+        </Animated.View>
 
         {/* Display Name Section */}
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Display Name</Text>
@@ -331,21 +419,28 @@ const styles = StyleSheet.create({
   // Avatar Section
   avatarSection: {
     alignItems: "center",
-    paddingVertical: spacing.xl,
+    paddingVertical: spacing.xl * 1.5,
   },
   avatarWrapper: {
     position: "relative",
   },
   avatarContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 3,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
   },
   avatar: {
-    width: "100%",
-    height: "100%",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -353,22 +448,42 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes["4xl"],
     fontWeight: typography.weights.bold as any,
     color: "#fff",
+    letterSpacing: 1,
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  spinnerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   cameraBadge: {
     position: "absolute",
-    bottom: 4,
-    right: 4,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    bottom: 0,
+    right: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 3,
     borderColor: "#050510",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 10,
   },
   tapToChange: {
     fontSize: typography.sizes.sm,
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
+    letterSpacing: 0.3,
   },
   // Section Titles
   sectionTitle: {

@@ -23,7 +23,7 @@ export const useFlare = () => {
   }, [currentUser?.id]); // Use id to avoid re-running on mood change
 
   // MOCK MODE FLAG - should match useRoom.ts
-  const USE_MOCK_DATA = true;
+  const USE_MOCK_DATA = false;
 
   const loadActiveFlares = async () => {
     if (!currentUser) return;
@@ -71,8 +71,8 @@ export const useFlare = () => {
         .maybeSingle();
 
       setMyActiveFlare(myFlare);
-    } catch (error: any) {
-      console.error('Error loading flares:', error);
+    } catch (_error: any) {
+      // Silently fail
     }
   };
 
@@ -178,23 +178,11 @@ export const useFlare = () => {
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
                 if (sessionError || !session) {
-                  console.error('No active session:', sessionError);
                   Alert.alert('Authentication Error', 'Please log in again to send flares.');
                   setLoading(false);
                   resolve(false);
                   return;
                 }
-
-                console.log('🔐 Auth Debug:', {
-                  sessionUserId: session.user.id,
-                  currentUserId: currentUser.id,
-                  idsMatch: session.user.id === currentUser.id,
-                  sessionEmail: session.user.email,
-                });
-
-                // Test if auth.uid() works
-                const { data: authUidTest } = await supabase.rpc('auth_uid_test');
-                console.log('🔐 auth.uid() returns:', authUidTest);
 
                 // Flare expires in 30 minutes
                 const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
@@ -209,15 +197,6 @@ export const useFlare = () => {
                   .single();
 
                 if (error) {
-                  console.error('❌ Flare insert error details:', {
-                    code: error.code,
-                    message: error.message,
-                    details: error.details,
-                    hint: error.hint,
-                    userId: currentUser.id,
-                    sessionUserId: session.user.id,
-                    authUidTest: authUidTest,
-                  });
                   throw error;
                 }
 
@@ -232,8 +211,7 @@ export const useFlare = () => {
                       },
                     });
                   }
-                } catch (notifError) {
-                  console.error('Failed to send flare notifications:', notifError);
+                } catch (_notifError) {
                   // Don't fail the flare if notification fails
                 }
 
@@ -249,8 +227,7 @@ export const useFlare = () => {
 
                 await loadActiveFlares();
                 resolve(true);
-              } catch (error: any) {
-                console.error('Error sending flare:', error);
+              } catch (_error: any) {
                 Alert.alert('Error', 'Failed to send flare');
                 resolve(false);
               } finally {
@@ -277,8 +254,7 @@ export const useFlare = () => {
 
       await loadActiveFlares();
       return true;
-    } catch (error: any) {
-      console.error('Error responding to flare:', error);
+    } catch (_error: any) {
       Alert.alert('Error', 'Failed to respond to flare');
       return false;
     } finally {
