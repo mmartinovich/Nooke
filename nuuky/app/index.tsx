@@ -5,7 +5,7 @@ import { useAppStore } from '../stores/appStore';
 import { supabase } from '../lib/supabase';
 
 export default function Index() {
-  const { isAuthenticated } = useAppStore();
+  const { isAuthenticated, currentUser } = useAppStore();
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
@@ -30,8 +30,12 @@ export default function Index() {
     );
   }
   
-  // Redirect based on authentication status
+  // Redirect based on authentication status and profile completion
   if (isAuthenticated) {
+    // Check if user has completed onboarding
+    if (currentUser && currentUser.profile_completed === false) {
+      return <Redirect href="/(auth)/onboarding" />;
+    }
     return <Redirect href="/(main)" />;
   }
   

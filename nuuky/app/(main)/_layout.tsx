@@ -1,5 +1,5 @@
-import { Stack } from 'expo-router';
-import { useTheme } from '../../hooks/useTheme';
+import { Stack } from "expo-router";
+import { useTheme } from "../../hooks/useTheme";
 
 export default function MainLayout() {
   const { theme } = useTheme();
@@ -14,7 +14,7 @@ export default function MainLayout() {
         },
         headerTintColor: theme.colors.text.primary,
         headerTitleStyle: {
-          fontWeight: '600',
+          fontWeight: "600",
           fontSize: 20,
           color: theme.colors.text.primary,
         },
@@ -30,8 +30,7 @@ export default function MainLayout() {
       <Stack.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          presentation: 'modal',
+          headerShown: false,
         }}
       />
       <Stack.Screen

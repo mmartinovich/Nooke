@@ -51,6 +51,7 @@ export default function RootLayout() {
                             data.session.user.user_metadata?.picture,
                 auth_provider: data.session.user.app_metadata?.provider || 'google',
                 is_online: true,
+                profile_completed: false,  // New users need onboarding
               })
               .select()
               .single();
@@ -64,7 +65,12 @@ export default function RootLayout() {
               userData.mood = existingUser.mood;
             }
             setCurrentUser(userData);
-            router.replace('/(main)');
+            // Redirect based on profile completion status
+            if (userData.profile_completed) {
+              router.replace('/(main)');
+            } else {
+              router.replace('/(auth)/onboarding');
+            }
           }
         }
       }
@@ -102,6 +108,7 @@ export default function RootLayout() {
             data.mood = existingUser.mood;
           }
           setCurrentUser(data);
+          // Note: Navigation handled by index.tsx based on auth state
         }
       }
 
@@ -130,6 +137,7 @@ export default function RootLayout() {
               data.mood = existingUser.mood;
             }
             setCurrentUser(data);
+            // Note: Navigation handled by index.tsx based on auth state
           }
         } else if (event === 'SIGNED_OUT') {
           setCurrentUser(null);

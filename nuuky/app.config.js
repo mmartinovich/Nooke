@@ -17,25 +17,39 @@ export default {
     newArchEnabled: true,
     scheme: "nuuky",
     splash: {
-      image: "./assets/splash-icon.png",
+      image: "./assets/wordmark.png",
       resizeMode: "contain",
-      backgroundColor: "#ffffff"
+      backgroundColor: "#050510"
     },
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.nuuky.app",
       usesAppleSignIn: true,
+      icon: "./assets/icon.png",
+      appClips: {
+        icon: "./assets/icon.png"
+      },
       infoPlist: {
         NSMicrophoneUsageDescription: "Nūūky needs microphone access to let you talk with friends in rooms.",
         NSCameraUsageDescription: "Nūūky needs camera access for video calls with friends.",
         UIBackgroundModes: ["audio"],
-        ITSAppUsesNonExemptEncryption: false
+        ITSAppUsesNonExemptEncryption: false,
+        UIAppFonts: [],
+        // Appearance-specific icons for iOS 13+
+        CFBundleAlternateIcons: {
+          Dark: {
+            CFBundleIconFiles: ["icon-dark"]
+          },
+          Light: {
+            CFBundleIconFiles: ["icon-light"]
+          }
+        }
       }
     },
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
-        backgroundColor: "#ffffff"
+        backgroundColor: "#050510"
       },
       package: "com.nuuky.app",
       edgeToEdgeEnabled: true,
@@ -56,6 +70,13 @@ export default {
         "expo-contacts",
         {
           contactsPermission: "Allow Nūūky to access your contacts to find friends who are already using the app."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          photosPermission: "Nūūky needs access to your photos so you can set your profile picture.",
+          cameraPermission: "Nūūky needs access to your camera so you can take a profile picture."
         }
       ],
       "@livekit/react-native-expo-plugin"

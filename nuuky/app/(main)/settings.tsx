@@ -1,13 +1,13 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, StatusBar } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import { useRouter } from 'expo-router';
-import { Feather, Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuth } from '../../hooks/useAuth';
-import { useTheme } from '../../hooks/useTheme';
-import { spacing, radius, typography } from '../../lib/theme';
+import React from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, StatusBar } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
+import { useRouter } from "expo-router";
+import { Feather, Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "../../hooks/useAuth";
+import { useTheme } from "../../hooks/useTheme";
+import { spacing, radius, typography } from "../../lib/theme";
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -16,37 +16,32 @@ export default function SettingsScreen() {
   const { theme, isDark } = useTheme();
 
   const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to log out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await signOut();
-              router.replace('/(auth)/login');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to logout');
-            }
-          },
+    Alert.alert("Logout", "Are you sure you want to log out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await signOut();
+            router.replace("/(auth)/login");
+          } catch (error) {
+            Alert.alert("Error", "Failed to logout");
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.bg.primary }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
-      <LinearGradient
-        colors={theme.gradients.background as unknown as string[]}
-        style={StyleSheet.absoluteFill}
-      />
+      <LinearGradient colors={theme.gradients.background as unknown as string[]} style={StyleSheet.absoluteFill} />
 
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + spacing.md, borderBottomColor: theme.colors.glass.border }]}>
+      <View
+        style={[styles.header, { paddingTop: insets.top + spacing.md, borderBottomColor: theme.colors.glass.border }]}
+      >
         <TouchableOpacity
           style={[styles.backButton, { borderColor: theme.colors.glass.border }]}
           onPress={() => router.back()}
@@ -61,14 +56,32 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Profile Section - At the top */}
+        <TouchableOpacity
+          style={[styles.settingCard, { borderColor: theme.colors.glass.border, marginTop: spacing.lg }]}
+          onPress={() => router.push("/(main)/profile")}
+        >
+          <BlurView intensity={isDark ? 20 : 10} tint={theme.colors.blurTint} style={styles.cardBlur}>
+            <View style={styles.cardContent}>
+              <View style={styles.settingItem}>
+                <View style={styles.iconContainer}>
+                  <Text style={styles.icon}>👤</Text>
+                </View>
+                <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>Profile</Text>
+                <Feather name="chevron-right" size={20} color={theme.colors.text.secondary} />
+              </View>
+            </View>
+          </BlurView>
+        </TouchableOpacity>
+
         {/* Privacy & Safety Section */}
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary, marginTop: spacing.lg }]}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary, marginTop: spacing.xl }]}>
           Privacy & Safety
         </Text>
 
         <TouchableOpacity
           style={[styles.settingCard, { borderColor: theme.colors.glass.border }]}
-          onPress={() => router.push('/(main)/safety')}
+          onPress={() => router.push("/(main)/safety")}
         >
           <BlurView intensity={isDark ? 20 : 10} tint={theme.colors.blurTint} style={styles.cardBlur}>
             <View style={styles.cardContent}>
@@ -76,9 +89,7 @@ export default function SettingsScreen() {
                 <View style={styles.iconContainer}>
                   <Text style={styles.icon}>🛡️</Text>
                 </View>
-                <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>
-                  Safety & Privacy
-                </Text>
+                <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>Safety & Privacy</Text>
                 <Feather name="chevron-right" size={20} color={theme.colors.text.secondary} />
               </View>
             </View>
@@ -86,9 +97,7 @@ export default function SettingsScreen() {
         </TouchableOpacity>
 
         {/* Notifications Section */}
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
-          Notifications
-        </Text>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Notifications</Text>
 
         <BlurView
           intensity={isDark ? 20 : 10}
@@ -148,9 +157,7 @@ export default function SettingsScreen() {
                 <View style={styles.iconContainer}>
                   <Text style={styles.icon}>📄</Text>
                 </View>
-                <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>
-                  Privacy Policy
-                </Text>
+                <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>Privacy Policy</Text>
                 <Feather name="chevron-right" size={20} color={theme.colors.text.secondary} />
               </View>
             </View>
@@ -164,9 +171,7 @@ export default function SettingsScreen() {
                 <View style={styles.iconContainer}>
                   <Text style={styles.icon}>📋</Text>
                 </View>
-                <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>
-                  Terms of Service
-                </Text>
+                <Text style={[styles.settingLabel, { color: theme.colors.text.primary }]}>Terms of Service</Text>
                 <Feather name="chevron-right" size={20} color={theme.colors.text.secondary} />
               </View>
             </View>
@@ -204,9 +209,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
@@ -215,13 +220,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderWidth: 1,
   },
   headerTitle: {
-    fontSize: typography.sizes['2xl'],
+    fontSize: typography.sizes["2xl"],
     fontWeight: typography.weights.bold as any,
     letterSpacing: -0.5,
   },
@@ -242,19 +247,19 @@ const styles = StyleSheet.create({
   },
   settingCard: {
     borderRadius: radius.lg,
-    overflow: 'hidden',
+    overflow: "hidden",
     borderWidth: 1,
     marginBottom: spacing.md,
   },
   cardBlur: {
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   cardContent: {
     padding: spacing.md,
   },
   settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   iconContainer: {
     marginRight: spacing.md,
@@ -272,6 +277,6 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
   },
   logoutText: {
-    color: '#EC4899',
+    color: "#EC4899",
   },
 });

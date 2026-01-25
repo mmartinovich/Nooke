@@ -13,6 +13,7 @@ export interface User {
   fcm_token?: string;
   auth_provider?: 'google' | 'apple' | 'email';  // OAuth provider
   default_room_id?: string;
+  profile_completed?: boolean;  // Whether user has completed onboarding
   created_at: string;
 }
 
