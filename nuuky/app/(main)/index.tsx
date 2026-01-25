@@ -54,6 +54,7 @@ import { useRoomInvites } from "../../hooks/useRoomInvites";
 import { useDefaultRoom } from "../../hooks/useDefaultRoom";
 import { useTheme } from "../../hooks/useTheme";
 import { useAudio } from "../../hooks/useAudio";
+import { useNotifications } from "../../hooks/useNotifications";
 import { getMoodColor, getVibeText, getCustomMoodColor, spacing, radius, typography, getAllMoodImages } from "../../lib/theme";
 import { CentralOrb } from "../../components/CentralOrb";
 import { FriendParticle } from "../../components/FriendParticle";
@@ -101,6 +102,9 @@ export default function QuantumOrbitScreen() {
     mute: audioMute,
     disconnect: audioDisconnect,
   } = useAudio(defaultRoom?.id || null);
+
+  // Notifications
+  const { unreadCount: notificationCount } = useNotifications();
 
   const [loading, setLoading] = useState(false); // Start with false - friends from Zustand show immediately
   const [showMoodPicker, setShowMoodPicker] = useState(false);
@@ -225,29 +229,37 @@ export default function QuantumOrbitScreen() {
 
   // Calculate friend list and positions - must be before conditional returns
   // Filter out any invalid friends (where friend data is missing)
+  // Also filter out the current user - they are represented by the central orb character
   // Friends persist in Zustand, so they're available immediately on remount
-  const friendList = friends.map((f) => f.friend as User).filter((f): f is User => f !== null && f !== undefined);
+  const friendList = friends
+    .map((f) => f.friend as User)
+    .filter((f): f is User => f !== null && f !== undefined && f.id !== currentUser?.id);
 
   // Get participant users from room (when in room mode)
   // Derive directly from myRooms using defaultRoom.id to avoid stale currentRoom data
+  // Filter out the current user - they are represented by the central orb character
   const participantUsers: User[] = useMemo(() => {
     if (!defaultRoom) return [];
 
     // Get participants directly from myRooms - this is always up to date
     const roomData = myRooms.find((r) => r.id === defaultRoom.id);
     if (roomData && roomData.participants && roomData.participants.length > 0) {
-      return roomData.participants.map((p) => p.user).filter((u): u is User => u !== null && u !== undefined);
+      return roomData.participants
+        .map((p) => p.user)
+        .filter((u): u is User => u !== null && u !== undefined && u.id !== currentUser?.id);
     }
 
     // Only use participants fallback if currentRoom matches defaultRoom
     // This prevents showing stale data from the previous room during transitions
     if (currentRoom?.id === defaultRoom.id && participants.length > 0) {
-      return participants.map((p) => p.user).filter((u): u is User => u !== null && u !== undefined);
+      return participants
+        .map((p) => p.user)
+        .filter((u): u is User => u !== null && u !== undefined && u.id !== currentUser?.id);
     }
 
     // Return empty array during room transitions - data will load shortly
     return [];
-  }, [defaultRoom?.id, myRooms, participants, currentRoom?.id]);
+  }, [defaultRoom?.id, myRooms, participants, currentRoom?.id, currentUser?.id]);
 
   // Use participants when in room mode, friends otherwise
   const orbitUsers = defaultRoom ? participantUsers : friendList;
@@ -527,114 +539,10 @@ export default function QuantumOrbitScreen() {
 
       if (error) throw error;
 
-      // Mock friends for testing with avatars
-      const mockFriends: any[] = [
-        {
-          id: "mock-1",
-          user_id: currentUser.id,
-          friend_id: "friend-1",
-          status: "accepted",
-          visibility: "full",
-          created_at: new Date().toISOString(),
-          last_interaction_at: new Date().toISOString(),
-          friend: {
-            id: "friend-1",
-            phone: "+1234567890",
-            display_name: "Alex",
-            mood: "good",
-            is_online: true,
-            last_seen_at: new Date().toISOString(),
-            avatar_url: "https://i.pravatar.cc/150?img=1",
-            created_at: new Date().toISOString(),
-          },
-        },
-        {
-          id: "mock-2",
-          user_id: currentUser.id,
-          friend_id: "friend-2",
-          status: "accepted",
-          visibility: "full",
-          created_at: new Date().toISOString(),
-          last_interaction_at: new Date().toISOString(),
-          friend: {
-            id: "friend-2",
-            phone: "+1234567891",
-            display_name: "Sam",
-            mood: "neutral",
-            is_online: false,
-            last_seen_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-            avatar_url: "https://i.pravatar.cc/150?img=5",
-            created_at: new Date().toISOString(),
-          },
-        },
-        {
-          id: "mock-3",
-          user_id: currentUser.id,
-          friend_id: "friend-3",
-          status: "accepted",
-          visibility: "full",
-          created_at: new Date().toISOString(),
-          last_interaction_at: new Date().toISOString(),
-          friend: {
-            id: "friend-3",
-            phone: "+1234567892",
-            display_name: "Jordan",
-            mood: "not_great",
-            is_online: true,
-            last_seen_at: new Date().toISOString(),
-            avatar_url: "https://i.pravatar.cc/150?img=12",
-            created_at: new Date().toISOString(),
-          },
-        },
-        {
-          id: "mock-4",
-          user_id: currentUser.id,
-          friend_id: "friend-4",
-          status: "accepted",
-          visibility: "full",
-          created_at: new Date().toISOString(),
-          last_interaction_at: new Date().toISOString(),
-          friend: {
-            id: "friend-4",
-            phone: "+1234567893",
-            display_name: "Taylor",
-            mood: "reach_out",
-            is_online: false,
-            last_seen_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            avatar_url: "https://i.pravatar.cc/150?img=47",
-            created_at: new Date().toISOString(),
-          },
-        },
-        {
-          id: "mock-5",
-          user_id: currentUser.id,
-          friend_id: "friend-5",
-          status: "accepted",
-          visibility: "full",
-          created_at: new Date().toISOString(),
-          last_interaction_at: new Date().toISOString(),
-          friend: {
-            id: "friend-5",
-            phone: "+1234567894",
-            display_name: "Riley",
-            mood: "good",
-            is_online: true,
-            last_seen_at: new Date().toISOString(),
-            avatar_url: "https://i.pravatar.cc/150?img=33",
-            created_at: new Date().toISOString(),
-          },
-        },
-      ];
-
-      // Use real friends data from database
-      // setFriends(mockFriends); // DISABLED: Using useFriends hook instead
-      // setFriends(data || []); // DISABLED: Using useFriends hook instead
-
-      // Ensure loading is false after setting friends
+      // Friends data is handled by useFriends hook
       setLoading(false);
     } catch (_error: any) {
-      // DISABLED: Using useFriends hook instead
-      // Don't set mock friends on error - let useFriends hook handle friends data
+      // Friends data is handled by useFriends hook
       setLoading(false);
     } finally {
       // Only update loading state if not a silent refresh
@@ -863,6 +771,22 @@ export default function QuantumOrbitScreen() {
       {/* Top Header - Wordmark Logo */}
       <View style={styles.topHeader} pointerEvents="box-none">
         <Image source={require("../../assets/wordmark.png")} style={styles.wordmarkSmall} resizeMode="contain" />
+
+        {/* Notification Bell Icon */}
+        <TouchableOpacity
+          style={[styles.notificationBell, { backgroundColor: theme.colors.glass.background }]}
+          onPress={() => router.push("/(main)/notifications")}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="notifications-outline" size={22} color={theme.colors.text.primary} />
+          {notificationCount > 0 && (
+            <View style={[styles.notificationBadge, { backgroundColor: theme.colors.neon.pink, borderColor: theme.colors.bg.primary }]}>
+              <Text style={styles.notificationBadgeText}>
+                {notificationCount > 99 ? "99+" : notificationCount}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
         {defaultRoom ? (
           <TouchableOpacity
             style={[
@@ -1117,6 +1041,35 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: "center",
+  },
+  notificationBell: {
+    position: "absolute",
+    top: 0,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+  notificationBadge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+    borderWidth: 2,
+  },
+  notificationBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   appTitle: {
     fontSize: 34,

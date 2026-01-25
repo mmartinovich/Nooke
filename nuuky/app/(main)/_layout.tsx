@@ -52,6 +52,12 @@ export default function MainLayout() {
         }}
       />
       <Stack.Screen
+        name="notifications"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
         name="room/[id]"
         options={{
           headerShown: false,

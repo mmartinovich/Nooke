@@ -103,6 +103,31 @@ serve(async (req) => {
 
     let totalSent = 0;
 
+    // Insert notifications for all friends into database
+    const notificationsToInsert = friendships.map((friendship: any) => ({
+      user_id: friendship.friend_id,
+      type: 'flare',
+      title: '🚨 Flare from ' + user.display_name,
+      body: `${user.display_name} sent a flare. They might need company or support.`,
+      data: {
+        sender_id: user_id,
+        sender_name: user.display_name,
+        flare_id: flare_id,
+      },
+      source_id: user_id,
+      source_type: 'flare',
+    }));
+
+    if (notificationsToInsert.length > 0) {
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert(notificationsToInsert);
+
+      if (notificationError) {
+        console.error('Failed to insert notifications:', notificationError);
+      }
+    }
+
     // Send stronger notification to anchors
     if (anchorTokens.length > 0) {
       const anchorNotification = {

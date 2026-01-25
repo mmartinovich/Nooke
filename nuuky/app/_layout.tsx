@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ActivityIndicator, View } from 'react-native';
@@ -7,11 +7,61 @@ import { useAppStore } from '../stores/appStore';
 import { supabase } from '../lib/supabase';
 import { ThemeProvider } from '../context/ThemeContext';
 import { initializeLiveKit } from '../lib/livekit';
+import {
+  registerForPushNotificationsAsync,
+  savePushTokenToUser,
+  setupNotificationListeners,
+} from '../lib/notifications';
 
 export default function RootLayout() {
   const { setCurrentUser } = useAppStore();
   const router = useRouter();
   const [isReady, setIsReady] = useState(false);
+  const notificationCleanupRef = useRef<(() => void) | null>(null);
+
+  // Handle notification tap navigation
+  const handleNotificationNavigation = (data: any) => {
+    const type = data?.type;
+
+    switch (type) {
+      case 'nudge':
+      case 'flare':
+        router.push('/(main)');
+        break;
+      case 'friend_request':
+      case 'friend_accepted':
+        router.push('/(main)/friends');
+        break;
+      case 'room_invite':
+        router.push('/(main)/rooms');
+        break;
+      default:
+        router.push('/(main)/notifications');
+    }
+  };
+
+  // Setup notification listeners
+  useEffect(() => {
+    const cleanup = setupNotificationListeners(
+      // On notification received (foreground)
+      (notification) => {
+        console.log('Notification received:', notification.request.content);
+      },
+      // On notification response (tap)
+      (response) => {
+        const data = response.notification.request.content.data;
+        handleNotificationNavigation(data);
+      }
+    );
+
+    notificationCleanupRef.current = cleanup;
+
+    return () => {
+      if (notificationCleanupRef.current) {
+        notificationCleanupRef.current();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -51,6 +101,7 @@ export default function RootLayout() {
                             data.session.user.user_metadata?.picture,
                 auth_provider: data.session.user.app_metadata?.provider || 'google',
                 is_online: true,
+                mood: 'neutral',
                 profile_completed: false,  // New users need onboarding
               })
               .select()
@@ -59,10 +110,9 @@ export default function RootLayout() {
           }
 
           if (userData) {
-            // Preserve local mood if it exists (for mock mode)
-            const existingUser = useAppStore.getState().currentUser;
-            if (existingUser?.mood) {
-              userData.mood = existingUser.mood;
+            // Ensure mood defaults to neutral if not set
+            if (!userData.mood) {
+              userData.mood = 'neutral';
             }
             setCurrentUser(userData);
             // Redirect based on profile completion status
@@ -102,12 +152,17 @@ export default function RootLayout() {
           .single();
 
         if (data && !error) {
-          // Preserve local mood if it exists (for mock mode)
-          const existingUser = useAppStore.getState().currentUser;
-          if (existingUser?.mood) {
-            data.mood = existingUser.mood;
+          // Ensure mood defaults to neutral if not set
+          if (!data.mood) {
+            data.mood = 'neutral';
           }
           setCurrentUser(data);
+
+          // Register for push notifications
+          const pushToken = await registerForPushNotificationsAsync();
+          if (pushToken) {
+            await savePushTokenToUser(data.id, pushToken);
+          }
           // Note: Navigation handled by index.tsx based on auth state
         }
       }
@@ -131,10 +186,9 @@ export default function RootLayout() {
             .single();
 
           if (data && !error) {
-            // Preserve local mood if it exists (for mock mode)
-            const existingUser = useAppStore.getState().currentUser;
-            if (existingUser?.mood) {
-              data.mood = existingUser.mood;
+            // Ensure mood defaults to neutral if not set
+            if (!data.mood) {
+              data.mood = 'neutral';
             }
             setCurrentUser(data);
             // Note: Navigation handled by index.tsx based on auth state

@@ -113,6 +113,27 @@ serve(async (req) => {
       priority: 'high' as const,
     };
 
+    // Insert notifications for all receivers into database
+    const notificationsToInsert = receivers.map((receiver: any) => ({
+      user_id: receiver.id,
+      type: 'room_invite',
+      title: notification.title,
+      body: notification.body,
+      data: notification.data,
+      source_id: room_id,
+      source_type: 'room_invite',
+    }));
+
+    if (notificationsToInsert.length > 0) {
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert(notificationsToInsert);
+
+      if (notificationError) {
+        console.error('Failed to insert notifications:', notificationError);
+      }
+    }
+
     const result = await sendBatchExpoNotifications(tokens, notification);
 
     console.log(`Sent ${result.success} room invite notifications`);
