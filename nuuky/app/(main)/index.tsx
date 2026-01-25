@@ -774,11 +774,11 @@ export default function QuantumOrbitScreen() {
 
         {/* Notification Bell Icon */}
         <TouchableOpacity
-          style={[styles.notificationBell, { backgroundColor: theme.colors.glass.background }]}
+          style={[styles.notificationBell, { backgroundColor: "rgba(168, 85, 247, 0.1)" }]}
           onPress={() => router.push("/(main)/notifications")}
           activeOpacity={0.7}
         >
-          <Ionicons name="notifications-outline" size={22} color={theme.colors.text.primary} />
+          <Ionicons name="notifications-outline" size={22} color="#A855F7" />
           {notificationCount > 0 && (
             <View style={[styles.notificationBadge, { backgroundColor: theme.colors.neon.pink, borderColor: theme.colors.bg.primary }]}>
               <Text style={styles.notificationBadgeText}>

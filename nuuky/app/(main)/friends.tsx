@@ -19,7 +19,7 @@ import { useContactSync } from "../../hooks/useContactSync";
 import { useInvite } from "../../hooks/useInvite";
 import { useAppStore } from "../../stores/appStore";
 import { useTheme } from "../../hooks/useTheme";
-import { typography, spacing, radius, getMoodColor } from "../../lib/theme";
+import { typography, spacing, radius, getMoodColor, interactionStates } from "../../lib/theme";
 import { User, MatchedContact } from "../../types";
 
 export default function FriendsScreen() {
@@ -100,29 +100,27 @@ export default function FriendsScreen() {
     <View style={[styles.container, { backgroundColor: theme.colors.bg.primary }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <LinearGradient colors={theme.gradients.background} style={styles.gradient}>
-        {/* Header */}
-        <View
-          style={[styles.header, { paddingTop: insets.top + spacing.md, borderBottomColor: theme.colors.glass.border }]}
-        >
+        {/* Header - Loóna style */}
+        <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
           <TouchableOpacity
-            style={[styles.backButton, { borderColor: theme.colors.glass.border }]}
+            style={styles.backButton}
             onPress={() => router.back()}
-            activeOpacity={0.8}
+            activeOpacity={interactionStates.pressed}
           >
-            <Ionicons name="chevron-back" size={24} color={theme.colors.text.primary} />
+            <Ionicons name="chevron-back" size={28} color={theme.colors.text.primary} />
           </TouchableOpacity>
 
           <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Friends</Text>
 
           <TouchableOpacity
-            style={[styles.debugButton, { borderColor: theme.colors.glass.border }]}
+            style={styles.refreshButton}
             onPress={async () => {
               setFriends([]);
               await refreshFriends();
             }}
-            activeOpacity={0.8}
+            activeOpacity={interactionStates.pressed}
           >
-            <Ionicons name="refresh" size={20} color={theme.colors.text.secondary} />
+            <Ionicons name="refresh" size={24} color="#A855F7" />
           </TouchableOpacity>
         </View>
 
@@ -403,36 +401,32 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
+    paddingHorizontal: spacing.screenPadding || 24,
+    paddingBottom: spacing.lg,
   },
   backButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderWidth: 1,
+    marginLeft: -8,
   },
   headerTitle: {
-    fontSize: typography.size["2xl"],
-    fontWeight: typography.weight.bold as any,
+    fontSize: 28,
+    fontWeight: "700",
     letterSpacing: -0.5,
   },
   placeholderButton: {
     width: 44,
     height: 44,
   },
-  debugButton: {
+  refreshButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderWidth: 1,
+    backgroundColor: "rgba(168, 85, 247, 0.1)",
   },
   scrollView: {
     flex: 1,
