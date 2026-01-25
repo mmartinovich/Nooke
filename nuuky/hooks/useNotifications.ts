@@ -195,8 +195,14 @@ export const useNotifications = () => {
           filter: `user_id=eq.${currentUser.id}`,
         },
         (payload) => {
-          // Add new notification to the top of the list
-          addNotification(payload.new as AppNotification);
+          try {
+            // Add new notification to the top of the list
+            if (payload.new && typeof payload.new === 'object') {
+              addNotification(payload.new as AppNotification);
+            }
+          } catch (error) {
+            console.error('Error handling new notification:', error);
+          }
         }
       )
       .on(
@@ -208,7 +214,13 @@ export const useNotifications = () => {
           filter: `user_id=eq.${currentUser.id}`,
         },
         (payload) => {
-          removeNotification(payload.old.id);
+          try {
+            if (payload.old && payload.old.id) {
+              removeNotification(payload.old.id);
+            }
+          } catch (error) {
+            console.error('Error handling notification deletion:', error);
+          }
         }
       )
       .subscribe();

@@ -12,23 +12,149 @@ import {
   StatusBar,
   Animated,
   Image,
+  KeyboardAvoidingView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppStore } from "../../stores/appStore";
 import { useProfile } from "../../hooks/useProfile";
 import { useTheme } from "../../hooks/useTheme";
-import { spacing, radius, typography } from "../../lib/theme";
+import { spacing } from "../../lib/theme";
+
+// iOS-style icon backgrounds
+const ICON_BACKGROUNDS = {
+  name: "#5856D6",
+  email: "#007AFF",
+  phone: "#FF9500",
+};
+
+interface ProfileRowProps {
+  icon: string;
+  iconBg: string;
+  label: string;
+  value: string;
+  onPress?: () => void;
+  showChevron?: boolean;
+  isFirst?: boolean;
+  isLast?: boolean;
+  theme: ReturnType<typeof useTheme>["theme"];
+}
+
+const ProfileRow: React.FC<ProfileRowProps> = ({
+  icon,
+  iconBg,
+  label,
+  value,
+  onPress,
+  showChevron = false,
+  isFirst = false,
+  isLast = false,
+  theme,
+}) => {
+  const content = (
+    <View
+      style={[
+        styles.rowContainer,
+        {
+          backgroundColor: theme.colors.glass.background,
+          borderTopLeftRadius: isFirst ? 12 : 0,
+          borderTopRightRadius: isFirst ? 12 : 0,
+          borderBottomLeftRadius: isLast ? 12 : 0,
+          borderBottomRightRadius: isLast ? 12 : 0,
+        },
+      ]}
+    >
+      <View style={styles.rowContent}>
+        <View style={[styles.iconWrapper, { backgroundColor: iconBg }]}>
+          <Ionicons name={icon as any} size={18} color="#FFFFFF" />
+        </View>
+        <View style={styles.rowTextContainer}>
+          <Text style={[styles.rowLabel, { color: theme.colors.text.tertiary }]}>
+            {label}
+          </Text>
+          <Text
+            style={[styles.rowValue, { color: theme.colors.text.primary }]}
+            numberOfLines={1}
+          >
+            {value}
+          </Text>
+        </View>
+        {showChevron && (
+          <Ionicons
+            name="chevron-forward"
+            size={18}
+            color={theme.colors.text.tertiary}
+          />
+        )}
+      </View>
+      {!isLast && (
+        <View style={styles.separatorContainer}>
+          <View
+            style={[styles.separator, { backgroundColor: theme.colors.glass.border }]}
+          />
+        </View>
+      )}
+    </View>
+  );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity activeOpacity={0.6} onPress={onPress}>
+        {content}
+      </TouchableOpacity>
+    );
+  }
+  return content;
+};
+
+interface ProfileSectionProps {
+  title?: string;
+  footer?: string;
+  children: React.ReactNode;
+  theme: ReturnType<typeof useTheme>["theme"];
+}
+
+const ProfileSection: React.FC<ProfileSectionProps> = ({
+  title,
+  footer,
+  children,
+  theme,
+}) => (
+  <View style={styles.section}>
+    {title && (
+      <Text style={[styles.sectionTitle, { color: theme.colors.text.tertiary }]}>
+        {title}
+      </Text>
+    )}
+    <View
+      style={[
+        styles.sectionContent,
+        {
+          borderColor: theme.colors.glass.border,
+          shadowColor: theme.colors.glass.shadow,
+        },
+      ]}
+    >
+      {children}
+    </View>
+    {footer && (
+      <Text style={[styles.sectionFooter, { color: theme.colors.text.tertiary }]}>
+        {footer}
+      </Text>
+    )}
+  </View>
+);
 
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
   const { currentUser } = useAppStore();
-  const { loading, previewUri, pickAndUploadAvatar, updateDisplayName, deleteAvatar } = useProfile();
+  const { loading, previewUri, pickAndUploadAvatar, updateDisplayName, deleteAvatar } =
+    useProfile();
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(currentUser?.display_name || "");
@@ -36,7 +162,7 @@ export default function ProfileScreen() {
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
   const spinValue = useRef(new Animated.Value(0)).current;
 
   // Sync editedName when currentUser changes
@@ -58,13 +184,13 @@ export default function ProfileScreen() {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 600,
+        duration: 400,
         useNativeDriver: true,
       }),
       Animated.spring(scaleAnim, {
         toValue: 1,
-        tension: 50,
-        friction: 7,
+        tension: 60,
+        friction: 8,
         useNativeDriver: true,
       }),
     ]).start();
@@ -86,7 +212,7 @@ export default function ProfileScreen() {
 
   const spin = spinValue.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
+    outputRange: ["0deg", "360deg"],
   });
 
   const handleAvatarPress = () => {
@@ -112,10 +238,9 @@ export default function ProfileScreen() {
           } else if (buttonIndex === 2 && currentUser?.avatar_url) {
             await deleteAvatar();
           }
-        },
+        }
       );
     } else {
-      // Android fallback
       const buttons: any[] = [
         { text: "Take Photo", onPress: () => pickAndUploadAvatar("camera") },
         { text: "Choose from Library", onPress: () => pickAndUploadAvatar("gallery") },
@@ -150,32 +275,44 @@ export default function ProfileScreen() {
     setIsEditingName(false);
   };
 
+  const handleEditName = () => {
+    setEditedName(currentUser?.display_name || "");
+    setIsEditingName(true);
+  };
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.bg.primary }]}>
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: theme.colors.bg.primary }]}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
-      <LinearGradient colors={theme.gradients.background as unknown as string[]} style={StyleSheet.absoluteFill} />
+      <LinearGradient
+        colors={theme.gradients.background}
+        style={StyleSheet.absoluteFill}
+      />
 
-      {/* Header */}
-      <View
-        style={[styles.header, { paddingTop: insets.top + spacing.md, borderBottomColor: theme.colors.glass.border }]}
-      >
+      {/* iOS-style Large Title Header */}
+      <View style={[styles.header, { paddingTop: insets.top }]}>
         <TouchableOpacity
-          style={[styles.backButton, { borderColor: theme.colors.glass.border }]}
+          style={styles.backButton}
           onPress={() => router.back()}
-          activeOpacity={0.8}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="chevron-back" size={24} color={theme.colors.text.primary} />
+          <Ionicons name="chevron-back" size={28} color={theme.colors.neon.cyan} />
         </TouchableOpacity>
-
-        <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Profile</Text>
-
-        <View style={styles.placeholderButton} />
+        <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
+          Profile
+        </Text>
       </View>
 
       <ScrollView
-        style={styles.content}
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + 32 },
+        ]}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Avatar Section */}
         <Animated.View
@@ -190,11 +327,15 @@ export default function ProfileScreen() {
           <TouchableOpacity
             onPress={handleAvatarPress}
             disabled={loading}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
             style={styles.avatarWrapper}
           >
-            <View style={styles.avatarContainer}>
-              {/* Show preview while uploading, then uploaded image */}
+            <View
+              style={[
+                styles.avatarContainer,
+                { borderColor: theme.colors.glass.border },
+              ]}
+            >
               {previewUri ? (
                 <Image
                   key={`preview-${previewUri}`}
@@ -205,23 +346,28 @@ export default function ProfileScreen() {
               ) : currentUser?.avatar_url ? (
                 <Image
                   key={`avatar-${imageKey}`}
-                  source={{ uri: currentUser.avatar_url, cache: 'reload' }}
+                  source={{ uri: currentUser.avatar_url, cache: "reload" }}
                   style={styles.avatar}
                   resizeMode="cover"
                 />
               ) : (
-                <LinearGradient colors={theme.gradients.neonPurple as any} style={styles.avatar}>
-                  <Text style={styles.avatarInitial}>{currentUser?.display_name?.[0]?.toUpperCase() || "?"}</Text>
+                <LinearGradient
+                  colors={["#5856D6", "#AF52DE"]}
+                  style={styles.avatarGradient}
+                >
+                  <Text style={styles.avatarInitial}>
+                    {currentUser?.display_name?.[0]?.toUpperCase() || "?"}
+                  </Text>
                 </LinearGradient>
               )}
 
-              {/* Loading overlay with spinner */}
+              {/* Loading overlay */}
               {loading && (
                 <View style={styles.loadingOverlay}>
-                  <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill}>
+                  <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill}>
                     <View style={styles.spinnerContainer}>
                       <Animated.View style={{ transform: [{ rotate: spin }] }}>
-                        <Ionicons name="sync" size={32} color="#fff" />
+                        <Ionicons name="sync" size={28} color="#fff" />
                       </Animated.View>
                     </View>
                   </BlurView>
@@ -229,39 +375,37 @@ export default function ProfileScreen() {
               )}
             </View>
 
-            {/* Camera badge - outside container to avoid clipping */}
+            {/* Camera badge */}
             {!loading && (
-              <View style={[styles.cameraBadge, { backgroundColor: theme.colors.mood.neutral.base }]}>
-                <Feather name="camera" size={16} color="#fff" />
+              <View style={[styles.cameraBadge, { backgroundColor: "#007AFF" }]}>
+                <Ionicons name="camera" size={16} color="#fff" />
               </View>
             )}
           </TouchableOpacity>
 
-          <Text style={[styles.tapToChange, { color: theme.colors.text.tertiary }]}>
-            {loading ? "Uploading..." : "Tap to change photo"}
+          <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
+            {currentUser?.display_name || "Your Name"}
+          </Text>
+          <Text style={[styles.userEmail, { color: theme.colors.text.tertiary }]}>
+            {currentUser?.email || ""}
           </Text>
         </Animated.View>
 
-        {/* Display Name Section */}
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Display Name</Text>
-
-        <BlurView
-          intensity={isDark ? 20 : 10}
-          tint={theme.colors.blurTint}
-          style={[styles.card, { borderColor: theme.colors.glass.border }]}
-        >
-          <View style={styles.cardContent}>
-            {isEditingName ? (
-              <View style={styles.editContainer}>
+        {/* Edit Name Section */}
+        {isEditingName ? (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.tertiary }]}>
+              DISPLAY NAME
+            </Text>
+            <View
+              style={[
+                styles.editCard,
+                { backgroundColor: theme.colors.glass.background },
+              ]}
+            >
+              <View style={styles.editInputContainer}>
                 <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      color: theme.colors.text.primary,
-                      borderColor: theme.colors.ui.border,
-                      backgroundColor: theme.colors.glass.background,
-                    },
-                  ]}
+                  style={[styles.nameInput, { color: theme.colors.text.primary }]}
                   value={editedName}
                   onChangeText={setEditedName}
                   placeholder="Enter your name"
@@ -271,114 +415,91 @@ export default function ProfileScreen() {
                   returnKeyType="done"
                   onSubmitEditing={handleSaveName}
                 />
-                <View style={styles.buttonRow}>
-                  <TouchableOpacity
-                    onPress={handleCancelEdit}
-                    style={[styles.actionButton, { borderColor: theme.colors.glass.border }]}
-                  >
-                    <Text style={[styles.actionButtonText, { color: theme.colors.text.secondary }]}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleSaveName}
-                    disabled={loading || editedName.trim().length === 0}
-                    style={[styles.actionButton, styles.saveButton]}
-                  >
-                    <LinearGradient colors={theme.gradients.neonCyan as any} style={styles.saveButtonGradient}>
-                      <Text style={styles.saveButtonText}>{loading ? "Saving..." : "Save"}</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                </View>
               </View>
-            ) : (
-              <View style={styles.displayRow}>
-                <View style={styles.nameInfo}>
-                  <View style={styles.iconContainer}>
-                    <Text style={styles.icon}>✏️</Text>
-                  </View>
-                  <Text style={[styles.nameText, { color: theme.colors.text.primary }]}>
-                    {currentUser?.display_name || "Set your name"}
-                  </Text>
-                </View>
+              <View
+                style={[
+                  styles.editDivider,
+                  { backgroundColor: theme.colors.glass.border },
+                ]}
+              />
+              <View style={styles.editButtons}>
                 <TouchableOpacity
-                  onPress={() => {
-                    setEditedName(currentUser?.display_name || "");
-                    setIsEditingName(true);
-                  }}
-                  style={[styles.editButton, { backgroundColor: theme.colors.glass.background }]}
+                  style={styles.editButton}
+                  onPress={handleCancelEdit}
+                  activeOpacity={0.6}
                 >
-                  <Feather name="edit-2" size={16} color={theme.colors.text.accent} />
+                  <Text style={[styles.cancelButtonText, { color: theme.colors.text.secondary }]}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <View
+                  style={[
+                    styles.buttonDivider,
+                    { backgroundColor: theme.colors.glass.border },
+                  ]}
+                />
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={handleSaveName}
+                  disabled={loading || editedName.trim().length === 0}
+                  activeOpacity={0.6}
+                >
+                  <Text
+                    style={[
+                      styles.saveButtonText,
+                      (loading || editedName.trim().length === 0) && styles.saveButtonDisabled,
+                    ]}
+                  >
+                    {loading ? "Saving..." : "Save"}
+                  </Text>
                 </TouchableOpacity>
               </View>
-            )}
+            </View>
           </View>
-        </BlurView>
+        ) : (
+          <ProfileSection
+            title="DISPLAY NAME"
+            footer="This is how your friends will see you in the app."
+            theme={theme}
+          >
+            <ProfileRow
+              icon="person"
+              iconBg={ICON_BACKGROUNDS.name}
+              label="Name"
+              value={currentUser?.display_name || "Set your name"}
+              onPress={handleEditName}
+              showChevron
+              isFirst
+              isLast
+              theme={theme}
+            />
+          </ProfileSection>
+        )}
 
         {/* Account Info Section */}
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Account Info</Text>
-
-        <BlurView
-          intensity={isDark ? 20 : 10}
-          tint={theme.colors.blurTint}
-          style={[styles.card, { borderColor: theme.colors.glass.border }]}
-        >
-          <View style={styles.cardContent}>
-            <View style={styles.infoRow}>
-              <View style={styles.iconContainer}>
-                <Text style={styles.icon}>📧</Text>
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={[styles.infoLabel, { color: theme.colors.text.tertiary }]}>Email</Text>
-                <Text style={[styles.infoValue, { color: theme.colors.text.primary }]}>
-                  {currentUser?.email || "Not set"}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </BlurView>
-
-        <BlurView
-          intensity={isDark ? 20 : 10}
-          tint={theme.colors.blurTint}
-          style={[styles.card, { borderColor: theme.colors.glass.border }]}
-        >
-          <View style={styles.cardContent}>
-            <View style={styles.infoRow}>
-              <View style={styles.iconContainer}>
-                <Text style={styles.icon}>🔐</Text>
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={[styles.infoLabel, { color: theme.colors.text.tertiary }]}>Sign-in Method</Text>
-                <Text style={[styles.infoValue, { color: theme.colors.text.primary }]}>
-                  {currentUser?.auth_provider
-                    ? currentUser.auth_provider.charAt(0).toUpperCase() + currentUser.auth_provider.slice(1)
-                    : "Email"}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </BlurView>
-
-        {currentUser?.phone && (
-          <BlurView
-            intensity={isDark ? 20 : 10}
-            tint={theme.colors.blurTint}
-            style={[styles.card, { borderColor: theme.colors.glass.border }]}
-          >
-            <View style={styles.cardContent}>
-              <View style={styles.infoRow}>
-                <View style={styles.iconContainer}>
-                  <Text style={styles.icon}>📱</Text>
-                </View>
-                <View style={styles.infoContent}>
-                  <Text style={[styles.infoLabel, { color: theme.colors.text.tertiary }]}>Phone</Text>
-                  <Text style={[styles.infoValue, { color: theme.colors.text.primary }]}>{currentUser.phone}</Text>
-                </View>
-              </View>
-            </View>
-          </BlurView>
-        )}
+        <ProfileSection title="ACCOUNT" theme={theme}>
+          <ProfileRow
+            icon="mail"
+            iconBg={ICON_BACKGROUNDS.email}
+            label="Email"
+            value={currentUser?.email || "Not set"}
+            isFirst
+            isLast={!currentUser?.phone}
+            theme={theme}
+          />
+          {currentUser?.phone && (
+            <ProfileRow
+              icon="call"
+              iconBg={ICON_BACKGROUNDS.phone}
+              label="Phone"
+              value={currentUser.phone}
+              isLast
+              theme={theme}
+            />
+          )}
+        </ProfileSection>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -387,75 +508,74 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
   },
   backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
+    flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderWidth: 1,
+    marginLeft: -spacing.xs,
+    marginBottom: spacing.xs,
   },
   headerTitle: {
-    fontSize: typography.sizes["2xl"],
-    fontWeight: typography.weights.bold as any,
-    letterSpacing: -0.5,
+    fontSize: 34,
+    fontWeight: "700",
+    letterSpacing: 0.37,
   },
-  placeholderButton: {
-    width: 44,
-    height: 44,
-  },
-  content: {
+  scrollView: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
+  },
+  scrollContent: {
+    paddingTop: spacing.lg,
   },
   // Avatar Section
   avatarSection: {
     alignItems: "center",
-    paddingVertical: spacing.xl * 1.5,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.md,
   },
   avatarWrapper: {
     position: "relative",
+    marginBottom: spacing.md,
   },
   avatarContainer: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
+    borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.1)",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 12,
+      },
+    }),
   },
   avatar: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    width: "100%",
+    height: "100%",
+  },
+  avatarGradient: {
+    width: "100%",
+    height: "100%",
     justifyContent: "center",
     alignItems: "center",
   },
   avatarInitial: {
-    fontSize: typography.sizes["4xl"],
-    fontWeight: typography.weights.bold as any,
+    fontSize: 48,
+    fontWeight: "600",
     color: "#fff",
-    letterSpacing: 1,
   },
   loadingOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 60,
+    overflow: "hidden",
   },
   spinnerContainer: {
     flex: 1,
@@ -464,133 +584,154 @@ const styles = StyleSheet.create({
   },
   cameraBadge: {
     position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    bottom: 2,
+    right: 2,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 3,
     borderColor: "#050510",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-    zIndex: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
-  tapToChange: {
-    fontSize: typography.sizes.sm,
-    marginTop: spacing.md,
-    letterSpacing: 0.3,
-  },
-  // Section Titles
-  sectionTitle: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.bold as any,
-    marginTop: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  // Cards
-  card: {
-    borderRadius: radius.lg,
-    overflow: "hidden",
-    borderWidth: 1,
-    marginBottom: spacing.md,
-  },
-  cardContent: {
-    padding: spacing.md,
-  },
-  // Display Name Row
-  displayRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  nameInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  iconContainer: {
-    marginRight: spacing.md,
-  },
-  icon: {
+  userName: {
     fontSize: 24,
+    fontWeight: "600",
+    letterSpacing: 0.35,
+    marginBottom: 4,
   },
-  nameText: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.semibold as any,
-    flex: 1,
+  userEmail: {
+    fontSize: 15,
+    fontWeight: "400",
   },
-  editButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
+  // Section styles
+  section: {
+    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.md,
   },
-  // Edit Container
-  editContainer: {
-    gap: spacing.md,
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "400",
+    letterSpacing: -0.08,
+    marginBottom: spacing.sm,
+    marginLeft: spacing.md,
+    textTransform: "uppercase",
   },
-  input: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.medium as any,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    gap: spacing.md,
-  },
-  actionButton: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-  },
-  actionButtonText: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold as any,
-  },
-  saveButton: {
-    borderWidth: 0,
+  sectionContent: {
+    borderRadius: 12,
     overflow: "hidden",
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
-  saveButtonGradient: {
-    flex: 1,
-    width: "100%",
-    paddingVertical: spacing.sm,
-    alignItems: "center",
-    justifyContent: "center",
+  sectionFooter: {
+    fontSize: 13,
+    fontWeight: "400",
+    lineHeight: 18,
+    marginTop: spacing.sm,
+    marginHorizontal: spacing.md,
   },
-  saveButtonText: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold as any,
-    color: "#fff",
+  // Row styles
+  rowContainer: {
+    minHeight: 44,
   },
-  // Info Rows
-  infoRow: {
+  rowContent: {
     flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    minHeight: 58,
   },
-  infoContent: {
+  iconWrapper: {
+    width: 29,
+    height: 29,
+    borderRadius: 6,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  rowTextContainer: {
     flex: 1,
+    marginRight: spacing.sm,
   },
-  infoLabel: {
-    fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.medium as any,
+  rowLabel: {
+    fontSize: 12,
+    fontWeight: "400",
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 2,
   },
-  infoValue: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold as any,
+  rowValue: {
+    fontSize: 17,
+    fontWeight: "400",
+    letterSpacing: -0.41,
+  },
+  separatorContainer: {
+    paddingLeft: 57,
+  },
+  separator: {
+    height: StyleSheet.hairlineWidth,
+  },
+  // Edit name styles
+  editCard: {
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  editInputContainer: {
+    padding: spacing.md,
+    paddingVertical: 14,
+  },
+  nameInput: {
+    fontSize: 17,
+    fontWeight: "400",
+    letterSpacing: -0.41,
+    padding: 0,
+    minHeight: 24,
+  },
+  editDivider: {
+    height: StyleSheet.hairlineWidth,
+  },
+  editButtons: {
+    flexDirection: "row",
+    height: 44,
+  },
+  editButton: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: "100%",
+  },
+  cancelButtonText: {
+    fontSize: 17,
+    fontWeight: "400",
+  },
+  saveButtonText: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#007AFF",
+  },
+  saveButtonDisabled: {
+    opacity: 0.4,
   },
 });

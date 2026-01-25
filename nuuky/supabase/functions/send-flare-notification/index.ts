@@ -84,12 +84,38 @@ serve(async (req) => {
 
     const anchorIds = new Set(anchors?.map(a => a.anchor_id) || []);
 
-    // Collect push tokens
+    // Get all friend IDs to check their preferences
+    const friendIds = friendships.map((f: any) => f.friend_id);
+
+    // Fetch notification preferences for all friends
+    const { data: allPreferences } = await supabase
+      .from('user_preferences')
+      .select('user_id, flares_enabled')
+      .in('user_id', friendIds);
+
+    // Create a map of user_id -> flares_enabled (default true if not found)
+    const preferencesMap = new Map<string, boolean>();
+    allPreferences?.forEach((pref: any) => {
+      preferencesMap.set(pref.user_id, pref.flares_enabled);
+    });
+
+    // Collect push tokens (only for users who have flares enabled)
     const regularTokens: string[] = [];
     const anchorTokens: string[] = [];
+    const filteredFriendships: any[] = [];
 
     friendships.forEach((friendship: any) => {
       const friend = friendship.friend;
+      // Default to enabled if no preference found
+      const flaresEnabled = preferencesMap.get(friend?.id) ?? true;
+
+      if (!flaresEnabled) {
+        console.log(`Skipping ${friend?.display_name} - flares disabled`);
+        return;
+      }
+
+      filteredFriendships.push(friendship);
+
       if (friend && friend.fcm_token) {
         if (anchorIds.has(friend.id)) {
           anchorTokens.push(friend.fcm_token);
@@ -103,8 +129,8 @@ serve(async (req) => {
 
     let totalSent = 0;
 
-    // Insert notifications for all friends into database
-    const notificationsToInsert = friendships.map((friendship: any) => ({
+    // Insert notifications only for friends who have flares enabled
+    const notificationsToInsert = filteredFriendships.map((friendship: any) => ({
       user_id: friendship.friend_id,
       type: 'flare',
       title: '🚨 Flare from ' + user.display_name,

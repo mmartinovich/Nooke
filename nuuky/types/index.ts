@@ -200,3 +200,14 @@ export interface AppNotification {
   source_id?: string;
   source_type?: string;
 }
+
+// User preferences types
+export interface UserPreferences {
+  id: string;
+  user_id: string;
+  nudges_enabled: boolean;
+  flares_enabled: boolean;
+  room_invites_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}

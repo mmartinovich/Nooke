@@ -7,6 +7,7 @@ import { useAppStore } from '../stores/appStore';
 import { supabase } from '../lib/supabase';
 import { ThemeProvider } from '../context/ThemeContext';
 import { initializeLiveKit } from '../lib/livekit';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import {
   registerForPushNotificationsAsync,
   savePushTokenToUser,
@@ -222,17 +223,19 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-          }}
-        >
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(main)" />
-        </Stack>
-      </GestureHandlerRootView>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+            }}
+          >
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(main)" />
+          </Stack>
+        </GestureHandlerRootView>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

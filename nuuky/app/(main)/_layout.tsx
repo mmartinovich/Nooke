@@ -63,6 +63,12 @@ export default function MainLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="safety"
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }

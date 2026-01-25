@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from "react";
 import {
   View,
   Text,
@@ -7,18 +7,183 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import { useRouter } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
-import { spacing, radius, typography } from '../../lib/theme';
-import { useTheme } from '../../hooks/useTheme';
-import { useSafety } from '../../hooks/useSafety';
-import { useFriends } from '../../hooks/useFriends';
+  StatusBar,
+  Platform,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { spacing } from "../../lib/theme";
+import { useTheme } from "../../hooks/useTheme";
+import { useSafety } from "../../hooks/useSafety";
+import { useFriends } from "../../hooks/useFriends";
+
+// iOS-style icon backgrounds
+const ICON_BACKGROUNDS = {
+  ghost: "#AF52DE",
+  break: "#5856D6",
+  blocked: "#FF3B30",
+  anchor: "#007AFF",
+  info: "#8E8E93",
+};
+
+interface SafetyRowProps {
+  icon?: string;
+  emoji?: string;
+  iconBg: string;
+  label: string;
+  description?: string;
+  value?: string;
+  showChevron?: boolean;
+  isDestructive?: boolean;
+  onPress?: () => void;
+  isFirst?: boolean;
+  isLast?: boolean;
+  isActive?: boolean;
+  children?: React.ReactNode;
+  theme: ReturnType<typeof useTheme>["theme"];
+  isDark: boolean;
+}
+
+const SafetyRow: React.FC<SafetyRowProps> = ({
+  icon,
+  emoji,
+  iconBg,
+  label,
+  description,
+  value,
+  showChevron = false,
+  isDestructive = false,
+  onPress,
+  isFirst = false,
+  isLast = false,
+  isActive = false,
+  children,
+  theme,
+}) => {
+  const content = (
+    <View
+      style={[
+        styles.rowContainer,
+        {
+          backgroundColor: theme.colors.glass.background,
+          borderTopLeftRadius: isFirst ? 12 : 0,
+          borderTopRightRadius: isFirst ? 12 : 0,
+          borderBottomLeftRadius: isLast ? 12 : 0,
+          borderBottomRightRadius: isLast ? 12 : 0,
+        },
+      ]}
+    >
+      <View style={styles.rowContent}>
+        {emoji ? (
+          <View style={styles.emojiWrapper}>
+            <Text style={styles.emojiText}>{emoji}</Text>
+          </View>
+        ) : (
+          <View style={[styles.iconWrapper, { backgroundColor: iconBg }]}>
+            <Ionicons name={icon as any} size={18} color="#FFFFFF" />
+          </View>
+        )}
+        <View style={styles.rowTextContainer}>
+          <View style={styles.labelRow}>
+            <Text
+              style={[
+                styles.rowLabel,
+                { color: isDestructive ? "#FF3B30" : theme.colors.text.primary },
+              ]}
+            >
+              {label}
+            </Text>
+            {isActive && (
+              <View style={[styles.activeBadge, { backgroundColor: "#34C759" }]}>
+                <Text style={styles.activeBadgeText}>Active</Text>
+              </View>
+            )}
+          </View>
+          {description && (
+            <Text style={[styles.rowDescription, { color: theme.colors.text.tertiary }]}>
+              {description}
+            </Text>
+          )}
+        </View>
+        <View style={styles.rowRight}>
+          {value && (
+            <Text style={[styles.rowValue, { color: theme.colors.text.tertiary }]}>
+              {value}
+            </Text>
+          )}
+          {children}
+          {showChevron && !children && (
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color={theme.colors.text.tertiary}
+            />
+          )}
+        </View>
+      </View>
+      {!isLast && (
+        <View style={styles.separatorContainer}>
+          <View
+            style={[styles.separator, { backgroundColor: theme.colors.glass.border }]}
+          />
+        </View>
+      )}
+    </View>
+  );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity activeOpacity={0.6} onPress={onPress}>
+        {content}
+      </TouchableOpacity>
+    );
+  }
+  return content;
+};
+
+interface SafetySectionProps {
+  title?: string;
+  footer?: string;
+  children: React.ReactNode;
+  theme: ReturnType<typeof useTheme>["theme"];
+}
+
+const SafetySection: React.FC<SafetySectionProps> = ({
+  title,
+  footer,
+  children,
+  theme,
+}) => (
+  <View style={styles.section}>
+    {title && (
+      <Text style={[styles.sectionTitle, { color: theme.colors.text.tertiary }]}>
+        {title}
+      </Text>
+    )}
+    <View
+      style={[
+        styles.sectionContent,
+        {
+          borderColor: theme.colors.glass.border,
+          shadowColor: theme.colors.glass.shadow,
+        },
+      ]}
+    >
+      {children}
+    </View>
+    {footer && (
+      <Text style={[styles.sectionFooter, { color: theme.colors.text.tertiary }]}>
+        {footer}
+      </Text>
+    )}
+  </View>
+);
 
 export default function SafetyScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
   const {
     blocks,
@@ -34,24 +199,17 @@ export default function SafetyScreen() {
   } = useSafety();
   const { friends } = useFriends();
 
-  const [showGhostDuration, setShowGhostDuration] = useState(false);
-  const [showBreakDuration, setShowBreakDuration] = useState(false);
-
   const handleGhostModeToggle = () => {
     if (isInGhostMode) {
       disableGhostMode();
     } else {
-      Alert.alert(
-        'Ghost Mode Duration',
-        'How long would you like to be invisible?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: '30 minutes', onPress: () => enableGhostMode(30) },
-          { text: '1 hour', onPress: () => enableGhostMode(60) },
-          { text: '4 hours', onPress: () => enableGhostMode(240) },
-          { text: '24 hours', onPress: () => enableGhostMode(1440) },
-        ]
-      );
+      Alert.alert("Ghost Mode Duration", "How long would you like to be invisible?", [
+        { text: "Cancel", style: "cancel" },
+        { text: "30 minutes", onPress: () => enableGhostMode(30) },
+        { text: "1 hour", onPress: () => enableGhostMode(60) },
+        { text: "4 hours", onPress: () => enableGhostMode(240) },
+        { text: "24 hours", onPress: () => enableGhostMode(1440) },
+      ]);
     }
   };
 
@@ -59,222 +217,263 @@ export default function SafetyScreen() {
     if (isOnBreak) {
       endBreak();
     } else {
-      Alert.alert(
-        'Take a Break Duration',
-        'How long do you need?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: '1 hour', onPress: () => takeBreak(1) },
-          { text: '6 hours', onPress: () => takeBreak(6) },
-          { text: '24 hours', onPress: () => takeBreak(24) },
-          { text: '3 days', onPress: () => takeBreak(72) },
-          { text: '1 week', onPress: () => takeBreak(168) },
-        ]
-      );
+      Alert.alert("Take a Break Duration", "How long do you need?", [
+        { text: "Cancel", style: "cancel" },
+        { text: "1 hour", onPress: () => takeBreak(1) },
+        { text: "6 hours", onPress: () => takeBreak(6) },
+        { text: "24 hours", onPress: () => takeBreak(24) },
+        { text: "3 days", onPress: () => takeBreak(72) },
+        { text: "1 week", onPress: () => takeBreak(168) },
+      ]);
     }
   };
 
   const handleUnblock = (userId: string, userName: string) => {
-    Alert.alert(
-      'Unblock User',
-      `Unblock ${userName}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Unblock', onPress: () => unblockUser(userId) },
-      ]
-    );
+    Alert.alert("Unblock User", `Unblock ${userName}?`, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Unblock", onPress: () => unblockUser(userId) },
+    ]);
   };
 
   const handleRemoveAnchor = (userId: string, userName: string) => {
-    Alert.alert(
-      'Remove Anchor',
-      `Remove ${userName} as your anchor?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Remove', onPress: () => removeAnchor(userId), style: 'destructive' },
-      ]
-    );
+    Alert.alert("Remove Anchor", `Remove ${userName} as your anchor?`, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Remove", onPress: () => removeAnchor(userId), style: "destructive" },
+    ]);
   };
 
   const getBlockedUserName = (blockedId: string) => {
-    const friend = friends.find(f => f.friend_id === blockedId);
-    return friend?.friend?.display_name || 'Unknown User';
+    const friend = friends.find((f) => f.friend_id === blockedId);
+    return friend?.friend?.display_name || "Unknown User";
   };
 
   const getAnchorName = (anchor: any) => {
-    return anchor.anchor?.display_name || 'Unknown';
+    return anchor.anchor?.display_name || "Unknown";
+  };
+
+  const getBlockTypeLabel = (blockType: string) => {
+    switch (blockType) {
+      case "mute":
+        return "Muted";
+      case "soft":
+        return "Soft Block";
+      case "hard":
+        return "Hard Block";
+      default:
+        return "Blocked";
+    }
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.bg.primary }]}>
-      <LinearGradient colors={theme.gradients.background} style={StyleSheet.absoluteFill} />
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+      <LinearGradient
+        colors={theme.gradients.background}
+        style={StyleSheet.absoluteFill}
+      />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color={theme.colors.text.primary} />
+      {/* iOS-style Large Title Header */}
+      <View style={[styles.header, { paddingTop: insets.top }]}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="chevron-back" size={28} color={theme.colors.neon.cyan} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Safety & Privacy</Text>
-        <View style={{ width: 40 }} />
+        <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
+          Safety & Privacy
+        </Text>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + 32 },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Privacy Modes Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Privacy Modes</Text>
-
-          {/* Ghost Mode */}
-          <BlurView intensity={isDark ? 20 : 10} tint={theme.colors.blurTint} style={[styles.card, { borderColor: theme.colors.glass.border }]}>
-            <View style={styles.cardContent}>
-              <View style={styles.cardHeader}>
-                <View style={styles.cardIcon}>
-                  <Text style={styles.iconText}>👻</Text>
-                </View>
-                <View style={styles.cardInfo}>
-                  <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>Ghost Mode</Text>
-                  <Text style={[styles.cardDescription, { color: theme.colors.text.secondary }]}>
-                    Disappear from everyone temporarily
-                  </Text>
-                  {isInGhostMode && (
-                    <Text style={[styles.activeText, { color: theme.colors.mood.good.base }]}>Active</Text>
-                  )}
-                </View>
-                <Switch
-                  value={isInGhostMode}
-                  onValueChange={handleGhostModeToggle}
-                  trackColor={{
-                    false: theme.colors.glass.background,
-                    true: theme.colors.mood.notGreat.base,
-                  }}
-                  thumbColor={theme.colors.text.primary}
-                />
-              </View>
-            </View>
-          </BlurView>
-
-          {/* Take a Break */}
-          <BlurView intensity={isDark ? 20 : 10} tint={theme.colors.blurTint} style={[styles.card, { borderColor: theme.colors.glass.border }]}>
-            <View style={styles.cardContent}>
-              <View style={styles.cardHeader}>
-                <View style={styles.cardIcon}>
-                  <Text style={styles.iconText}>🌙</Text>
-                </View>
-                <View style={styles.cardInfo}>
-                  <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>Take a Break</Text>
-                  <Text style={[styles.cardDescription, { color: theme.colors.text.secondary }]}>
-                    Pause all presence and notifications
-                  </Text>
-                  {isOnBreak && (
-                    <Text style={[styles.activeText, { color: theme.colors.mood.good.base }]}>Active</Text>
-                  )}
-                </View>
-                <Switch
-                  value={isOnBreak}
-                  onValueChange={handleBreakToggle}
-                  trackColor={{
-                    false: theme.colors.glass.background,
-                    true: theme.colors.mood.neutral.base,
-                  }}
-                  thumbColor={theme.colors.text.primary}
-                />
-              </View>
-            </View>
-          </BlurView>
-        </View>
+        <SafetySection
+          title="PRIVACY MODES"
+          footer="These modes help you take a break from social activity when you need it."
+          theme={theme}
+        >
+          <SafetyRow
+            emoji="👻"
+            iconBg={ICON_BACKGROUNDS.ghost}
+            label="Ghost Mode"
+            description="Disappear from everyone temporarily"
+            isFirst
+            isActive={isInGhostMode}
+            theme={theme}
+            isDark={isDark}
+          >
+            <Switch
+              value={isInGhostMode}
+              onValueChange={handleGhostModeToggle}
+              trackColor={{
+                false: isDark ? "rgba(120,120,128,0.32)" : "rgba(120,120,128,0.16)",
+                true: "#AF52DE",
+              }}
+              thumbColor="#FFFFFF"
+              ios_backgroundColor={
+                isDark ? "rgba(120,120,128,0.32)" : "rgba(120,120,128,0.16)"
+              }
+            />
+          </SafetyRow>
+          <SafetyRow
+            emoji="🌙"
+            iconBg={ICON_BACKGROUNDS.break}
+            label="Take a Break"
+            description="Pause all presence and notifications"
+            isLast
+            isActive={isOnBreak}
+            theme={theme}
+            isDark={isDark}
+          >
+            <Switch
+              value={isOnBreak}
+              onValueChange={handleBreakToggle}
+              trackColor={{
+                false: isDark ? "rgba(120,120,128,0.32)" : "rgba(120,120,128,0.16)",
+                true: "#5856D6",
+              }}
+              thumbColor="#FFFFFF"
+              ios_backgroundColor={
+                isDark ? "rgba(120,120,128,0.32)" : "rgba(120,120,128,0.16)"
+              }
+            />
+          </SafetyRow>
+        </SafetySection>
 
         {/* Blocked Users Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Blocked Users</Text>
+        <SafetySection title="BLOCKED USERS" theme={theme}>
           {blocks.length === 0 ? (
-            <BlurView intensity={isDark ? 20 : 10} tint={theme.colors.blurTint} style={[styles.card, { borderColor: theme.colors.glass.border }]}>
-              <View style={styles.cardContent}>
-                <Text style={[styles.emptyText, { color: theme.colors.text.secondary }]}>No blocked users</Text>
-              </View>
-            </BlurView>
-          ) : (
-            blocks.map((block) => (
-              <BlurView key={block.id} intensity={isDark ? 20 : 10} tint={theme.colors.blurTint} style={[styles.card, { borderColor: theme.colors.glass.border }]}>
-                <View style={styles.cardContent}>
-                  <View style={styles.cardHeader}>
-                    <View style={styles.cardInfo}>
-                      <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>
-                        {getBlockedUserName(block.blocked_id)}
-                      </Text>
-                      <Text style={[styles.cardDescription, { color: theme.colors.text.secondary }]}>
-                        {block.block_type === 'mute' && 'Muted'}
-                        {block.block_type === 'soft' && 'Soft Blocked'}
-                        {block.block_type === 'hard' && 'Hard Blocked'}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => handleUnblock(block.blocked_id, getBlockedUserName(block.blocked_id))}
-                      style={[styles.unblockButton, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }]}
-                    >
-                      <Text style={[styles.unblockText, { color: theme.colors.text.secondary }]}>Unblock</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </BlurView>
-            ))
-          )}
-        </View>
-
-        {/* Anchors Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Safety Anchors</Text>
-            <Text style={[styles.sectionSubtitle, { color: theme.colors.text.secondary }]}>Trusted contacts (max 2)</Text>
-          </View>
-          {anchors.length === 0 ? (
-            <BlurView intensity={isDark ? 20 : 10} tint={theme.colors.blurTint} style={[styles.card, { borderColor: theme.colors.glass.border }]}>
-              <View style={styles.cardContent}>
-                <Text style={[styles.emptyText, { color: theme.colors.text.secondary }]}>No anchors set</Text>
-                <Text style={[styles.emptySubtext, { color: theme.colors.text.tertiary }]}>
-                  Anchors get notified when you're inactive for 48+ hours
-                </Text>
-              </View>
-            </BlurView>
-          ) : (
-            anchors.map((anchor) => (
-              <BlurView key={anchor.id} intensity={isDark ? 20 : 10} tint={theme.colors.blurTint} style={[styles.card, { borderColor: theme.colors.glass.border }]}>
-                <View style={styles.cardContent}>
-                  <View style={styles.cardHeader}>
-                    <View style={styles.cardIcon}>
-                      <Text style={styles.iconText}>⚓</Text>
-                    </View>
-                    <View style={styles.cardInfo}>
-                      <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>{getAnchorName(anchor)}</Text>
-                      <Text style={[styles.cardDescription, { color: theme.colors.text.secondary }]}>Safety Anchor</Text>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => handleRemoveAnchor(anchor.anchor_id, getAnchorName(anchor))}
-                      style={styles.removeButton}
-                    >
-                      <Feather name="x" size={20} color={theme.colors.text.secondary} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </BlurView>
-            ))
-          )}
-        </View>
-
-        {/* Info Section */}
-        <View style={styles.section}>
-          <BlurView intensity={isDark ? 20 : 10} tint={theme.colors.blurTint} style={[styles.infoCard, { borderColor: theme.colors.glass.border }]}>
-            <View style={styles.cardContent}>
-              <Text style={[styles.infoTitle, { color: theme.colors.text.primary }]}>About Safety Features</Text>
-              <Text style={[styles.infoText, { color: theme.colors.text.secondary }]}>
-                • All blocks are silent - users won't know{'\n'}
-                • Ghost mode makes you invisible to everyone{'\n'}
-                • Anchors help watch out for you{'\n'}
-                • Visibility settings are per-friend
+            <View
+              style={[
+                styles.emptyCard,
+                { backgroundColor: theme.colors.glass.background },
+              ]}
+            >
+              <Text style={[styles.emptyText, { color: theme.colors.text.tertiary }]}>
+                No blocked users
               </Text>
             </View>
-          </BlurView>
-        </View>
+          ) : (
+            blocks.map((block, index) => (
+              <SafetyRow
+                key={block.id}
+                icon="person-remove"
+                iconBg={ICON_BACKGROUNDS.blocked}
+                label={getBlockedUserName(block.blocked_id)}
+                description={getBlockTypeLabel(block.block_type)}
+                value="Unblock"
+                onPress={() =>
+                  handleUnblock(block.blocked_id, getBlockedUserName(block.blocked_id))
+                }
+                isFirst={index === 0}
+                isLast={index === blocks.length - 1}
+                theme={theme}
+                isDark={isDark}
+              />
+            ))
+          )}
+        </SafetySection>
 
-        <View style={{ height: 40 }} />
+        {/* Safety Anchors Section */}
+        <SafetySection
+          title="SAFETY ANCHORS"
+          footer="Anchors are trusted contacts who get notified when you're inactive for 48+ hours. You can set up to 2 anchors."
+          theme={theme}
+        >
+          {anchors.length === 0 ? (
+            <View
+              style={[
+                styles.emptyCard,
+                { backgroundColor: theme.colors.glass.background },
+              ]}
+            >
+              <Ionicons
+                name="shield-checkmark"
+                size={32}
+                color={theme.colors.text.tertiary}
+                style={styles.emptyIcon}
+              />
+              <Text style={[styles.emptyText, { color: theme.colors.text.tertiary }]}>
+                No anchors set
+              </Text>
+            </View>
+          ) : (
+            anchors.map((anchor, index) => (
+              <SafetyRow
+                key={anchor.id}
+                icon="shield-checkmark"
+                iconBg={ICON_BACKGROUNDS.anchor}
+                label={getAnchorName(anchor)}
+                description="Safety Anchor"
+                onPress={() => handleRemoveAnchor(anchor.anchor_id, getAnchorName(anchor))}
+                showChevron
+                isFirst={index === 0}
+                isLast={index === anchors.length - 1}
+                theme={theme}
+                isDark={isDark}
+              />
+            ))
+          )}
+        </SafetySection>
+
+        {/* About Section */}
+        <SafetySection title="ABOUT" theme={theme}>
+          <View
+            style={[
+              styles.infoCard,
+              { backgroundColor: theme.colors.glass.background },
+            ]}
+          >
+            <View style={styles.infoRow}>
+              <Ionicons
+                name="checkmark-circle"
+                size={16}
+                color={theme.colors.text.tertiary}
+              />
+              <Text style={[styles.infoText, { color: theme.colors.text.secondary }]}>
+                All blocks are silent - users won't know
+              </Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Ionicons
+                name="checkmark-circle"
+                size={16}
+                color={theme.colors.text.tertiary}
+              />
+              <Text style={[styles.infoText, { color: theme.colors.text.secondary }]}>
+                Ghost mode makes you invisible to everyone
+              </Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Ionicons
+                name="checkmark-circle"
+                size={16}
+                color={theme.colors.text.tertiary}
+              />
+              <Text style={[styles.infoText, { color: theme.colors.text.secondary }]}>
+                Anchors help watch out for you
+              </Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Ionicons
+                name="checkmark-circle"
+                size={16}
+                color={theme.colors.text.tertiary}
+              />
+              <Text style={[styles.infoText, { color: theme.colors.text.secondary }]}>
+                Visibility settings are per-friend
+              </Text>
+            </View>
+          </View>
+        </SafetySection>
       </ScrollView>
     </View>
   );
@@ -285,110 +484,158 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingTop: 60,
-    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: typography.sizes.xl,
-    fontWeight: typography.weights.bold,
-  },
-  content: {
-    flex: 1,
-  },
-  section: {
-    paddingHorizontal: spacing.lg,
-    marginTop: spacing.lg,
-  },
-  sectionHeader: {
-    marginBottom: spacing.md,
-  },
-  sectionTitle: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.bold,
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: -spacing.xs,
     marginBottom: spacing.xs,
   },
-  sectionSubtitle: {
-    fontSize: typography.sizes.sm,
+  headerTitle: {
+    fontSize: 34,
+    fontWeight: "700",
+    letterSpacing: 0.37,
   },
-  card: {
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    marginBottom: spacing.md,
-  },
-  cardContent: {
-    padding: spacing.md,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  cardIcon: {
-    marginRight: spacing.md,
-  },
-  iconText: {
-    fontSize: 32,
-  },
-  cardInfo: {
+  scrollView: {
     flex: 1,
   },
-  cardTitle: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold,
-    marginBottom: spacing.xs / 2,
+  scrollContent: {
+    paddingTop: spacing.md,
   },
-  cardDescription: {
-    fontSize: typography.sizes.sm,
-  },
-  activeText: {
-    fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.bold,
-    marginTop: spacing.xs / 2,
-  },
-  emptyText: {
-    fontSize: typography.sizes.md,
-    textAlign: 'center',
-  },
-  emptySubtext: {
-    fontSize: typography.sizes.sm,
-    textAlign: 'center',
-    marginTop: spacing.xs,
-  },
-  unblockButton: {
+  section: {
+    marginBottom: spacing.xl,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
   },
-  unblockText: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.semibold,
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "400",
+    letterSpacing: -0.08,
+    marginBottom: spacing.sm,
+    marginLeft: spacing.md,
+    textTransform: "uppercase",
   },
-  removeButton: {
-    padding: spacing.sm,
+  sectionContent: {
+    borderRadius: 12,
+    overflow: "hidden",
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
-  infoCard: {
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
+  sectionFooter: {
+    fontSize: 13,
+    fontWeight: "400",
+    lineHeight: 18,
+    marginTop: spacing.sm,
+    marginHorizontal: spacing.md,
   },
-  infoTitle: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.bold,
+  rowContainer: {
+    minHeight: 44,
+  },
+  rowContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
+    minHeight: 60,
+  },
+  iconWrapper: {
+    width: 29,
+    height: 29,
+    borderRadius: 6,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  emojiWrapper: {
+    width: 36,
+    height: 36,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  emojiText: {
+    fontSize: 28,
+  },
+  rowTextContainer: {
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  labelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  rowLabel: {
+    fontSize: 17,
+    fontWeight: "400",
+    letterSpacing: -0.41,
+  },
+  rowDescription: {
+    fontSize: 13,
+    fontWeight: "400",
+    marginTop: 2,
+  },
+  activeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  activeBadgeText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  rowRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  rowValue: {
+    fontSize: 17,
+    fontWeight: "400",
+    marginRight: spacing.xs,
+  },
+  separatorContainer: {
+    paddingLeft: 57,
+  },
+  separator: {
+    height: StyleSheet.hairlineWidth,
+  },
+  emptyCard: {
+    borderRadius: 12,
+    padding: spacing.xl,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyIcon: {
     marginBottom: spacing.sm,
   },
+  emptyText: {
+    fontSize: 15,
+    fontWeight: "400",
+  },
+  infoCard: {
+    borderRadius: 12,
+    padding: spacing.md,
+    gap: 12,
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
   infoText: {
-    fontSize: typography.sizes.sm,
-    lineHeight: 22,
+    fontSize: 15,
+    fontWeight: "400",
+    flex: 1,
+    lineHeight: 20,
   },
 });

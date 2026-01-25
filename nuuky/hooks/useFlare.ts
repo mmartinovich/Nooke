@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
@@ -9,29 +9,42 @@ import { Flare } from '../types';
 let activeFlareSubscription: { cleanup: () => void; userId: string } | null = null;
 
 export const useFlare = () => {
-  const { currentUser } = useAppStore();
+  const { currentUser, friends } = useAppStore();
   const [loading, setLoading] = useState(false);
   const [activeFlares, setActiveFlares] = useState<Flare[]>([]);
   const [myActiveFlare, setMyActiveFlare] = useState<Flare | null>(null);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
+    isMountedRef.current = true;
     if (currentUser) {
       loadActiveFlares();
       const cleanup = setupRealtimeSubscription();
-      return cleanup;
+      return () => {
+        isMountedRef.current = false;
+        cleanup();
+      };
     }
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [currentUser?.id]); // Use id to avoid re-running on mood change
 
   // MOCK MODE FLAG - should match useRoom.ts
   const USE_MOCK_DATA = false;
 
   const loadActiveFlares = async () => {
-    if (!currentUser) return;
+    // Get fresh state from store to avoid stale closures
+    const user = useAppStore.getState().currentUser;
+    const currentFriends = useAppStore.getState().friends;
+    if (!user) return;
 
     // MOCK MODE: Skip Supabase queries, use empty flares
     if (USE_MOCK_DATA) {
-      setActiveFlares([]);
-      setMyActiveFlare(null);
+      if (isMountedRef.current) {
+        setActiveFlares([]);
+        setMyActiveFlare(null);
+      }
       return;
     }
 
@@ -49,28 +62,33 @@ export const useFlare = () => {
           )
         `)
         .gte('expires_at', new Date().toISOString())
-        .neq('user_id', currentUser.id);
+        .neq('user_id', user.id);
 
       if (error) throw error;
 
+      // Get friend IDs for filtering
+      const friendIds = new Set(currentFriends.map(f => f.friend_id));
+
       // Filter for flares from friends only
       const friendFlares = data?.filter((flare: any) => {
-        // We'd need to check if flare.user_id is in our friends list
-        // For now, showing all active flares
-        return true;
+        return friendIds.has(flare.user_id);
       }) || [];
 
-      setActiveFlares(friendFlares);
+      if (isMountedRef.current) {
+        setActiveFlares(friendFlares);
+      }
 
       // Check if user has an active flare
       const { data: myFlare } = await supabase
         .from('flares')
         .select('*')
-        .eq('user_id', currentUser.id)
+        .eq('user_id', user.id)
         .gte('expires_at', new Date().toISOString())
         .maybeSingle();
 
-      setMyActiveFlare(myFlare);
+      if (isMountedRef.current) {
+        setMyActiveFlare(myFlare);
+      }
     } catch (_error: any) {
       // Silently fail
     }

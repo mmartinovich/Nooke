@@ -62,16 +62,21 @@ export default function LoginScreen() {
     };
   }, []);
 
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async (userId: string): Promise<{ userData: any; needsOnboarding: boolean } | null> => {
+    console.log("[Auth] fetchUserProfile called for userId:", userId);
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    console.log("[Auth] getUser result:", user?.id);
 
-    let { data: userData } = await supabase.from("users").select("*").eq("id", userId).single();
+    let { data: userData, error: fetchError } = await supabase.from("users").select("*").eq("id", userId).single();
+    console.log("[Auth] Fetched user profile:", userData?.id, "error:", fetchError?.message);
 
     if (!userData && user) {
+      console.log("[Auth] Creating new user profile...");
       // Create profile for OAuth user (fallback if trigger doesn't work)
-      const { data: newUser } = await supabase
+      const { data: newUser, error: insertError } = await supabase
         .from("users")
         .insert({
           id: userId,
@@ -85,12 +90,17 @@ export default function LoginScreen() {
         })
         .select()
         .single();
+      console.log("[Auth] Insert result:", newUser?.id, "error:", insertError?.message);
       userData = newUser;
     }
 
     if (userData) {
+      console.log("[Auth] Setting current user, profile_completed:", userData.profile_completed);
       setCurrentUser(userData);
+      return { userData, needsOnboarding: userData.profile_completed === false };
     }
+    console.log("[Auth] No user data found, returning null");
+    return null;
   };
 
   const handleAppleSignIn = async () => {
@@ -130,13 +140,29 @@ export default function LoginScreen() {
         nonce: randomString,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.log("[Auth] Apple signInWithIdToken error:", error.message);
+        throw error;
+      }
+      console.log("[Auth] Apple sign in success, user id:", data.user.id);
 
-      // Fetch or create user profile
-      await fetchUserProfile(data.user.id);
-      // Check profile completion status - navigation handled by index.tsx
-      router.replace("/");
+      // Fetch or create user profile and navigate directly
+      const result = await fetchUserProfile(data.user.id);
+      console.log("[Auth] fetchUserProfile result:", result);
+      if (result) {
+        // Navigate directly based on profile completion - avoids race condition with index.tsx
+        console.log("[Auth] Navigating to:", result.needsOnboarding ? "onboarding" : "main");
+        if (result.needsOnboarding) {
+          router.replace("/(auth)/onboarding");
+        } else {
+          router.replace("/(main)");
+        }
+      } else {
+        console.log("[Auth] No result from fetchUserProfile - this is the problem!");
+        Alert.alert("Sign In Error", "Could not fetch user profile. Please try again.");
+      }
     } catch (error: any) {
+      console.log("[Auth] Apple sign in catch block:", error.code, error.message);
       if (error.code === "ERR_REQUEST_CANCELED") {
         // User cancelled the sign-in
         return;
@@ -166,13 +192,29 @@ export default function LoginScreen() {
         token: userInfo.data.idToken,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.log("[Auth] Google signInWithIdToken error:", error.message);
+        throw error;
+      }
+      console.log("[Auth] Google sign in success, user id:", data.user.id);
 
-      // Fetch or create user profile
-      await fetchUserProfile(data.user.id);
-      // Check profile completion status - navigation handled by index.tsx
-      router.replace("/");
+      // Fetch or create user profile and navigate directly
+      const result = await fetchUserProfile(data.user.id);
+      console.log("[Auth] fetchUserProfile result:", result);
+      if (result) {
+        // Navigate directly based on profile completion - avoids race condition with index.tsx
+        console.log("[Auth] Navigating to:", result.needsOnboarding ? "onboarding" : "main");
+        if (result.needsOnboarding) {
+          router.replace("/(auth)/onboarding");
+        } else {
+          router.replace("/(main)");
+        }
+      } else {
+        console.log("[Auth] No result from fetchUserProfile - this is the problem!");
+        Alert.alert("Sign In Error", "Could not fetch user profile. Please try again.");
+      }
     } catch (error: any) {
+      console.log("[Auth] Google sign in catch block:", error.code, error.message);
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
         // User cancelled the sign-in
         return;

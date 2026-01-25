@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,43 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
-} from 'react';
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { colors, spacing, radius, typography } from '../lib/theme';
 
 type BlockType = 'mute' | 'soft' | 'hard';
+
+// Moved outside component to prevent recreation on each render
+const BLOCK_OPTIONS: ReadonlyArray<{
+  type: BlockType;
+  title: string;
+  description: string;
+  icon: string;
+  color: string;
+}> = [
+  {
+    type: 'mute',
+    title: 'Mute',
+    description: "You won't see their presence or updates, but they can still see yours",
+    icon: '🔇',
+    color: colors.mood.neutral.base,
+  },
+  {
+    type: 'soft',
+    title: 'Soft Block',
+    description: 'You appear offline to them. They can still send nudges (which you can ignore)',
+    icon: '👻',
+    color: colors.mood.notGreat.base,
+  },
+  {
+    type: 'hard',
+    title: 'Hard Block',
+    description: 'Complete removal. They disappear from your friends list',
+    icon: '🚫',
+    color: '#EF4444',
+  },
+] as const;
 
 interface BlockModalProps {
   visible: boolean;
@@ -28,51 +59,33 @@ export const BlockModal: React.FC<BlockModalProps> = ({
 }) => {
   const [selectedType, setSelectedType] = useState<BlockType | null>(null);
 
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(() => {
     if (selectedType) {
       onBlock(selectedType);
       setSelectedType(null);
       onClose();
     }
-  };
+  }, [selectedType, onBlock, onClose]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setSelectedType(null);
     onClose();
-  };
-
-  const blockOptions = [
-    {
-      type: 'mute' as BlockType,
-      title: 'Mute',
-      description: "You won't see their presence or updates, but they can still see yours",
-      icon: '🔇',
-      color: colors.mood.neutral.base,
-    },
-    {
-      type: 'soft' as BlockType,
-      title: 'Soft Block',
-      description: 'You appear offline to them. They can still send nudges (which you can ignore)',
-      icon: '👻',
-      color: colors.mood.notGreat.base,
-    },
-    {
-      type: 'hard' as BlockType,
-      title: 'Hard Block',
-      description: 'Complete removal. They disappear from your friends list',
-      icon: '🚫',
-      color: '#EF4444',
-    },
-  ];
+  }, [onClose]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      accessibilityViewIsModal={true}
+    >
       <BlurView intensity={80} style={styles.overlay}>
         <View style={styles.modalContainer}>
           <BlurView intensity={30} style={styles.modal}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.title}>Block {userName}</Text>
+              <Text style={styles.title} accessibilityRole="header">Block {userName}</Text>
               <Text style={styles.subtitle}>All blocks are silent - they won't know</Text>
             </View>
 
@@ -82,7 +95,7 @@ export const BlockModal: React.FC<BlockModalProps> = ({
               contentContainerStyle={styles.optionsContent}
               showsVerticalScrollIndicator={false}
             >
-              {blockOptions.map((option) => (
+              {BLOCK_OPTIONS.map((option) => (
                 <TouchableOpacity
                   key={option.type}
                   onPress={() => setSelectedType(option.type)}
@@ -90,6 +103,9 @@ export const BlockModal: React.FC<BlockModalProps> = ({
                     styles.optionCard,
                     selectedType === option.type && styles.optionCardSelected,
                   ]}
+                  accessibilityLabel={`${option.title}: ${option.description}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: selectedType === option.type }}
                 >
                   <View style={styles.optionHeader}>
                     <Text style={styles.optionIcon}>{option.icon}</Text>
@@ -109,7 +125,12 @@ export const BlockModal: React.FC<BlockModalProps> = ({
 
             {/* Buttons */}
             <View style={styles.buttons}>
-              <TouchableOpacity onPress={handleCancel} style={styles.cancelButton}>
+              <TouchableOpacity
+                onPress={handleCancel}
+                style={styles.cancelButton}
+                accessibilityLabel="Cancel"
+                accessibilityRole="button"
+              >
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
 
@@ -117,6 +138,9 @@ export const BlockModal: React.FC<BlockModalProps> = ({
                 onPress={handleConfirm}
                 disabled={!selectedType}
                 style={[styles.confirmButton, !selectedType && styles.confirmButtonDisabled]}
+                accessibilityLabel="Confirm block"
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !selectedType }}
               >
                 <LinearGradient
                   colors={
