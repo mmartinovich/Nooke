@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useMemo } from "react";
 import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Animated, Easing, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
@@ -178,57 +178,53 @@ export function CentralOrb({
     onPress?.();
   };
 
-  // Enhanced outer glow - more prominent
-  const outerGlowScale = breatheAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1.0, 1.3],
-  });
-
-  const outerGlowOpacity = breatheAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.5],
-  });
-
-  // Mid glow for depth
-  const midGlowOpacity = pulseAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.2, 0.4],
-  });
-
-  // Inner orb scale - more noticeable breathing
-  const innerOrbScale = breatheAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1.0, 1.06],
-  });
-
-  // Gentle bounce
-  const bounceTranslate = bounceAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -4],
-  });
-
-  const flareScale = flareAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1.0, 1.5],
-  });
-
-  const flareOpacity = flareAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 0.8],
-  });
+  // Memoize all interpolations to prevent recreation on every render
+  const interpolations = useMemo(() => ({
+    // Enhanced outer glow - more prominent
+    outerGlowScale: breatheAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [1.0, 1.3],
+    }),
+    outerGlowOpacity: breatheAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.3, 0.5],
+    }),
+    // Mid glow for depth
+    midGlowOpacity: pulseAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.2, 0.4],
+    }),
+    // Inner orb scale - more noticeable breathing
+    innerOrbScale: breatheAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [1.0, 1.06],
+    }),
+    // Gentle bounce
+    bounceTranslate: bounceAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, -4],
+    }),
+    // Flare animations
+    flareScale: flareAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [1.0, 1.5],
+    }),
+    flareOpacity: flareAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 0.8],
+    }),
+    // Hint ring interpolations
+    hintRingScale: hintAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [1.0, 1.3],
+    }),
+    hintRingOpacity: hintAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.8, 0.3],
+    }),
+  }), [breatheAnim, pulseAnim, bounceAnim, flareAnim, hintAnim]);
 
   const moodImage = getMoodImage(mood);
-
-  // Hint ring interpolations
-  const hintRingScale = hintAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1.0, 1.3],
-  });
-
-  const hintRingOpacity = hintAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.8, 0.3],
-  });
 
   return (
     <Animated.View
@@ -236,7 +232,7 @@ export function CentralOrb({
         styles.container,
         { left: CENTER_X, top: CENTER_Y },
         {
-          transform: [{ translateY: bounceTranslate }],
+          transform: [{ translateY: interpolations.bounceTranslate }],
         },
       ]}
       pointerEvents="box-none"
@@ -247,8 +243,8 @@ export function CentralOrb({
           style={[
             styles.hintRing,
             {
-              opacity: Animated.multiply(hintOpacity, hintRingOpacity),
-              transform: [{ scale: hintRingScale }],
+              opacity: Animated.multiply(hintOpacity, interpolations.hintRingOpacity),
+              transform: [{ scale: interpolations.hintRingScale }],
               borderColor: glowColor,
             },
           ]}
@@ -262,8 +258,8 @@ export function CentralOrb({
           style={[
             styles.flareGlow,
             {
-              transform: [{ scale: flareScale }],
-              opacity: flareOpacity,
+              transform: [{ scale: interpolations.flareScale }],
+              opacity: interpolations.flareOpacity,
             },
           ]}
           pointerEvents="none"
@@ -281,8 +277,8 @@ export function CentralOrb({
           styles.glowLayer,
           styles.outerGlow,
           {
-            transform: [{ scale: outerGlowScale }],
-            opacity: outerGlowOpacity,
+            transform: [{ scale: interpolations.outerGlowScale }],
+            opacity: interpolations.outerGlowOpacity,
           },
         ]}
         pointerEvents="none"
@@ -298,7 +294,7 @@ export function CentralOrb({
           styles.glowLayer,
           styles.midGlow,
           {
-            opacity: midGlowOpacity,
+            opacity: interpolations.midGlowOpacity,
           },
         ]}
         pointerEvents="none"
@@ -314,7 +310,7 @@ export function CentralOrb({
           style={[
             styles.innerOrb,
             {
-              transform: [{ scale: innerOrbScale }],
+              transform: [{ scale: interpolations.innerOrbScale }],
               shadowColor: moodColor,
             },
           ]}

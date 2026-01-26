@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Alert, StatusBar,
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -11,7 +10,6 @@ import { supabase } from "../../lib/supabase";
 import { Animated as RNAnimated, PanResponder, Easing } from "react-native";
 
 // AsyncStorage with fallback for when package isn't installed
-// TODO: Install @react-native-async-storage/async-storage package: npm install @react-native-async-storage/async-storage
 let AsyncStorage: {
   getItem: (key: string) => Promise<string | null>;
   setItem: (key: string, value: string) => Promise<void>;
@@ -21,22 +19,38 @@ let AsyncStorage: {
 try {
   AsyncStorage = require("@react-native-async-storage/async-storage").default;
 } catch (e) {
-  // Fallback to in-memory storage if package not installed
-  const memoryStorage: Record<string, string> = {};
+  // Fallback to in-memory storage with LRU limit to prevent unbounded memory growth
+  const MAX_STORAGE_ITEMS = 50;
+  const memoryStorage: Map<string, string> = new Map();
+
   AsyncStorage = {
-    getItem: async (key: string) => memoryStorage[key] || null,
+    getItem: async (key: string) => {
+      const value = memoryStorage.get(key);
+      if (value !== undefined) {
+        // Move to end (most recently used)
+        memoryStorage.delete(key);
+        memoryStorage.set(key, value);
+      }
+      return value || null;
+    },
     setItem: async (key: string, value: string) => {
-      memoryStorage[key] = value;
+      // Delete first to update position in Map
+      memoryStorage.delete(key);
+      memoryStorage.set(key, value);
+      // Evict oldest entries if over limit
+      if (memoryStorage.size > MAX_STORAGE_ITEMS) {
+        const firstKey = memoryStorage.keys().next().value;
+        if (firstKey) memoryStorage.delete(firstKey);
+      }
     },
     removeItem: async (key: string) => {
-      delete memoryStorage[key];
+      memoryStorage.delete(key);
     },
   };
 }
 import { useAppStore } from "../../stores/appStore";
 import { User } from "../../types";
 import { MoodPicker } from "../../components/MoodPicker";
-import { Asset } from "expo-asset";
 
 // Module-level subscription tracking to prevent duplicates
 let activePresenceSubscription: { cleanup: () => void; userId: string } | null = null;
@@ -55,7 +69,7 @@ import { useDefaultRoom } from "../../hooks/useDefaultRoom";
 import { useTheme } from "../../hooks/useTheme";
 import { useAudio } from "../../hooks/useAudio";
 import { useNotifications } from "../../hooks/useNotifications";
-import { getMoodColor, getVibeText, getCustomMoodColor, spacing, radius, typography, getAllMoodImages } from "../../lib/theme";
+import { getMoodColor, getVibeText, getCustomMoodColor, spacing, radius, typography } from "../../lib/theme";
 import { CentralOrb } from "../../components/CentralOrb";
 import { FriendParticle } from "../../components/FriendParticle";
 import { StarField } from "../../components/StarField";
@@ -395,18 +409,7 @@ export default function QuantumOrbitScreen() {
     });
   }, [orbitPositions]);
 
-  // Preload mood images for instant display
-  useEffect(() => {
-    const preloadImages = async () => {
-      try {
-        const images = getAllMoodImages();
-        await Asset.loadAsync(images);
-      } catch (_error) {
-        // Silently fail preloading
-      }
-    };
-    preloadImages();
-  }, []);
+  // Mood images are preloaded at app startup in _layout.tsx
 
   // Audio-reactive button pulsing animation
   useEffect(() => {

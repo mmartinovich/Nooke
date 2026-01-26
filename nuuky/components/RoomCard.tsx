@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,7 +12,7 @@ interface RoomCardProps {
   isDefault?: boolean;
 }
 
-export const RoomCard: React.FC<RoomCardProps> = ({ room, onPress, isCreator = false, isDefault = false }) => {
+const RoomCardComponent: React.FC<RoomCardProps> = ({ room, onPress, isCreator = false, isDefault = false }) => {
   const participants = room.participants || [];
   const participantCount = participants.length;
   const maxMembers = 10;
@@ -252,4 +252,19 @@ const styles = StyleSheet.create({
   chevronContainer: {
     paddingRight: spacing.md,
   },
+});
+
+// Memoize to prevent re-renders when parent updates but room data hasn't changed
+export const RoomCard = memo(RoomCardComponent, (prevProps, nextProps) => {
+  // Only re-render if these specific props changed
+  return (
+    prevProps.room.id === nextProps.room.id &&
+    prevProps.room.name === nextProps.room.name &&
+    prevProps.isDefault === nextProps.isDefault &&
+    prevProps.isCreator === nextProps.isCreator &&
+    prevProps.room.participants?.length === nextProps.room.participants?.length &&
+    // Check if participants changed (by comparing user online status)
+    JSON.stringify(prevProps.room.participants?.map(p => ({ id: p.id, online: p.user?.is_online }))) ===
+    JSON.stringify(nextProps.room.participants?.map(p => ({ id: p.id, online: p.user?.is_online })))
+  );
 });

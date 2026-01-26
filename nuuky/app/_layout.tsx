@@ -1,18 +1,23 @@
 import { useEffect, useState, useRef } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { ActivityIndicator, View } from 'react-native';
 import * as Linking from 'expo-linking';
+import * as SplashScreen from 'expo-splash-screen';
+import { Asset } from 'expo-asset';
 import { useAppStore } from '../stores/appStore';
 import { supabase } from '../lib/supabase';
 import { ThemeProvider } from '../context/ThemeContext';
 import { initializeLiveKit } from '../lib/livekit';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { getAllMoodImages } from '../lib/theme';
 import {
   registerForPushNotificationsAsync,
   savePushTokenToUser,
   setupNotificationListeners,
 } from '../lib/notifications';
+
+// Keep the splash screen visible while we initialize
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { setCurrentUser } = useAppStore();
@@ -131,6 +136,14 @@ export default function RootLayout() {
       // Initialize LiveKit WebRTC globals
       initializeLiveKit();
 
+      // Preload mood images at app startup (only once)
+      try {
+        const images = getAllMoodImages();
+        await Asset.loadAsync(images);
+      } catch (_error) {
+        // Silently fail preloading - images will load on demand
+      }
+
       // Listen for incoming deep links
       const subscription = Linking.addEventListener('url', (event) => {
         handleDeepLink(event.url);
@@ -213,13 +226,16 @@ export default function RootLayout() {
     };
   }, []);
 
-  // Show loading screen while initializing
+  // Hide splash screen when app is ready
+  useEffect(() => {
+    if (isReady) {
+      SplashScreen.hideAsync();
+    }
+  }, [isReady]);
+
+  // Keep splash screen visible while initializing (return null to render nothing)
   if (!isReady) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
-        <ActivityIndicator size="large" color="#fff" />
-      </View>
-    );
+    return null;
   }
 
   return (

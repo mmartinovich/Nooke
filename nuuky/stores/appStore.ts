@@ -77,6 +77,22 @@ interface AppState {
   logout: () => void;
 }
 
+// Memoized selectors for performance - prevents re-renders on unrelated state changes
+export const useCurrentUser = () => useAppStore((state) => state.currentUser);
+export const useFriendsStore = () => useAppStore((state) => state.friends);
+export const useActiveRooms = () => useAppStore((state) => state.activeRooms);
+export const useMyRooms = () => useAppStore((state) => state.myRooms);
+export const useCurrentRoom = () => useAppStore((state) => state.currentRoom);
+export const useRoomParticipants = () => useAppStore((state) => state.roomParticipants);
+export const useRoomInvites = () => useAppStore((state) => state.roomInvites);
+export const useSpeakingParticipants = () => useAppStore((state) => state.speakingParticipants);
+export const useActiveCustomMood = () => useAppStore((state) => state.activeCustomMood);
+export const useNotificationsStore = () => useAppStore((state) => state.notifications);
+export const useUnreadNotificationCount = () => useAppStore((state) => state.unreadNotificationCount);
+export const useThemeMode = () => useAppStore((state) => state.themeMode);
+export const useDefaultRoomId = () => useAppStore((state) => state.defaultRoomId);
+export const useAudioConnectionStatus = () => useAppStore((state) => state.audioConnectionStatus);
+
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
