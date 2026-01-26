@@ -9,7 +9,7 @@ export default {
   expo: {
     name: "Nūūky",
     slug: "nuuky",
-    version: "1.0.4h",
+    version: "1.0.5",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "dark",
@@ -66,7 +66,6 @@ export default {
     plugins: [
       "expo-router",
       "expo-apple-authentication",
-      "expo-dev-client",
       [
         "expo-contacts",
         {
