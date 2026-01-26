@@ -1,14 +1,15 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback, memo } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   Alert,
   RefreshControl,
   ActivityIndicator,
   StatusBar,
+  ListRenderItem,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,7 +21,68 @@ import { useInvite } from "../../hooks/useInvite";
 import { useAppStore } from "../../stores/appStore";
 import { useTheme } from "../../hooks/useTheme";
 import { typography, spacing, radius, getMoodColor, interactionStates } from "../../lib/theme";
-import { User, MatchedContact } from "../../types";
+import { User, MatchedContact, Friendship } from "../../types";
+
+// Memoized Friend Card component to prevent unnecessary re-renders
+interface FriendCardProps {
+  friendship: Friendship;
+  onLongPress: () => void;
+  textPrimaryColor: string;
+}
+
+const FriendCard = memo(({ friendship, onLongPress, textPrimaryColor }: FriendCardProps) => {
+  const friend = friendship.friend as User;
+  const moodColors = getMoodColor(friend.mood);
+
+  return (
+    <TouchableOpacity
+      style={styles.friendCard}
+      activeOpacity={0.7}
+      onLongPress={onLongPress}
+    >
+      <View style={styles.friendInfo}>
+        <View style={styles.friendAvatarWrapper}>
+          <View
+            style={[
+              styles.friendAvatar,
+              {
+                backgroundColor: moodColors.base,
+                borderColor: friend.is_online ? moodColors.base : "rgba(255,255,255,0.1)",
+              },
+            ]}
+          />
+          {friend.is_online && (
+            <View style={styles.onlineIndicator} />
+          )}
+        </View>
+
+        <View style={styles.friendText}>
+          <Text style={[styles.friendName, { color: textPrimaryColor }]}>
+            {friend.display_name}
+          </Text>
+          <Text style={styles.friendStatus}>
+            {friend.is_online ? "Online" : "Offline"}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.chevronContainer}>
+        <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.3)" />
+      </View>
+    </TouchableOpacity>
+  );
+}, (prevProps, nextProps) => {
+  // Custom comparison - only re-render if relevant data changed
+  const prevFriend = prevProps.friendship.friend as User;
+  const nextFriend = nextProps.friendship.friend as User;
+  return (
+    prevProps.friendship.id === nextProps.friendship.id &&
+    prevFriend.display_name === nextFriend.display_name &&
+    prevFriend.mood === nextFriend.mood &&
+    prevFriend.is_online === nextFriend.is_online &&
+    prevProps.textPrimaryColor === nextProps.textPrimaryColor
+  );
+});
 
 export default function FriendsScreen() {
   const router = useRouter();
@@ -84,7 +146,7 @@ export default function FriendsScreen() {
     setRefreshing(false);
   };
 
-  const handleRemoveFriend = (friendship: any) => {
+  const handleRemoveFriend = useCallback((friendship: any) => {
     const friend = friendship.friend as User;
     Alert.alert("Remove Friend", `Remove ${friend.display_name} from your friends?`, [
       { text: "Cancel", style: "cancel" },
@@ -94,7 +156,19 @@ export default function FriendsScreen() {
         onPress: () => removeFriendship(friend.id),
       },
     ]);
-  };
+  }, [removeFriendship]);
+
+  // Memoized render function for FlatList
+  const renderFriendItem: ListRenderItem<Friendship> = useCallback(({ item: friendship }) => (
+    <FriendCard
+      friendship={friendship}
+      onLongPress={() => handleRemoveFriend(friendship)}
+      textPrimaryColor={theme.colors.text.primary}
+    />
+  ), [handleRemoveFriend, theme.colors.text.primary]);
+
+  // Key extractor for FlatList
+  const keyExtractor = useCallback((item: Friendship) => item.id, []);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.bg.primary }]}>
@@ -124,202 +198,170 @@ export default function FriendsScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView
+        <FlatList
           style={styles.scrollView}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + spacing["3xl"] }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.colors.text.secondary} />
           }
-        >
-          {initialLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={theme.colors.text.secondary} />
-            </View>
-          ) : (
-            <>
-              {/* Hero Section */}
-              {isMounted && hasLoadedOnce && !hasSynced && friends.length === 0 && !hasEverHadFriends.current && (
-                <View style={styles.heroSection}>
-                  <View style={styles.heroIconContainer}>
-                    <Ionicons name="people" size={32} color="#A855F7" />
-                  </View>
-                  <Text style={[styles.heroTitle, { color: theme.colors.text.primary }]}>Connect with Friends</Text>
-                  <Text style={styles.heroSubtitle}>
-                    Find friends who are already on Nūūky or invite new ones to join
-                  </Text>
-                </View>
-              )}
-
-              {/* Action Buttons */}
-              <View style={styles.actionsSection}>
-                {/* Find Friends Button */}
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={handleSyncContacts}
-                  disabled={syncLoading}
-                  style={[styles.actionCard, syncLoading && styles.buttonDisabled]}
-                >
-                  <View style={styles.actionIconContainer}>
-                    {syncLoading ? (
-                      <ActivityIndicator size="small" color="#A855F7" />
-                    ) : (
-                      <Ionicons name="search" size={20} color="#A855F7" />
-                    )}
-                  </View>
-                  <View style={styles.actionTextContainer}>
-                    <Text style={[styles.actionTitle, { color: theme.colors.text.primary }]}>
-                      {syncLoading ? "Searching..." : "Find Friends"}
-                    </Text>
-                    <Text style={styles.actionSubtitle}>From your contacts</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.3)" />
-                </TouchableOpacity>
-
-                {/* Invite Button */}
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={handleInviteToNooke}
-                  disabled={sending}
-                  style={[styles.actionCard, sending && styles.buttonDisabled]}
-                >
-                  <View style={styles.actionIconContainer}>
-                    <Ionicons name="share-social-outline" size={20} color="#A855F7" />
-                  </View>
-                  <View style={styles.actionTextContainer}>
-                    <Text style={[styles.actionTitle, { color: theme.colors.text.primary }]}>
-                      Invite to Nūūky
-                    </Text>
-                    <Text style={styles.actionSubtitle}>Share with anyone</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.3)" />
-                </TouchableOpacity>
+          data={initialLoading ? [] : friends}
+          keyExtractor={keyExtractor}
+          renderItem={renderFriendItem}
+          // Optimize FlatList performance
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={10}
+          initialNumToRender={10}
+          getItemLayout={(_, index) => ({
+            length: 76, // Approximate height of friend card
+            offset: 76 * index,
+            index,
+          })}
+          ListHeaderComponent={
+            initialLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.colors.text.secondary} />
               </View>
-
-              {/* Contacts on Nūūky */}
-              {hasSynced &&
-                (() => {
-                  const notYetAddedContacts = matches.onNuuky.filter((contact) => {
-                    const isAlreadyFriend =
-                      addedContacts.has(contact.userId || "") || friends.some((f) => f.friend_id === contact.userId);
-                    return !isAlreadyFriend;
-                  });
-
-                  if (notYetAddedContacts.length === 0) return null;
-
-                  return (
-                    <View style={styles.section}>
-                      <View style={styles.sectionHeader}>
-                        <View style={styles.sectionTitleRow}>
-                          <Text style={styles.sectionTitleText}>PEOPLE ON NŪŪKY</Text>
-                          <View style={styles.badge}>
-                            <Text style={styles.badgeText}>{notYetAddedContacts.length}</Text>
-                          </View>
-                        </View>
-                      </View>
-
-                      <View style={styles.contactsList}>
-                        {notYetAddedContacts.map((contact) => {
-                          return (
-                            <View key={contact.id} style={styles.contactCard}>
-                              <View style={styles.contactInfo}>
-                                <View style={styles.contactAvatar}>
-                                  <Ionicons name="person" size={20} color="#A855F7" />
-                                </View>
-                                <View style={styles.contactText}>
-                                  <Text style={[styles.contactName, { color: theme.colors.text.primary }]}>
-                                    {contact.displayName || contact.name}
-                                  </Text>
-                                  <Text style={styles.contactPhone}>
-                                    {contact.phoneNumbers[0]}
-                                  </Text>
-                                </View>
-                              </View>
-
-                              <TouchableOpacity
-                                onPress={() => handleAddFromContacts(contact)}
-                                disabled={loading}
-                                style={styles.addContactButton}
-                                activeOpacity={0.7}
-                              >
-                                <Text style={styles.addButtonText}>Add</Text>
-                              </TouchableOpacity>
-                            </View>
-                          );
-                        })}
-                      </View>
+            ) : (
+              <>
+                {/* Hero Section */}
+                {isMounted && hasLoadedOnce && !hasSynced && friends.length === 0 && !hasEverHadFriends.current && (
+                  <View style={styles.heroSection}>
+                    <View style={styles.heroIconContainer}>
+                      <Ionicons name="people" size={32} color="#A855F7" />
                     </View>
-                  );
-                })()}
-
-              {/* Friends List */}
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitleText}>MY FRIENDS</Text>
-                </View>
-
-                {friends.length === 0 ? (
-                  <View style={styles.emptyState}>
-                    <View style={styles.emptyIconContainer}>
-                      <Ionicons name="person-add-outline" size={36} color="#A855F7" />
-                    </View>
-                    <Text style={[styles.emptyTitle, { color: theme.colors.text.primary }]}>No Friends Yet</Text>
-                    <Text style={styles.emptyMessage}>
-                      Find friends from your contacts to get started
+                    <Text style={[styles.heroTitle, { color: theme.colors.text.primary }]}>Connect with Friends</Text>
+                    <Text style={styles.heroSubtitle}>
+                      Find friends who are already on Nūūky or invite new ones to join
                     </Text>
-                  </View>
-                ) : (
-                  <View style={styles.friendsList}>
-                    {friends.map((friendship) => {
-                      const friend = friendship.friend as User;
-                      const moodColors = getMoodColor(friend.mood);
-
-                      return (
-                        <TouchableOpacity 
-                          key={friendship.id} 
-                          style={styles.friendCard}
-                          activeOpacity={0.7}
-                          onLongPress={() => handleRemoveFriend(friendship)}
-                        >
-                          <View style={styles.friendInfo}>
-                            {/* Friend avatar */}
-                            <View style={styles.friendAvatarWrapper}>
-                              <View
-                                style={[
-                                  styles.friendAvatar,
-                                  { 
-                                    backgroundColor: moodColors.base,
-                                    borderColor: friend.is_online ? moodColors.base : "rgba(255,255,255,0.1)",
-                                  },
-                                ]}
-                              />
-                              {friend.is_online && (
-                                <View style={styles.onlineIndicator} />
-                              )}
-                            </View>
-
-                            <View style={styles.friendText}>
-                              <Text style={[styles.friendName, { color: theme.colors.text.primary }]}>
-                                {friend.display_name}
-                              </Text>
-                              <Text style={styles.friendStatus}>
-                                {friend.is_online ? "Online" : "Offline"}
-                              </Text>
-                            </View>
-                          </View>
-
-                          <View style={styles.chevronContainer}>
-                            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.3)" />
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
                   </View>
                 )}
+
+                {/* Action Buttons */}
+                <View style={styles.actionsSection}>
+                  {/* Find Friends Button */}
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={handleSyncContacts}
+                    disabled={syncLoading}
+                    style={[styles.actionCard, syncLoading && styles.buttonDisabled]}
+                  >
+                    <View style={styles.actionIconContainer}>
+                      {syncLoading ? (
+                        <ActivityIndicator size="small" color="#A855F7" />
+                      ) : (
+                        <Ionicons name="search" size={20} color="#A855F7" />
+                      )}
+                    </View>
+                    <View style={styles.actionTextContainer}>
+                      <Text style={[styles.actionTitle, { color: theme.colors.text.primary }]}>
+                        {syncLoading ? "Searching..." : "Find Friends"}
+                      </Text>
+                      <Text style={styles.actionSubtitle}>From your contacts</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.3)" />
+                  </TouchableOpacity>
+
+                  {/* Invite Button */}
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={handleInviteToNooke}
+                    disabled={sending}
+                    style={[styles.actionCard, sending && styles.buttonDisabled]}
+                  >
+                    <View style={styles.actionIconContainer}>
+                      <Ionicons name="share-social-outline" size={20} color="#A855F7" />
+                    </View>
+                    <View style={styles.actionTextContainer}>
+                      <Text style={[styles.actionTitle, { color: theme.colors.text.primary }]}>
+                        Invite to Nūūky
+                      </Text>
+                      <Text style={styles.actionSubtitle}>Share with anyone</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.3)" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Contacts on Nūūky */}
+                {hasSynced &&
+                  (() => {
+                    const notYetAddedContacts = matches.onNuuky.filter((contact) => {
+                      const isAlreadyFriend =
+                        addedContacts.has(contact.userId || "") || friends.some((f) => f.friend_id === contact.userId);
+                      return !isAlreadyFriend;
+                    });
+
+                    if (notYetAddedContacts.length === 0) return null;
+
+                    return (
+                      <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                          <View style={styles.sectionTitleRow}>
+                            <Text style={styles.sectionTitleText}>PEOPLE ON NŪŪKY</Text>
+                            <View style={styles.badge}>
+                              <Text style={styles.badgeText}>{notYetAddedContacts.length}</Text>
+                            </View>
+                          </View>
+                        </View>
+
+                        <View style={styles.contactsList}>
+                          {notYetAddedContacts.map((contact) => {
+                            return (
+                              <View key={contact.id} style={styles.contactCard}>
+                                <View style={styles.contactInfo}>
+                                  <View style={styles.contactAvatar}>
+                                    <Ionicons name="person" size={20} color="#A855F7" />
+                                  </View>
+                                  <View style={styles.contactText}>
+                                    <Text style={[styles.contactName, { color: theme.colors.text.primary }]}>
+                                      {contact.displayName || contact.name}
+                                    </Text>
+                                    <Text style={styles.contactPhone}>
+                                      {contact.phoneNumbers[0]}
+                                    </Text>
+                                  </View>
+                                </View>
+
+                                <TouchableOpacity
+                                  onPress={() => handleAddFromContacts(contact)}
+                                  disabled={loading}
+                                  style={styles.addContactButton}
+                                  activeOpacity={0.7}
+                                >
+                                  <Text style={styles.addButtonText}>Add</Text>
+                                </TouchableOpacity>
+                              </View>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    );
+                  })()}
+
+                {/* Friends List Header */}
+                <View style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitleText}>MY FRIENDS</Text>
+                  </View>
+                </View>
+              </>
+            )
+          }
+          ListEmptyComponent={
+            !initialLoading ? (
+              <View style={styles.emptyState}>
+                <View style={styles.emptyIconContainer}>
+                  <Ionicons name="person-add-outline" size={36} color="#A855F7" />
+                </View>
+                <Text style={[styles.emptyTitle, { color: theme.colors.text.primary }]}>No Friends Yet</Text>
+                <Text style={styles.emptyMessage}>
+                  Find friends from your contacts to get started
+                </Text>
               </View>
-            </>
-          )}
-        </ScrollView>
+            ) : null
+          }
+        />
       </LinearGradient>
     </View>
   );

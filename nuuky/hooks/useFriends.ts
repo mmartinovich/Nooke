@@ -38,41 +38,42 @@ export const useFriends = () => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('friendships')
-        .select(`
-          *,
-          friend:friend_id (
-            id,
-            display_name,
-            mood,
-            custom_mood_id,
-            is_online,
-            last_seen_at,
-            avatar_url,
-            custom_mood:custom_mood_id (
+      // Fetch friendships and blocks in parallel for better performance
+      const [friendsResult, blocksResult] = await Promise.all([
+        supabase
+          .from('friendships')
+          .select(`
+            *,
+            friend:friend_id (
               id,
-              emoji,
-              text,
-              color
+              display_name,
+              mood,
+              custom_mood_id,
+              is_online,
+              last_seen_at,
+              avatar_url,
+              custom_mood:custom_mood_id (
+                id,
+                emoji,
+                text,
+                color
+              )
             )
-          )
-        `)
-        .eq('user_id', currentUser.id)
-        .eq('status', 'accepted');
+          `)
+          .eq('user_id', currentUser.id)
+          .eq('status', 'accepted'),
+        supabase
+          .from('blocks')
+          .select('blocked_id')
+          .eq('blocker_id', currentUser.id)
+      ]);
 
-      if (error) throw error;
+      if (friendsResult.error) throw friendsResult.error;
 
-      // Fetch blocks to filter out blocked users
-      const { data: blocks } = await supabase
-        .from('blocks')
-        .select('blocked_id')
-        .eq('blocker_id', currentUser.id);
-
-      const blockedIds = new Set(blocks?.map(b => b.blocked_id) || []);
+      const blockedIds = new Set(blocksResult.data?.map(b => b.blocked_id) || []);
 
       // Filter out blocked friends
-      const filteredFriends = data?.filter(f => !blockedIds.has(f.friend_id)) || [];
+      const filteredFriends = friendsResult.data?.filter(f => !blockedIds.has(f.friend_id)) || [];
 
       setFriends(filteredFriends);
       setHasLoadedOnce(true);
@@ -110,47 +111,48 @@ export const useFriends = () => {
         return;
       }
       lastFriendsRefresh = now;
-      
+
       // Get fresh user from store
       const user = useAppStore.getState().currentUser;
       if (!user) return;
-      
+
       try {
-        const { data, error } = await supabase
-          .from('friendships')
-          .select(`
-            *,
-            friend:friend_id (
-              id,
-              display_name,
-              mood,
-              custom_mood_id,
-              is_online,
-              last_seen_at,
-              avatar_url,
-              custom_mood:custom_mood_id (
+        // Fetch friendships and blocks in parallel for better performance
+        const [friendsResult, blocksResult] = await Promise.all([
+          supabase
+            .from('friendships')
+            .select(`
+              *,
+              friend:friend_id (
                 id,
-                emoji,
-                text,
-                color
+                display_name,
+                mood,
+                custom_mood_id,
+                is_online,
+                last_seen_at,
+                avatar_url,
+                custom_mood:custom_mood_id (
+                  id,
+                  emoji,
+                  text,
+                  color
+                )
               )
-            )
-          `)
-          .eq('user_id', user.id)
-          .eq('status', 'accepted');
+            `)
+            .eq('user_id', user.id)
+            .eq('status', 'accepted'),
+          supabase
+            .from('blocks')
+            .select('blocked_id')
+            .eq('blocker_id', user.id)
+        ]);
 
-        if (error) throw error;
+        if (friendsResult.error) throw friendsResult.error;
 
-        // Fetch blocks to filter out blocked users
-        const { data: blocks } = await supabase
-          .from('blocks')
-          .select('blocked_id')
-          .eq('blocker_id', user.id);
-
-        const blockedIds = new Set(blocks?.map(b => b.blocked_id) || []);
+        const blockedIds = new Set(blocksResult.data?.map(b => b.blocked_id) || []);
 
         // Filter out blocked friends
-        const filteredFriends = data?.filter(f => !blockedIds.has(f.friend_id)) || [];
+        const filteredFriends = friendsResult.data?.filter(f => !blockedIds.has(f.friend_id)) || [];
 
         useAppStore.getState().setFriends(filteredFriends);
       } catch (error: any) {
