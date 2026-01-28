@@ -40,6 +40,7 @@ export interface UserSearchResult {
   display_name: string;
   avatar_url?: string;
   is_online: boolean;
+  last_seen_at?: string;
   mood: PresetMood;
 }
 
@@ -66,6 +67,10 @@ export interface Room {
   created_at: string;
   closed_at?: string;
   participants?: RoomParticipant[];
+  creator?: {
+    id: string;
+    display_name: string;
+  };
 }
 
 export interface RoomParticipant {

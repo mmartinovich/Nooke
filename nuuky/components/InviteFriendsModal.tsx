@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, radius, typography, gradients } from '../lib/theme';
 import { User } from '../types';
+import { isUserTrulyOnline } from '../lib/utils';
 
 interface InviteFriendsModalProps {
   visible: boolean;
@@ -114,7 +115,7 @@ const FriendItem: React.FC<FriendItemProps> = ({ friend, onInvite, isInviting })
           )}
 
           {/* Online indicator */}
-          {friend.is_online && (
+          {isUserTrulyOnline(friend.is_online, friend.last_seen_at) && (
             <View style={styles.onlineIndicator}>
               <View style={styles.onlineDot} />
             </View>

@@ -92,6 +92,10 @@ export default function RoomsScreen() {
 
   const hasRooms = myRooms.length > 0;
 
+  // Separate default room from other rooms
+  const defaultRoom = myRooms.find(room => isDefaultRoom(room.id));
+  const otherRooms = myRooms.filter(room => !isDefaultRoom(room.id));
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.bg.primary }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
@@ -126,25 +130,49 @@ export default function RoomsScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.colors.text.secondary} />
           }
         >
-          {/* My Rooms Section */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: 'rgba(255,255,255,0.5)' }]}>MY ROOMS</Text>
-            </View>
+          {hasRooms ? (
+            <>
+              {/* My Nūūky Section - Default Room */}
+              {defaultRoom && (
+                <View style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={[styles.sectionTitle, { color: 'rgba(255,255,255,0.5)' }]}>MY NŪŪKY</Text>
+                  </View>
+                  <View style={styles.defaultRoomContainer}>
+                    <RoomCard
+                      room={defaultRoom}
+                      onPress={() => handleRoomPress(defaultRoom.id)}
+                      isCreator={defaultRoom.creator_id === currentUser?.id}
+                      isDefault={true}
+                      creatorName={defaultRoom.creator?.display_name}
+                    />
+                  </View>
+                </View>
+              )}
 
-            {hasRooms ? (
-              <View style={styles.roomsList}>
-                {myRooms.map((room) => (
-                  <RoomCard
-                    key={room.id}
-                    room={room}
-                    onPress={() => handleRoomPress(room.id)}
-                    isCreator={room.creator_id === currentUser?.id}
-                    isDefault={isDefaultRoom(room.id)}
-                  />
-                ))}
-              </View>
-            ) : (
+              {/* Other Rooms Section */}
+              {otherRooms.length > 0 && (
+                <View style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={[styles.sectionTitle, { color: 'rgba(255,255,255,0.5)' }]}>OTHER ROOMS</Text>
+                  </View>
+                  <View style={styles.roomsList}>
+                    {otherRooms.map((room) => (
+                      <RoomCard
+                        key={room.id}
+                        room={room}
+                        onPress={() => handleRoomPress(room.id)}
+                        isCreator={room.creator_id === currentUser?.id}
+                        isDefault={false}
+                        creatorName={room.creator?.display_name}
+                      />
+                    ))}
+                  </View>
+                </View>
+              )}
+            </>
+          ) : (
+            <View style={styles.section}>
               <View style={styles.emptyState}>
                 <View style={[styles.emptyIconContainer, { backgroundColor: accent.soft }]}>
                   <Ionicons name="home-outline" size={36} color={accent.primary} />
@@ -162,8 +190,8 @@ export default function RoomsScreen() {
                   </View>
                 </TouchableOpacity>
               </View>
-            )}
-          </View>
+            </View>
+          )}
         </ScrollView>
 
         {/* Create Room Modal */}
@@ -233,6 +261,10 @@ const styles = StyleSheet.create({
   },
   roomsList: {
     gap: spacing.sm + 4,
+  },
+  defaultRoomContainer: {
+    // Slightly larger visual treatment for the default room
+    marginBottom: spacing.xs,
   },
   emptyState: {
     alignItems: "center",

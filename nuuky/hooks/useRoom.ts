@@ -96,6 +96,10 @@ export const useRoom = () => {
         .from('rooms')
         .select(`
           *,
+          creator:creator_id (
+            id,
+            display_name
+          ),
           participants:room_participants (
             id,
             user_id,
@@ -106,7 +110,8 @@ export const useRoom = () => {
               display_name,
               avatar_url,
               mood,
-              is_online
+              is_online,
+              last_seen_at
             )
           )
         `)
