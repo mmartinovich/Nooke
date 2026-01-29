@@ -142,7 +142,7 @@ export const useAppStore = create<AppState>()(
   activeCustomMood: null,
   notifications: [],
   unreadNotificationCount: 0,
-  sessionTimeoutMinutes: 30,
+  sessionTimeoutMinutes: 43200, // 30 days - Instagram/Snapchat style (essentially no timeout)
   lastActivityTimestamp: Date.now(),
   sessionWarningShown: false,
 

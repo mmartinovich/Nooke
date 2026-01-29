@@ -20,8 +20,6 @@ import { ErrorBoundary } from "../components/ErrorBoundary";
 import { getAllMoodImages } from "../lib/theme";
 import { startNetworkMonitor, stopNetworkMonitor } from "../lib/network";
 import { OfflineBanner } from "../components/OfflineBanner";
-import { useSessionTimeout } from "../hooks/useSessionTimeout";
-import { SessionTimeoutWarning } from "../components/SessionTimeoutWarning";
 import {
   registerForPushNotificationsAsync,
   savePushTokenToUser,
@@ -49,9 +47,6 @@ export default function RootLayout() {
   });
   const notificationCleanupRef = useRef<(() => void) | null>(null);
   const pendingDeepLinkRef = useRef<PendingDeepLinkAction | null>(null);
-
-  // Session timeout monitoring
-  const { handleUserActivity } = useSessionTimeout();
 
   // Handle notification tap navigation
   const handleNotificationNavigation = (data: any) => {
@@ -586,12 +581,8 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <GestureHandlerRootView
-          style={{ flex: 1, backgroundColor: "#0a0a0f" }}
-          onTouchStart={handleUserActivity}
-        >
+        <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#0a0a0f" }}>
           <OfflineBanner />
-          <SessionTimeoutWarning />
           <Stack
             screenOptions={{
               headerShown: false,

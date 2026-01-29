@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from '
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { User } from '../types';
+import { colors, typography } from '../lib/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -47,7 +48,7 @@ export function FriendActionBubble({
   }, []);
 
   // Calculate bubble position - center above friend, clear of avatar
-  const bubbleWidth = 180;
+  const bubbleWidth = 210;
   const avatarRadius = 35; // Approximate avatar radius
   const bubbleX = Math.max(
     16,
@@ -58,9 +59,6 @@ export function FriendActionBubble({
   // Adjust if bubble would go off screen top
   const isAbove = bubbleY >= 100;
   const finalBubbleY = isAbove ? bubbleY : position.y + avatarRadius + 50;
-  
-  // Calculate tail position to point at friend
-  const tailX = position.x - bubbleX;
 
   const handleHeartPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -159,8 +157,8 @@ export function FriendActionBubble({
               accessibilityLabel="Nudge friend"
               accessibilityRole="button"
             >
-              <MaterialCommunityIcons name="cursor-pointer" size={22} color="#A855F7" />
-              <Text style={[styles.actionLabel, { color: '#A855F7' }]}>Nudge</Text>
+              <MaterialCommunityIcons name="cursor-pointer" size={22} color="#FFFFFF" />
+              <Text style={styles.actionLabel}>Nudge</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -170,8 +168,8 @@ export function FriendActionBubble({
               accessibilityLabel="Request a call"
               accessibilityRole="button"
             >
-              <Ionicons name="call" size={22} color="#34C759" />
-              <Text style={[styles.actionLabel, { color: '#34C759' }]}>Call</Text>
+              <Ionicons name="call" size={22} color="#FFFFFF" />
+              <Text style={styles.actionLabel}>Call me</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -181,31 +179,11 @@ export function FriendActionBubble({
               accessibilityLabel="Send heart"
               accessibilityRole="button"
             >
-              <Ionicons name="heart" size={22} color="#FF0000" />
-              <Text style={[styles.actionLabel, { color: '#FF0000' }]}>Heart</Text>
+              <Ionicons name="heart" size={22} color="#FFFFFF" />
+              <Text style={styles.actionLabel}>Heart</Text>
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* Speech bubble tail - pointing down when above */}
-        {isAbove && (
-          <View 
-            style={[
-              styles.tailDown,
-              { left: Math.max(14, Math.min(tailX - 10, bubbleWidth - 34)) }
-            ]} 
-          />
-        )}
-        
-        {/* Speech bubble tail - pointing up when below */}
-        {!isAbove && (
-          <View 
-            style={[
-              styles.tailUp,
-              { left: Math.max(14, Math.min(tailX - 10, bubbleWidth - 34)) }
-            ]} 
-          />
-        )}
       </Animated.View>
 
       {/* Animated heart that grows and fades - positioned at heart button location */}
@@ -215,17 +193,17 @@ export function FriendActionBubble({
             styles.heartAnimation,
             {
               // Heart button is the 3rd button, at the right side of the bubble
-              // Bubble: 140 width, 12px padding, 3 buttons with space-around
-              // Heart is at approximately bubbleX + 110 (right third)
-              left: bubbleX + 110,
-              top: finalBubbleY + 24, // Center of bubble vertically (10 padding + ~14 to icon center)
+              // Bubble: 210 width, 16px padding, 3 buttons with space-around
+              // Heart is at approximately bubbleX + 140 (right third)
+              left: bubbleX + 140,
+              top: finalBubbleY + 24, // Center of bubble vertically
               transform: [{ scale: heartScale }],
               opacity: heartOpacity,
             },
           ]}
           pointerEvents="none"
         >
-          <Ionicons name="heart" size={60} color="#FF0000" />
+          <Ionicons name="heart" size={60} color={colors.neon.pink} />
         </Animated.View>
       )}
     </>
@@ -240,19 +218,15 @@ const styles = StyleSheet.create({
   bubbleContainer: {
     position: 'absolute',
     zIndex: 1001,
-    width: 180,
+    width: 210,
   },
   bubble: {
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.6)',
     borderRadius: 22,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    // Soft shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
   actionsRow: {
     flexDirection: 'row',
@@ -262,45 +236,16 @@ const styles = StyleSheet.create({
   actionButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 44,
-    minHeight: 44,
+    minWidth: 48,
+    minHeight: 48,
     padding: 4,
   },
   actionLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  // Tail pointing down (bubble is above friend)
-  tailDown: {
-    position: 'absolute',
-    bottom: -10,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 10,
-    borderRightWidth: 10,
-    borderTopWidth: 12,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderTopColor: 'rgba(255, 255, 255, 0.85)',
-    // Match bubble shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-  },
-  // Tail pointing up (bubble is below friend)
-  tailUp: {
-    position: 'absolute',
-    top: -10,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 10,
-    borderRightWidth: 10,
-    borderBottomWidth: 12,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderBottomColor: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 11,
+    fontFamily: 'Outfit_600SemiBold',
+    color: 'rgba(255, 255, 255, 0.85)',
+    marginTop: 3,
+    letterSpacing: 0.3,
   },
   heartAnimation: {
     position: 'absolute',

@@ -464,6 +464,34 @@ export const useRoom = () => {
     }
   };
 
+  // Leave a specific room by ID (for swipe-to-leave on non-active rooms)
+  const leaveRoomById = async (roomId: string): Promise<void> => {
+    if (!currentUser) return;
+
+    try {
+      const { error } = await supabase
+        .from('room_participants')
+        .delete()
+        .eq('room_id', roomId)
+        .eq('user_id', currentUser.id);
+
+      if (error) throw error;
+
+      // Clear current room if it was the one left
+      if (currentRoom?.id === roomId) {
+        setCurrentRoom(null);
+        setRoomParticipants([]);
+        lastJoinedRoomId = null;
+      }
+
+      removeMyRoom(roomId);
+      await loadMyRooms();
+    } catch (error: any) {
+      console.error('Error leaving room:', error);
+      Alert.alert('Error', 'Failed to leave room');
+    }
+  };
+
   const toggleMute = async (): Promise<void> => {
     if (!currentUser || !currentRoom) return;
 
@@ -781,6 +809,7 @@ export const useRoom = () => {
     createRoom,
     joinRoom,
     leaveRoom,
+    leaveRoomById,
     toggleMute,
     deleteRoom,
     updateRoomName,

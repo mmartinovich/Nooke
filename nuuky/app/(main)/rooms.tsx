@@ -21,6 +21,7 @@ import { useDefaultRoom } from "../../hooks/useDefaultRoom";
 import { useHomeRoom } from "../../hooks/useHomeRoom";
 import { useTheme } from "../../hooks/useTheme";
 import { RoomCard } from "../../components/RoomCard";
+import { SwipeableRoomCard } from "../../components/SwipeableRoomCard";
 import { CreateRoomModal } from "../../components/CreateRoomModal";
 import { spacing, radius, typography, interactionStates } from "../../lib/theme";
 
@@ -31,7 +32,7 @@ export default function RoomsScreen() {
   const insets = useSafeAreaInsets();
   const { theme, isDark, accent } = useTheme();
   const { currentUser, myRooms } = useAppStore();
-  const { loadMyRooms, canCreateRoom, createRoom } = useRoom();
+  const { loadMyRooms, canCreateRoom, createRoom, deleteRoom, leaveRoomById } = useRoom();
   const { loading: firstTimeLoading } = useFirstTimeRoom();
   const { isDefaultRoom, setAsDefaultRoom } = useDefaultRoom();
   const { isHomeRoom } = useHomeRoom();
@@ -90,6 +91,15 @@ export default function RoomsScreen() {
   const handleRoomPress = (roomId: string) => {
     setAsDefaultRoom(roomId);
     router.replace("/(main)");
+  };
+
+  const handleDeleteRoom = async (roomId: string): Promise<boolean> => {
+    const result = await deleteRoom(roomId);
+    return result;
+  };
+
+  const handleLeaveRoom = async (roomId: string): Promise<void> => {
+    await leaveRoomById(roomId);
   };
 
   const hasRooms = myRooms.length > 0;
@@ -152,7 +162,7 @@ export default function RoomsScreen() {
                 </View>
               )}
 
-              {/* Other Rooms Section */}
+              {/* Other Rooms Section - swipeable */}
               {otherRooms.length > 0 && (
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
@@ -160,13 +170,15 @@ export default function RoomsScreen() {
                   </View>
                   <View style={styles.roomsList}>
                     {otherRooms.map((room) => (
-                      <RoomCard
+                      <SwipeableRoomCard
                         key={room.id}
                         room={room}
                         onPress={() => handleRoomPress(room.id)}
                         isCreator={room.creator_id === currentUser?.id}
                         isDefault={isDefaultRoom(room.id)}
                         creatorName={room.creator?.display_name}
+                        onDelete={handleDeleteRoom}
+                        onLeave={handleLeaveRoom}
                       />
                     ))}
                   </View>

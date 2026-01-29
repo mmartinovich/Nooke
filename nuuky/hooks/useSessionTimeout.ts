@@ -2,8 +2,6 @@ import { useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { useAppStore } from '../stores/appStore';
 
-const WARNING_BEFORE_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes warning
-
 export const useSessionTimeout = () => {
   const {
     currentUser,
@@ -11,12 +9,10 @@ export const useSessionTimeout = () => {
     lastActivityTimestamp,
     sessionTimeoutMinutes,
     setLastActivity,
-    showSessionWarning,
     logout,
   } = useAppStore();
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const warningTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const isMountedRef = useRef(true);
 
@@ -25,26 +21,16 @@ export const useSessionTimeout = () => {
 
     // Reset the timeout
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (warningTimeoutRef.current) clearTimeout(warningTimeoutRef.current);
-
-    showSessionWarning(false);
     setLastActivity();
 
-    // Restart timers
-    startSessionTimers();
+    // Restart timer
+    startSessionTimer();
   };
 
-  const startSessionTimers = () => {
+  const startSessionTimer = () => {
     const timeoutMs = sessionTimeoutMinutes * 60 * 1000;
 
-    // Warning timeout (triggers 2 minutes before expiry)
-    warningTimeoutRef.current = setTimeout(() => {
-      if (isMountedRef.current) {
-        showSessionWarning(true);
-      }
-    }, timeoutMs - WARNING_BEFORE_TIMEOUT_MS);
-
-    // Actual timeout
+    // Auto-logout timeout
     timeoutRef.current = setTimeout(() => {
       if (isMountedRef.current && currentUser) {
         logout();
@@ -55,12 +41,11 @@ export const useSessionTimeout = () => {
   useEffect(() => {
     if (!currentUser || !isAuthenticated) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (warningTimeoutRef.current) clearTimeout(warningTimeoutRef.current);
       return;
     }
 
     isMountedRef.current = true;
-    startSessionTimers();
+    startSessionTimer();
 
     // Handle app state changes
     const subscription = AppState.addEventListener('change', (nextAppState) => {
@@ -79,7 +64,7 @@ export const useSessionTimeout = () => {
           // Session expired while in background
           logout();
         } else {
-          // Reset timers on foreground
+          // Reset timer on foreground
           handleUserActivity();
         }
       }
@@ -90,7 +75,6 @@ export const useSessionTimeout = () => {
     return () => {
       isMountedRef.current = false;
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (warningTimeoutRef.current) clearTimeout(warningTimeoutRef.current);
       subscription.remove();
     };
   }, [currentUser?.id, isAuthenticated, sessionTimeoutMinutes]);
