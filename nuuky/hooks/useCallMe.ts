@@ -45,7 +45,7 @@ export const useCallMe = () => {
       }
 
       // Send push notification via Edge Function
-      const { error } = await supabase.functions.invoke('send-call-me-notification', {
+      const { data, error } = await supabase.functions.invoke('send-call-me-notification', {
         body: {
           receiver_id: friendId,
           sender_id: currentUser.id,
@@ -53,7 +53,9 @@ export const useCallMe = () => {
         },
       });
 
-      if (error) {
+      // supabase.functions.invoke can set error even on successful responses.
+      // Check the response data first — if the function returned a success payload, trust it.
+      if (error && !(data?.sent === true || data?.message)) {
         console.error('Call me notification error:', error);
         throw error;
       }

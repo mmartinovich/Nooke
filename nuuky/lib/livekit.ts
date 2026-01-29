@@ -135,6 +135,12 @@ export const connectToAudioRoom = async (roomId: string): Promise<boolean> => {
   try {
     eventCallbacks?.onConnectionStatusChange('connecting');
 
+    // Configure audio to use speaker output for louder playback
+    AudioSession.configureAudio({
+      ios: { defaultOutput: 'speaker' },
+      android: { audioTypeOptions: { focusMode: 'gain' } },
+    });
+
     // OPTIMIZATION: Run audio session and token request in parallel
     const [, tokenData] = await Promise.all([
       AudioSession.startAudioSession(),

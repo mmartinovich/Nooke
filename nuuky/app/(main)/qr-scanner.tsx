@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StatusBar,
   Animated,
   Alert,
+  Platform,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { LinearGradient } from "expo-linear-gradient";
@@ -24,6 +25,7 @@ export default function QRScannerScreen() {
   const { theme, isDark } = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
   const overlayFade = useRef(new Animated.Value(0)).current;
 
   // Request permission on mount if not granted
@@ -32,6 +34,14 @@ export default function QRScannerScreen() {
       requestPermission();
     }
   }, [permission]);
+
+  // Delay camera mount to avoid native crash on New Architecture
+  useEffect(() => {
+    if (permission?.granted) {
+      const timer = setTimeout(() => setCameraReady(true), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [permission?.granted]);
 
   // Show permission request screen
   if (!permission?.granted) {
@@ -125,13 +135,15 @@ export default function QRScannerScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      <CameraView
-        style={StyleSheet.absoluteFill}
-        barcodeScannerSettings={{
-          barcodeTypes: ["qr"],
-        }}
-        onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
-      />
+      {cameraReady && (
+        <CameraView
+          style={StyleSheet.absoluteFill}
+          barcodeScannerSettings={{
+            barcodeTypes: ["qr"],
+          }}
+          onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+        />
+      )}
 
       {/* Dark overlay with cutout */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">

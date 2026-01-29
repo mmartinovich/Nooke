@@ -5,12 +5,21 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as Linking from "expo-linking";
 import * as SplashScreen from "expo-splash-screen";
 import { Asset } from "expo-asset";
+import { useFonts } from "expo-font";
+import {
+  Outfit_400Regular,
+  Outfit_500Medium,
+  Outfit_600SemiBold,
+  Outfit_700Bold,
+} from "@expo-google-fonts/outfit";
 import { useAppStore } from "../stores/appStore";
 import { supabase } from "../lib/supabase";
 import { ThemeProvider } from "../context/ThemeContext";
 import { initializeLiveKit } from "../lib/livekit";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { getAllMoodImages } from "../lib/theme";
+import { startNetworkMonitor, stopNetworkMonitor } from "../lib/network";
+import { OfflineBanner } from "../components/OfflineBanner";
 import {
   registerForPushNotificationsAsync,
   savePushTokenToUser,
@@ -30,6 +39,12 @@ export default function RootLayout() {
   const { currentUser, setCurrentUser } = useAppStore();
   const router = useRouter();
   const [isReady, setIsReady] = useState(false);
+  const [fontsLoaded] = useFonts({
+    Outfit_400Regular,
+    Outfit_500Medium,
+    Outfit_600SemiBold,
+    Outfit_700Bold,
+  });
   const notificationCleanupRef = useRef<(() => void) | null>(null);
   const pendingDeepLinkRef = useRef<PendingDeepLinkAction | null>(null);
 
@@ -345,6 +360,9 @@ export default function RootLayout() {
 
     const initialize = async () => {
       try {
+        // Start network monitoring
+        startNetworkMonitor();
+
         // Initialize LiveKit WebRTC globals (synchronous, shouldn't block)
         initializeLiveKit();
 
@@ -492,6 +510,7 @@ export default function RootLayout() {
       mounted = false;
       linkingSubscription?.remove();
       authSubscription.unsubscribe();
+      stopNetworkMonitor();
       clearTimeout(fallbackTimeout);
     };
   }, []);
@@ -555,7 +574,7 @@ export default function RootLayout() {
   }, [currentUser]);
 
   // Keep splash screen visible while initializing (return null to render nothing)
-  if (!isReady) {
+  if (!isReady || !fontsLoaded) {
     return null;
   }
 
@@ -563,6 +582,7 @@ export default function RootLayout() {
     <ErrorBoundary>
       <ThemeProvider>
         <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#0a0a0f" }}>
+          <OfflineBanner />
           <Stack
             screenOptions={{
               headerShown: false,

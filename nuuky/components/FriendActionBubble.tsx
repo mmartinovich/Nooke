@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { User } from '../types';
@@ -47,7 +47,7 @@ export function FriendActionBubble({
   }, []);
 
   // Calculate bubble position - center above friend, clear of avatar
-  const bubbleWidth = 140;
+  const bubbleWidth = 180;
   const avatarRadius = 35; // Approximate avatar radius
   const bubbleX = Math.max(
     16,
@@ -150,30 +150,39 @@ export function FriendActionBubble({
       >
         {/* Main bubble body */}
         <View style={styles.bubble}>
-          {/* Action icons - clean, no circles */}
+          {/* Action icons with labels */}
           <View style={styles.actionsRow}>
             <TouchableOpacity
               style={styles.actionButton}
               onPress={() => handleAction(onNudge)}
               activeOpacity={0.6}
+              accessibilityLabel="Nudge friend"
+              accessibilityRole="button"
             >
-              <MaterialCommunityIcons name="cursor-pointer" size={24} color="#A855F7" />
+              <MaterialCommunityIcons name="cursor-pointer" size={22} color="#A855F7" />
+              <Text style={[styles.actionLabel, { color: '#A855F7' }]}>Nudge</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.actionButton}
               onPress={() => handleAction(onCallMe)}
               activeOpacity={0.6}
+              accessibilityLabel="Request a call"
+              accessibilityRole="button"
             >
-              <Ionicons name="call" size={24} color="#34C759" />
+              <Ionicons name="call" size={22} color="#34C759" />
+              <Text style={[styles.actionLabel, { color: '#34C759' }]}>Call</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.actionButton}
               onPress={handleHeartPress}
               activeOpacity={0.6}
+              accessibilityLabel="Send heart"
+              accessibilityRole="button"
             >
-              <Ionicons name="heart" size={24} color="#FF0000" />
+              <Ionicons name="heart" size={22} color="#FF0000" />
+              <Text style={[styles.actionLabel, { color: '#FF0000' }]}>Heart</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -231,13 +240,13 @@ const styles = StyleSheet.create({
   bubbleContainer: {
     position: 'absolute',
     zIndex: 1001,
-    width: 140,
+    width: 180,
   },
   bubble: {
     backgroundColor: 'rgba(255, 255, 255, 0.85)',
-    borderRadius: 28, // Pill shape
+    borderRadius: 22,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 8,
     // Soft shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
@@ -251,7 +260,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButton: {
-    padding: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 44,
+    minHeight: 44,
+    padding: 4,
+  },
+  actionLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 2,
   },
   // Tail pointing down (bubble is above friend)
   tailDown: {

@@ -219,9 +219,9 @@ export default function OnboardingScreen() {
       return;
     }
 
-    const e164Phone = validatePhone(phoneNumber, countryCode);
-    if (!e164Phone) {
-      Alert.alert("Phone Required", "Please enter a valid phone number");
+    const phoneValidation = validatePhone(phoneNumber, countryCode);
+    if (!phoneValidation.isValid) {
+      Alert.alert("Phone Required", phoneValidation.error || "Please enter a valid phone number");
       return;
     }
 
@@ -235,7 +235,7 @@ export default function OnboardingScreen() {
       if (!success) return;
     }
 
-    const phoneSuccess = await updatePhone(e164Phone);
+    const phoneSuccess = await updatePhone(phoneValidation.normalized);
     if (!phoneSuccess) return;
 
     const completed = await completeProfile();

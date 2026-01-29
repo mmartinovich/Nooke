@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { encryptedStorage } from '../lib/secureStorage';
 import { User, Friendship, Room, RoomParticipant, RoomInvite, AudioConnectionStatus, CustomMood, PresetMood, AppNotification } from '../types';
 import { ThemeMode } from '../lib/theme';
 
@@ -28,6 +28,9 @@ interface AppState {
 
   // Theme state
   themeMode: ThemeMode;
+
+  // Network state
+  isOnline: boolean;
 
   // Battery optimization
   lowPowerMode: boolean;
@@ -76,6 +79,7 @@ interface AppState {
   setDefaultRoomId: (roomId: string | null) => void;
   setHomeRoomId: (roomId: string | null) => void;
   setThemeMode: (mode: ThemeMode) => void;
+  setIsOnline: (online: boolean) => void;
   setLowPowerMode: (enabled: boolean) => void;
   setAudioConnectionStatus: (status: AudioConnectionStatus) => void;
   setAudioError: (error: string | null) => void;
@@ -101,6 +105,7 @@ export const useThemeMode = () => useAppStore((state) => state.themeMode);
 export const useDefaultRoomId = () => useAppStore((state) => state.defaultRoomId);
 export const useHomeRoomId = () => useAppStore((state) => state.homeRoomId);
 export const useAudioConnectionStatus = () => useAppStore((state) => state.audioConnectionStatus);
+export const useIsOnline = () => useAppStore((state) => state.isOnline);
 export const useLowPowerMode = () => useAppStore((state) => state.lowPowerMode);
 
 export const useAppStore = create<AppState>()(
@@ -119,6 +124,7 @@ export const useAppStore = create<AppState>()(
   defaultRoomId: null,
   homeRoomId: null,
   themeMode: 'dark' as ThemeMode,
+  isOnline: true,
   lowPowerMode: false,
   audioConnectionStatus: 'disconnected' as AudioConnectionStatus,
   audioError: null,
@@ -252,6 +258,7 @@ export const useAppStore = create<AppState>()(
 
   setThemeMode: (mode) => set({ themeMode: mode }),
 
+  setIsOnline: (online) => set({ isOnline: online }),
   setLowPowerMode: (enabled) => set({ lowPowerMode: enabled }),
 
   setAudioConnectionStatus: (status) => set({ audioConnectionStatus: status }),
@@ -298,7 +305,7 @@ export const useAppStore = create<AppState>()(
 }),
     {
       name: 'nooke-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => encryptedStorage),
       partialize: (state) => ({
         currentUser: state.currentUser,
         themeMode: state.themeMode,

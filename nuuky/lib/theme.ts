@@ -200,8 +200,10 @@ export const gradients = darkGradients;
 
 export const typography = {
   // Font families
-  display: 'Outfit', // Modern, rounded, friendly
-  body: 'system',
+  display: 'Outfit_600SemiBold',
+  displayMedium: 'Outfit_500Medium',
+  displayBold: 'Outfit_700Bold',
+  body: 'Outfit_400Regular',
   mono: 'monospace',
 
   // Font sizes (refined for better readability)
