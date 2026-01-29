@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { shallow } from 'zustand/shallow';
 import { encryptedStorage } from '../lib/secureStorage';
 import { User, Friendship, Room, RoomParticipant, RoomInvite, AudioConnectionStatus, CustomMood, PresetMood, AppNotification } from '../types';
 import { ThemeMode } from '../lib/theme';
@@ -49,6 +50,11 @@ interface AppState {
   notifications: AppNotification[];
   unreadNotificationCount: number;
 
+  // Session timeout state
+  sessionTimeoutMinutes: number;
+  lastActivityTimestamp: number;
+  sessionWarningShown: boolean;
+
   // Actions
   setCurrentUser: (user: User | null) => void;
   setFriends: (friends: Friendship[]) => void;
@@ -86,6 +92,9 @@ interface AppState {
   addSpeakingParticipant: (participantId: string) => void;
   removeSpeakingParticipant: (participantId: string) => void;
   clearSpeakingParticipants: () => void;
+  setLastActivity: () => void;
+  setSessionTimeoutMinutes: (minutes: number) => void;
+  showSessionWarning: (shown: boolean) => void;
   logout: () => void;
 }
 
@@ -97,7 +106,7 @@ export const useMyRooms = () => useAppStore((state) => state.myRooms);
 export const useCurrentRoom = () => useAppStore((state) => state.currentRoom);
 export const useRoomParticipants = () => useAppStore((state) => state.roomParticipants);
 export const useRoomInvites = () => useAppStore((state) => state.roomInvites);
-export const useSpeakingParticipants = () => useAppStore((state) => state.speakingParticipants);
+export const useSpeakingParticipants = () => useAppStore((state) => state.speakingParticipants, shallow);
 export const useActiveCustomMood = () => useAppStore((state) => state.activeCustomMood);
 export const useNotificationsStore = () => useAppStore((state) => state.notifications);
 export const useUnreadNotificationCount = () => useAppStore((state) => state.unreadNotificationCount);
@@ -133,6 +142,9 @@ export const useAppStore = create<AppState>()(
   activeCustomMood: null,
   notifications: [],
   unreadNotificationCount: 0,
+  sessionTimeoutMinutes: 30,
+  lastActivityTimestamp: Date.now(),
+  sessionWarningShown: false,
 
   // Actions
   setCurrentUser: (user) => set({ currentUser: user, isAuthenticated: !!user }),
@@ -276,6 +288,15 @@ export const useAppStore = create<AppState>()(
   })),
 
   clearSpeakingParticipants: () => set({ speakingParticipants: [] }),
+
+  setLastActivity: () => set({
+    lastActivityTimestamp: Date.now(),
+    sessionWarningShown: false,
+  }),
+
+  setSessionTimeoutMinutes: (minutes) => set({ sessionTimeoutMinutes: minutes }),
+
+  showSessionWarning: (shown) => set({ sessionWarningShown: shown }),
 
   logout: () => set((state) => ({
     currentUser: null,

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, memo } from 'react';
 import { View, StyleSheet, Dimensions, TouchableOpacity, Animated, Easing, Text, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -27,7 +27,7 @@ interface FriendParticleProps {
   orbitAngle: Animated.Value;
 }
 
-export function FriendParticle({
+function FriendParticleComponent({
   friend,
   index,
   total,
@@ -407,6 +407,24 @@ export function FriendParticle({
     </Animated.View>
   );
 }
+
+// Memoize component to prevent unnecessary re-renders
+// Only re-render when friend data, position, or speaking state actually changes
+export const FriendParticle = memo(FriendParticleComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.friend.id === nextProps.friend.id &&
+    prevProps.friend.mood === nextProps.friend.mood &&
+    prevProps.friend.avatar_url === nextProps.friend.avatar_url &&
+    prevProps.friend.is_online === nextProps.friend.is_online &&
+    prevProps.friend.last_seen_at === nextProps.friend.last_seen_at &&
+    prevProps.position === nextProps.position &&
+    prevProps.hasActiveFlare === nextProps.hasActiveFlare &&
+    prevProps.baseAngle === nextProps.baseAngle &&
+    prevProps.radius === nextProps.radius
+    // Note: orbitAngle is an Animated.Value that changes continuously
+    // We don't include it in comparison as it's handled by animation listeners
+  );
+});
 
 const styles = StyleSheet.create({
   container: {

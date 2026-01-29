@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, memo } from 'react';
 import { View, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -41,7 +41,7 @@ interface StarParticleProps {
   star: Star;
 }
 
-function StarParticle({ star }: StarParticleProps) {
+const StarParticle = memo(({ star }: StarParticleProps) => {
   const twinkleAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -92,7 +92,7 @@ function StarParticle({ star }: StarParticleProps) {
       ]}
     />
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from "react";
+import React, { useEffect, useRef, useMemo, memo } from "react";
 import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Animated, Easing, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
@@ -21,7 +21,7 @@ interface CentralOrbProps {
   showHint?: boolean;
 }
 
-export function CentralOrb({
+function CentralOrbComponent({
   moodColor,
   glowColor,
   onPress,
@@ -347,6 +347,16 @@ export function CentralOrb({
     </Animated.View>
   );
 }
+
+// Memoize component to prevent unnecessary re-renders
+export const CentralOrb = memo(CentralOrbComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.mood === nextProps.mood &&
+    prevProps.hasActiveFlare === nextProps.hasActiveFlare &&
+    prevProps.showHint === nextProps.showHint &&
+    prevProps.customMood?.id === nextProps.customMood?.id
+  );
+});
 
 const styles = StyleSheet.create({
   container: {
