@@ -74,13 +74,19 @@ export const useCustomMood = () => {
       return null;
     }
 
-    // Check 1-mood limit (client-side check)
+    // If user already has a custom mood, delete it first (replace behavior)
     if (customMoods.length >= 1) {
-      Alert.alert(
-        'Mood Limit Reached',
-        'You can only have 1 custom mood. Delete your current one to create another.'
-      );
-      return null;
+      const existing = customMoods[0];
+      try {
+        await supabase
+          .from('custom_moods')
+          .delete()
+          .eq('id', existing.id)
+          .eq('user_id', currentUser.id);
+        deleteCustomMoodFromStore(existing.id);
+      } catch (_err) {
+        // Continue anyway, DB trigger will handle the limit
+      }
     }
 
     // MOCK MODE: Create mock custom mood

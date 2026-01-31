@@ -494,14 +494,11 @@ export const getVibeText = (mood: 'good' | 'neutral' | 'not_great' | 'reach_out'
 // ============================================
 
 // Custom mood color palette
-export const CUSTOM_MOOD_COLORS = [
-  '#3B82F6', // Blue (default)
-  '#22C55E', // Green
-  '#A855F7', // Purple
-  '#EC4899', // Pink
-  '#F59E0B', // Orange
-  '#EF4444', // Red
-];
+// Neutral color for custom moods — works in both light/dark, avoids clashing with preset mood colors
+export const CUSTOM_MOOD_NEUTRAL_COLOR = '#94A3B8'; // Slate-400
+
+// Legacy export kept for compatibility
+export const CUSTOM_MOOD_COLORS = [CUSTOM_MOOD_NEUTRAL_COLOR];
 
 // Helper to get custom mood color with glow and soft variants
 export const getCustomMoodColor = (hexColor: string) => {

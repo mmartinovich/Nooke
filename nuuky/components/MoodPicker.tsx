@@ -2,8 +2,8 @@ import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Image, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { PresetMood } from '../types';
-import { getMoodImage, getMoodColor, radius } from '../lib/theme';
+import { PresetMood, CustomMood } from '../types';
+import { getMoodImage, getMoodColor, getCustomMoodColor, radius } from '../lib/theme';
 import { useTheme } from '../hooks/useTheme';
 
 // Moved outside component to prevent recreation on each render
@@ -35,6 +35,10 @@ interface MoodPickerProps {
   currentMood: PresetMood;
   onSelectMood: (mood: PresetMood) => void;
   onClose: () => void;
+  customMood?: CustomMood | null;
+  isCustomMoodActive?: boolean;
+  onCreateCustomMood?: () => void;
+  onSelectCustomMood?: () => void;
 }
 
 export const MoodPicker: React.FC<MoodPickerProps> = ({
@@ -42,6 +46,10 @@ export const MoodPicker: React.FC<MoodPickerProps> = ({
   currentMood,
   onSelectMood,
   onClose,
+  customMood,
+  isCustomMoodActive,
+  onCreateCustomMood,
+  onSelectCustomMood,
 }) => {
   const { theme, accent } = useTheme();
 
@@ -96,7 +104,7 @@ export const MoodPicker: React.FC<MoodPickerProps> = ({
                 {/* Mood options */}
                 <View style={styles.moodList}>
                   {MOODS.map(({ mood, label, description }) => {
-                    const isSelected = currentMood === mood;
+                    const isSelected = !isCustomMoodActive && currentMood === mood;
                     const moodColors = getMoodColor(mood);
 
                     return (
@@ -138,6 +146,60 @@ export const MoodPicker: React.FC<MoodPickerProps> = ({
                       </TouchableOpacity>
                     );
                   })}
+
+                  {/* Custom Mood */}
+                  {customMood ? (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        if (isCustomMoodActive) {
+                          onCreateCustomMood?.();
+                        } else {
+                          onSelectCustomMood?.();
+                          onClose();
+                        }
+                      }}
+                      onLongPress={onCreateCustomMood}
+                      delayLongPress={400}
+                      style={[
+                        styles.moodCard,
+                        { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border },
+                        isCustomMoodActive && { borderColor: getCustomMoodColor(customMood.color).base, borderWidth: 2 },
+                      ]}
+                    >
+                      <View style={styles.imageWrapper}>
+                        <Text style={{ fontSize: 40 }}>{customMood.emoji}</Text>
+                      </View>
+                      <View style={styles.moodText}>
+                        <Text style={[styles.moodLabel, { color: theme.colors.text.primary }]}>{customMood.text}</Text>
+                        <Text style={[styles.moodDescription, { color: theme.colors.text.tertiary }]}>
+                          {isCustomMoodActive ? 'Hold to edit' : 'Custom mood'}
+                        </Text>
+                      </View>
+                      {isCustomMoodActive && (
+                        <View style={[styles.checkmark, { backgroundColor: getCustomMoodColor(customMood.color).base }]}>
+                          <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={onCreateCustomMood}
+                      style={[
+                        styles.moodCard,
+                        { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border, borderStyle: 'dashed' as const },
+                      ]}
+                    >
+                      <View style={styles.imageWrapper}>
+                        <Ionicons name="add-circle-outline" size={40} color={theme.colors.text.tertiary} />
+                      </View>
+                      <View style={styles.moodText}>
+                        <Text style={[styles.moodLabel, { color: theme.colors.text.primary }]}>Custom mood</Text>
+                        <Text style={[styles.moodDescription, { color: theme.colors.text.tertiary }]}>Pick your own emoji & message</Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
                 </View>
 
                 {/* Cancel button */}

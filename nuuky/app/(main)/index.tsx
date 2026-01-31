@@ -47,6 +47,7 @@ try {
 import { useAppStore } from "../../stores/appStore";
 import { User } from "../../types";
 import { MoodPicker } from "../../components/MoodPicker";
+import { CustomMoodEditor } from "../../components/CustomMoodEditor";
 
 // Module-level subscription tracking to prevent duplicates
 let activePresenceSubscription: { cleanup: () => void; userId: string } | null = null;
@@ -57,6 +58,7 @@ let lastPresenceRefresh = 0;
 const PRESENCE_REFRESH_THROTTLE_MS = 3000;
 
 import { useMood } from "../../hooks/useMood";
+import { useCustomMood } from "../../hooks/useCustomMood";
 import { useNudge } from "../../hooks/useNudge";
 import { useCallMe } from "../../hooks/useCallMe";
 import { useHeart } from "../../hooks/useHeart";
@@ -96,6 +98,8 @@ export default function QuantumOrbitScreen() {
   const { theme, isDark, accent } = useTheme();
   const { currentUser, friends, speakingParticipants, activeCustomMood } = useAppStore();
   const { currentMood, changeMood } = useMood();
+  const { customMoods, createCustomMood, selectCustomMood, deleteCustomMood } = useCustomMood();
+  const [showCustomMoodEditor, setShowCustomMoodEditor] = useState(false);
   const { sendNudge } = useNudge();
   const { sendCallMe } = useCallMe();
   const { sendHeart } = useHeart();
@@ -661,6 +665,26 @@ export default function QuantumOrbitScreen() {
         currentMood={currentMood}
         onSelectMood={changeMood}
         onClose={() => setShowMoodPicker(false)}
+        customMood={customMoods[0] || activeCustomMood || null}
+        isCustomMoodActive={!!activeCustomMood}
+        onCreateCustomMood={() => {
+          setShowMoodPicker(false);
+          setShowCustomMoodEditor(true);
+        }}
+        onSelectCustomMood={() => {
+          const mood = customMoods[0] || activeCustomMood;
+          if (mood) selectCustomMood(mood.id);
+        }}
+      />
+
+      <CustomMoodEditor
+        visible={showCustomMoodEditor}
+        onSave={async (emoji, text, color) => {
+          await createCustomMood(emoji, text, color);
+        }}
+        onClose={() => setShowCustomMoodEditor(false)}
+        initialEmoji={customMoods[0]?.emoji ?? activeCustomMood?.emoji}
+        initialText={customMoods[0]?.text ?? activeCustomMood?.text}
       />
 
       <RoomListModal
