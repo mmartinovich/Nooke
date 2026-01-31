@@ -57,6 +57,7 @@ let lastPresenceRefresh = 0;
 const PRESENCE_REFRESH_THROTTLE_MS = 3000;
 
 import { useMood } from "../../hooks/useMood";
+import { useCustomMood } from "../../hooks/useCustomMood";
 import { useNudge } from "../../hooks/useNudge";
 import { useCallMe } from "../../hooks/useCallMe";
 import { useHeart } from "../../hooks/useHeart";
@@ -96,6 +97,7 @@ export default function QuantumOrbitScreen() {
   const { theme, isDark, accent } = useTheme();
   const { currentUser, friends, speakingParticipants, activeCustomMood } = useAppStore();
   const { currentMood, changeMood } = useMood();
+  const { customMoods, createCustomMood, selectCustomMood, deleteCustomMood } = useCustomMood();
   const { sendNudge } = useNudge();
   const { sendCallMe } = useCallMe();
   const { sendHeart } = useHeart();
@@ -661,6 +663,16 @@ export default function QuantumOrbitScreen() {
         currentMood={currentMood}
         onSelectMood={changeMood}
         onClose={() => setShowMoodPicker(false)}
+        originPoint={{ x: CENTER_X, y: CENTER_Y }}
+        customMood={customMoods[0] || activeCustomMood || null}
+        isCustomMoodActive={!!activeCustomMood}
+        onSelectCustomMood={() => {
+          const mood = customMoods[0] || activeCustomMood;
+          if (mood) selectCustomMood(mood.id);
+        }}
+        onSaveCustomMood={async (emoji, text, color) => {
+          await createCustomMood(emoji, text, color);
+        }}
       />
 
       <RoomListModal
