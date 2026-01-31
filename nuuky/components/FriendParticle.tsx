@@ -2,10 +2,11 @@ import React, { useEffect, useRef, useMemo, memo } from 'react';
 import { View, StyleSheet, Dimensions, TouchableOpacity, Animated, Easing, Text, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import { User } from '../types';
+import { User, Streak } from '../types';
 import { getMoodColor } from '../lib/theme';
 import { useLowPowerMode } from '../stores/appStore';
 import { isUserTrulyOnline } from '../lib/utils';
+import { StreakBadge } from './StreakBadge';
 
 const { width, height } = Dimensions.get('window');
 const CENTER_X = width / 2;
@@ -25,6 +26,7 @@ interface FriendParticleProps {
   baseAngle: number;
   radius: number;
   orbitAngle: Animated.Value;
+  streak?: Streak;
 }
 
 function FriendParticleComponent({
@@ -37,6 +39,7 @@ function FriendParticleComponent({
   baseAngle,
   radius,
   orbitAngle,
+  streak,
 }: FriendParticleProps) {
   const lowPowerMode = useLowPowerMode();
 
@@ -376,6 +379,11 @@ function FriendParticleComponent({
             )}
           </View>
 
+          {/* Streak Badge */}
+          {streak && streak.state !== 'broken' && (
+            <StreakBadge streak={streak} />
+          )}
+
           {/* Online indicator - positioned outside avatar circle at top-right */}
           {isOnline && (
             <Animated.View 
@@ -420,7 +428,9 @@ export const FriendParticle = memo(FriendParticleComponent, (prevProps, nextProp
     prevProps.position === nextProps.position &&
     prevProps.hasActiveFlare === nextProps.hasActiveFlare &&
     prevProps.baseAngle === nextProps.baseAngle &&
-    prevProps.radius === nextProps.radius
+    prevProps.radius === nextProps.radius &&
+    prevProps.streak?.consecutive_days === nextProps.streak?.consecutive_days &&
+    prevProps.streak?.state === nextProps.streak?.state
     // Note: orbitAngle is an Animated.Value that changes continuously
     // We don't include it in comparison as it's handled by animation listeners
   );

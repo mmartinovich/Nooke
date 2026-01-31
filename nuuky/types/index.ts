@@ -181,6 +181,23 @@ export interface MatchedContact extends PhoneContact {
   avatarUrl?: string;
 }
 
+// Streak types
+export type StreakState = 'active' | 'fading' | 'broken';
+
+export interface Streak {
+  id: string;
+  user1_id: string;
+  user2_id: string;
+  consecutive_days: number;
+  user1_last_interaction: string | null;
+  user2_last_interaction: string | null;
+  last_streak_at: string | null;
+  created_at: string;
+  /** Derived client-side */
+  friend_id: string;
+  state: StreakState;
+}
+
 // Audio types
 export type AudioConnectionStatus = "disconnected" | "connecting" | "connected" | "reconnecting" | "error";
 

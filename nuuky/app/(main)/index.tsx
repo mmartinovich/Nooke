@@ -66,6 +66,7 @@ import { useNudge } from "../../hooks/useNudge";
 import { useCallMe } from "../../hooks/useCallMe";
 import { useHeart } from "../../hooks/useHeart";
 import { useFlare } from "../../hooks/useFlare";
+import { useStreaks } from "../../hooks/useStreaks";
 import { usePresence } from "../../hooks/usePresence";
 import { useRoom } from "../../hooks/useRoom";
 import { useRoomInvites } from "../../hooks/useRoomInvites";
@@ -84,6 +85,7 @@ import { CreateRoomModal } from "../../components/CreateRoomModal";
 import { RoomSettingsModal } from "../../components/RoomSettingsModal";
 import { InviteFriendsModal } from "../../components/InviteFriendsModal";
 import { AudioConnectionBadge } from "../../components/AudioConnectionBadge";
+import { ElectricBolt } from "../../components/ElectricBolt";
 
 const { width, height } = Dimensions.get("window");
 const CENTER_X = width / 2;
@@ -99,6 +101,7 @@ export default function QuantumOrbitScreen() {
   const { sendCallMe } = useCallMe();
   const { sendHeart } = useHeart();
   const { sendFlare, activeFlares, myActiveFlare } = useFlare();
+  const { streaks, recordInteraction } = useStreaks();
   const { updateActivity } = usePresence(); // Track presence while app is active
   const {
     activeRooms,
@@ -139,6 +142,9 @@ export default function QuantumOrbitScreen() {
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [showRoomSettings, setShowRoomSettings] = useState(false);
   const [showInviteFriendsFromDefault, setShowInviteFriendsFromDefault] = useState(false);
+  // Bolt endpoint positions for electric streaks (use ref to avoid re-render loops)
+  const boltPositionsRef = useRef<Array<{ x: number; y: number }>>([]);
+  const [boltTick, setBoltTick] = useState(0);
   // Audio-reactive button animation
   const isCurrentUserSpeaking = currentUser?.id ? speakingParticipants.includes(currentUser.id) : false;
   // Separate animated values: scale uses native driver, glow uses JS driver
@@ -159,6 +165,9 @@ export default function QuantumOrbitScreen() {
   const lastTimeRef = useRef<number>(Date.now());
   const decayAnimationRef = useRef<RNAnimated.CompositeAnimation | null>(null);
   const decayListenerRef = useRef<string | null>(null); // Track decay listener for cleanup
+  const isSpinningRef = useRef(false);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const computeBoltPositionsRef = useRef<(() => void) | null>(null);
 
   // Cleanup animation listeners on unmount to prevent accumulation
   useEffect(() => {
@@ -198,6 +207,8 @@ export default function QuantumOrbitScreen() {
           decayListenerRef.current = null;
         }
         orbitVelocity.current = 0;
+        isSpinningRef.current = true;
+        setIsSpinning(true);
         const touchX = event.nativeEvent.pageX;
         const touchY = event.nativeEvent.pageY;
         const { width, height } = Dimensions.get("window");
@@ -248,7 +259,16 @@ export default function QuantumOrbitScreen() {
             decayListenerRef.current = null;
             orbitVelocity.current = 0;
             decayAnimationRef.current = null;
+            computeBoltPositionsRef.current?.();
+            isSpinningRef.current = false;
+            setIsSpinning(false);
+            setBoltTick((t) => t + 1);
           });
+        } else {
+          computeBoltPositionsRef.current?.();
+          isSpinningRef.current = false;
+          setIsSpinning(false);
+          setBoltTick((t) => t + 1);
         }
         lastAngleRef.current = null;
       },
@@ -319,7 +339,7 @@ export default function QuantumOrbitScreen() {
     const maxRadius = Math.min(maxRadiusX, maxRadiusY) - PARTICLE_SIZE / 2;
 
     // Start with base radius, use multiple layers if needed
-    let baseRadius = 140;
+    let baseRadius = 155;
     const radiusStep = 40; // Step between layers if needed
     const maxLayers = 3;
 
@@ -411,6 +431,82 @@ export default function QuantumOrbitScreen() {
       return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
     });
   }, [orbitPositions]);
+
+  // Build streak lookup map by friend_id
+  const streakMap = useMemo(() => {
+    const map = new Map<string, typeof streaks[0]>();
+    for (const s of streaks) {
+      map.set(s.friend_id, s);
+    }
+    return map;
+  }, [streaks]);
+
+  // Compute which bolts to render (max 7, sorted by consecutive_days desc)
+  const lowPowerMode = useAppStore((s) => s.lowPowerMode);
+  const maxBolts = lowPowerMode ? 3 : 7;
+  const activeBolts = useMemo(() => {
+    return streaks
+      .filter((s) => s.state === 'active' || s.state === 'fading')
+      .sort((a, b) => b.consecutive_days - a.consecutive_days)
+      .slice(0, maxBolts)
+      .map((s) => {
+        const friendIdx = orbitUsers.findIndex((u) => u.id === s.friend_id);
+        return { streak: s, friendIndex: friendIdx };
+      })
+      .filter((b) => b.friendIndex >= 0);
+  }, [streaks, orbitUsers, maxBolts]);
+
+  // Sync bolt positions when orbit changes or bolts change
+  useEffect(() => {
+    if (activeBolts.length === 0) {
+      boltPositionsRef.current = [];
+      return;
+    }
+
+    const computePositions = () => {
+      const currentAngle = orbitAngleValueRef.current;
+      return activeBolts.map(({ friendIndex }) => {
+        const base = orbitBaseAngles[friendIndex] || 0;
+        const r = orbitRadii[friendIndex] || 150;
+        const angle = base + currentAngle;
+        return {
+          x: CENTER_X + Math.cos(angle) * r,
+          y: CENTER_Y + Math.sin(angle) * r,
+        };
+      });
+    };
+
+    // Store compute function so panResponder can call it before showing bolts
+    computeBoltPositionsRef.current = () => {
+      boltPositionsRef.current = computePositions();
+    };
+
+    // Recompute positions (especially important when spin stops)
+    boltPositionsRef.current = computePositions();
+    setBoltTick((t) => t + 1);
+
+    // Listen to orbit angle changes (only fires during drag/decay)
+    const listenerId = orbitAngle.addListener(() => {
+      boltPositionsRef.current = computePositions();
+    });
+
+    // Also update on a slow interval for local oscillation drift (every 500ms)
+    const id = setInterval(() => {
+      boltPositionsRef.current = computePositions();
+    }, 500);
+
+    return () => {
+      orbitAngle.removeListener(listenerId);
+      clearInterval(id);
+    };
+  }, [activeBolts, orbitBaseAngles, orbitRadii, isSpinning]);
+
+  // Handle streak recording on interaction
+  const handleStreakInteraction = useCallback(() => {
+    if (selectedFriend) {
+      recordInteraction(selectedFriend.id);
+    }
+  }, [selectedFriend, recordInteraction]);
 
   // Mood images are preloaded at app startup in _layout.tsx
 
@@ -777,6 +873,24 @@ export default function QuantumOrbitScreen() {
       {/* Animated Star Field */}
       <StarField />
 
+      {/* Electric Bolt Layer */}
+      {activeBolts.length > 0 && !isSpinning && boltPositionsRef.current.length === activeBolts.length && (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {activeBolts.map(({ streak: s }, i) => (
+            <ElectricBolt
+              key={s.friend_id}
+              fromX={CENTER_X}
+              fromY={CENTER_Y}
+              toX={boltPositionsRef.current[i]?.x ?? CENTER_X}
+              toY={boltPositionsRef.current[i]?.y ?? CENTER_Y}
+              state={s.state}
+              consecutiveDays={s.consecutive_days}
+              boltIndex={i}
+            />
+          ))}
+        </View>
+      )}
+
       {/* Gesture handler for drag-to-spin - BEHIND interactive elements */}
       {/* Rendered before CentralOrb/FriendParticles so they receive touches first */}
       <View style={StyleSheet.absoluteFill} {...panResponder.panHandlers} pointerEvents="auto" />
@@ -809,6 +923,7 @@ export default function QuantumOrbitScreen() {
             baseAngle={orbitBaseAngles[index] || 0}
             radius={orbitRadii[index] || 150}
             orbitAngle={orbitAngle}
+            streak={streakMap.get(user.id)}
           />
         ))}
 
@@ -821,6 +936,7 @@ export default function QuantumOrbitScreen() {
           onNudge={handleNudge}
           onCallMe={handleCallMe}
           onHeart={handleHeart}
+          onInteraction={handleStreakInteraction}
         />
       )}
 
