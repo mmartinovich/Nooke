@@ -185,7 +185,10 @@ export const InAppNotificationBanner: React.FC<Props> = ({ notification, onDismi
               {notification.avatarUrl ? (
                 <Image
                   source={{ uri: notification.avatarUrl }}
-                  style={styles.avatar}
+                  style={[
+                    styles.avatar,
+                    { borderColor: theme.colors.glass.border },
+                  ]}
                 />
               ) : (
                 <View
@@ -287,7 +290,6 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   iconCircle: {
     width: 44,

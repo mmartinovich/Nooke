@@ -12,13 +12,9 @@ import * as Haptics from 'expo-haptics';
 import { RoomCard } from './RoomCard';
 import { Room } from '../types';
 import { radius } from '../lib/theme';
+import { useTheme } from '../hooks/useTheme';
 
 const ACTION_WIDTH = 74; // Per-action width, iOS standard
-
-// Tailwind colors
-const TAILWIND_RED = '#EF4444';
-const TAILWIND_AMBER = '#F59E0B';
-const TAILWIND_GRAY = '#6B7280';
 
 interface SwipeableRoomCardProps {
   room: Room;
@@ -38,6 +34,7 @@ function RightAction({
   index,
   totalActions,
   onPress,
+  textColor,
 }: {
   drag: SharedValue<number>;
   iconName: string;
@@ -46,6 +43,7 @@ function RightAction({
   index: number;
   totalActions: number;
   onPress: () => void;
+  textColor: string;
 }) {
   const actionOffset = ACTION_WIDTH * (totalActions - index);
 
@@ -70,8 +68,8 @@ function RightAction({
         style={[styles.actionButtonInner, { backgroundColor: color }]}
         onPress={onPress}
       >
-        <Ionicons name={iconName as any} size={24} color="#FFFFFF" />
-        <Text style={styles.actionText}>{label}</Text>
+        <Ionicons name={iconName as any} size={24} color={textColor} />
+        <Text style={[styles.actionText, { color: textColor }]}>{label}</Text>
       </RectButton>
     </Reanimated.View>
   );
@@ -86,6 +84,7 @@ export const SwipeableRoomCard: React.FC<SwipeableRoomCardProps> = ({
   onDelete,
   onLeave,
 }) => {
+  const { theme } = useTheme();
   const swipeableRef = useRef<any>(null);
   const pendingAction = useRef<'destructive' | null>(null);
 
@@ -107,7 +106,7 @@ export const SwipeableRoomCard: React.FC<SwipeableRoomCardProps> = ({
     (prog: SharedValue<number>, drag: SharedValue<number>) => {
       const destructiveLabel = isCreator ? 'Delete' : 'Leave';
       const destructiveIcon = isCreator ? 'trash-outline' : 'exit-outline';
-      const destructiveColor = isCreator ? TAILWIND_RED : TAILWIND_AMBER;
+      const destructiveColor = isCreator ? theme.colors.action.delete : theme.colors.action.archive;
       const totalActions = 1;
 
       return (
@@ -121,11 +120,12 @@ export const SwipeableRoomCard: React.FC<SwipeableRoomCardProps> = ({
             index={0}
             totalActions={totalActions}
             onPress={handleDestructiveAction}
+            textColor={theme.colors.text.primary}
           />
         </View>
       );
     },
-    [isCreator, handleDestructiveAction]
+    [isCreator, handleDestructiveAction, theme]
   );
 
   const onSwipeableOpen = useCallback((direction: string) => {
@@ -195,7 +195,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   actionText: {
-    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '600',
   },

@@ -14,7 +14,7 @@ interface InviteCardProps {
 }
 
 export const InviteCard: React.FC<InviteCardProps> = ({ invite, onAccept, onDecline }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const [timeRemaining, setTimeRemaining] = useState('');
   const [isExpired, setIsExpired] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -116,12 +116,12 @@ export const InviteCard: React.FC<InviteCardProps> = ({ invite, onAccept, onDecl
 
             {/* Time remaining badge */}
             {!isExpired ? (
-              <View style={[styles.timeBadge, { borderColor: theme.colors.glass.border }]}>
+              <View style={[styles.timeBadge, { borderColor: theme.colors.glass.border, backgroundColor: theme.colors.glass.background }]}>
                 <Ionicons name="time-outline" size={12} color={theme.colors.text.secondary} />
                 <Text style={[styles.timeText, { color: theme.colors.text.secondary }]}>{timeRemaining}</Text>
               </View>
             ) : (
-              <View style={[styles.timeBadge, styles.expiredBadge]}>
+              <View style={[styles.timeBadge, styles.expiredBadge, { backgroundColor: isDark ? 'rgba(236, 72, 153, 0.1)' : 'rgba(236, 72, 153, 0.08)', borderColor: isDark ? 'rgba(236, 72, 153, 0.3)' : 'rgba(236, 72, 153, 0.2)' }]}>
                 <Text style={[styles.expiredText, { color: theme.colors.mood.reachOut.base }]}>Expired</Text>
               </View>
             )}
@@ -131,7 +131,7 @@ export const InviteCard: React.FC<InviteCardProps> = ({ invite, onAccept, onDecl
           {!isExpired && (
             <View style={styles.actions}>
               <TouchableOpacity
-                style={[styles.button, styles.declineButton, { borderColor: theme.colors.glass.border }]}
+                style={[styles.button, styles.declineButton, { borderColor: theme.colors.glass.border, backgroundColor: theme.colors.glass.background }]}
                 onPress={handleDecline}
                 disabled={loading}
                 activeOpacity={0.8}
@@ -224,17 +224,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: radius.sm,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
   },
   timeText: {
     fontSize: typography.size.xs,
     fontWeight: typography.weight.medium as any,
   },
-  expiredBadge: {
-    backgroundColor: 'rgba(236, 72, 153, 0.1)',
-    borderColor: 'rgba(236, 72, 153, 0.3)',
-  },
+  expiredBadge: {},
   expiredText: {
     fontSize: typography.size.xs,
     fontWeight: typography.weight.medium as any,
@@ -254,9 +250,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
   },
-  declineButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-  },
+  declineButton: {},
   declineText: {
     fontSize: typography.size.sm,
     fontWeight: typography.weight.medium as any,

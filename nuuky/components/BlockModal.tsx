@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { colors, spacing, radius, typography } from '../lib/theme';
+import { spacing, radius, typography } from '../lib/theme';
+import { useTheme } from '../hooks/useTheme';
 
 type BlockType = 'mute' | 'soft' | 'hard';
 
@@ -19,28 +20,24 @@ const BLOCK_OPTIONS: ReadonlyArray<{
   title: string;
   description: string;
   icon: string;
-  color: string;
 }> = [
   {
     type: 'mute',
     title: 'Mute',
     description: "You won't see their presence or updates, but they can still see yours",
     icon: '🔇',
-    color: colors.mood.neutral.base,
   },
   {
     type: 'soft',
     title: 'Soft Block',
     description: 'You appear offline to them. They can still send nudges (which you can ignore)',
     icon: '👻',
-    color: colors.mood.notGreat.base,
   },
   {
     type: 'hard',
     title: 'Hard Block',
     description: 'Complete removal. They disappear from your friends list',
     icon: '🚫',
-    color: '#EF4444',
   },
 ] as const;
 
@@ -57,7 +54,19 @@ export const BlockModal: React.FC<BlockModalProps> = ({
   onBlock,
   userName,
 }) => {
+  const { colors } = useTheme();
   const [selectedType, setSelectedType] = useState<BlockType | null>(null);
+
+  const getBlockColor = useCallback((type: BlockType) => {
+    switch (type) {
+      case 'mute':
+        return colors.status.neutral;
+      case 'soft':
+        return colors.status.warning;
+      case 'hard':
+        return colors.status.error;
+    }
+  }, [colors]);
 
   const handleConfirm = useCallback(() => {
     if (selectedType) {
@@ -71,6 +80,137 @@ export const BlockModal: React.FC<BlockModalProps> = ({
     setSelectedType(null);
     onClose();
   }, [onClose]);
+
+  const styles = useMemo(() => StyleSheet.create({
+    overlay: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContainer: {
+      width: '85%',
+      maxWidth: 400,
+      maxHeight: '80%',
+    },
+    modal: {
+      borderRadius: radius.xl,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: colors.glass.border,
+    },
+    header: {
+      padding: spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.glass.border,
+    },
+    title: {
+      fontSize: typography.sizes['2xl'],
+      fontWeight: typography.weights.bold,
+      color: colors.text.primary,
+      marginBottom: spacing.xs,
+    },
+    subtitle: {
+      fontSize: typography.sizes.sm,
+      color: colors.text.secondary,
+    },
+    optionsList: {
+      maxHeight: 400,
+    },
+    optionsContent: {
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    optionCard: {
+      backgroundColor: colors.glass.background,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+      borderWidth: 2,
+      borderColor: colors.glass.border,
+    },
+    optionCardSelected: {
+      borderColor: colors.status.info,
+      backgroundColor: colors.bg.tertiary,
+    },
+    optionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: spacing.sm,
+    },
+    optionIcon: {
+      fontSize: 32,
+      marginRight: spacing.md,
+    },
+    optionInfo: {
+      flex: 1,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    optionTitle: {
+      fontSize: typography.sizes.lg,
+      fontWeight: typography.weights.bold,
+      color: colors.text.primary,
+    },
+    checkmark: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    checkmarkText: {
+      color: colors.text.primary,
+      fontSize: typography.sizes.sm,
+      fontWeight: typography.weights.bold,
+    },
+    optionDescription: {
+      fontSize: typography.sizes.sm,
+      color: colors.text.secondary,
+      lineHeight: 20,
+    },
+    buttons: {
+      flexDirection: 'row',
+      gap: spacing.md,
+      padding: spacing.lg,
+      borderTopWidth: 1,
+      borderTopColor: colors.glass.border,
+    },
+    cancelButton: {
+      flex: 1,
+      padding: spacing.md,
+      borderRadius: radius.full,
+      backgroundColor: colors.glass.background,
+      borderWidth: 1,
+      borderColor: colors.glass.border,
+      alignItems: 'center',
+    },
+    cancelText: {
+      fontSize: typography.sizes.md,
+      fontWeight: typography.weights.semibold,
+      color: colors.text.secondary,
+    },
+    confirmButton: {
+      flex: 1,
+      borderRadius: radius.full,
+      overflow: 'hidden',
+    },
+    confirmButtonDisabled: {
+      opacity: 0.5,
+    },
+    confirmGradient: {
+      padding: spacing.md,
+      alignItems: 'center',
+    },
+    confirmText: {
+      fontSize: typography.sizes.md,
+      fontWeight: typography.weights.bold,
+      color: colors.text.primary,
+    },
+    confirmTextDisabled: {
+      color: colors.text.tertiary,
+    },
+  }), [colors]);
 
   return (
     <Modal
@@ -112,7 +252,7 @@ export const BlockModal: React.FC<BlockModalProps> = ({
                     <View style={styles.optionInfo}>
                       <Text style={styles.optionTitle}>{option.title}</Text>
                       {selectedType === option.type && (
-                        <View style={[styles.checkmark, { backgroundColor: option.color }]}>
+                        <View style={[styles.checkmark, { backgroundColor: getBlockColor(option.type) }]}>
                           <Text style={styles.checkmarkText}>✓</Text>
                         </View>
                       )}
@@ -145,8 +285,8 @@ export const BlockModal: React.FC<BlockModalProps> = ({
                 <LinearGradient
                   colors={
                     selectedType
-                      ? ['rgba(239, 68, 68, 0.8)', 'rgba(220, 38, 38, 0.8)']
-                      : ['rgba(100, 100, 100, 0.3)', 'rgba(80, 80, 80, 0.3)']
+                      ? [colors.status.error, colors.status.error]
+                      : [colors.bg.secondary, colors.bg.tertiary]
                   }
                   style={styles.confirmGradient}
                 >
@@ -163,133 +303,3 @@ export const BlockModal: React.FC<BlockModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContainer: {
-    width: '85%',
-    maxWidth: 400,
-    maxHeight: '80%',
-  },
-  modal: {
-    borderRadius: radius.xl,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.glass.border,
-  },
-  header: {
-    padding: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.glass.border,
-  },
-  title: {
-    fontSize: typography.sizes['2xl'],
-    fontWeight: typography.weights.bold,
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    fontSize: typography.sizes.sm,
-    color: colors.text.secondary,
-  },
-  optionsList: {
-    maxHeight: 400,
-  },
-  optionsContent: {
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  optionCard: {
-    backgroundColor: colors.glass.background,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    borderWidth: 2,
-    borderColor: colors.glass.border,
-  },
-  optionCardSelected: {
-    borderColor: colors.mood.reachOut.base,
-    backgroundColor: 'rgba(236, 72, 153, 0.1)',
-  },
-  optionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  optionIcon: {
-    fontSize: 32,
-    marginRight: spacing.md,
-  },
-  optionInfo: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  optionTitle: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.bold,
-    color: colors.text.primary,
-  },
-  checkmark: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkmarkText: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.bold,
-  },
-  optionDescription: {
-    fontSize: typography.sizes.sm,
-    color: colors.text.secondary,
-    lineHeight: 20,
-  },
-  buttons: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    padding: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.glass.border,
-  },
-  cancelButton: {
-    flex: 1,
-    padding: spacing.md,
-    borderRadius: radius.full,
-    backgroundColor: colors.glass.background,
-    borderWidth: 1,
-    borderColor: colors.glass.border,
-    alignItems: 'center',
-  },
-  cancelText: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold,
-    color: colors.text.secondary,
-  },
-  confirmButton: {
-    flex: 1,
-    borderRadius: radius.full,
-    overflow: 'hidden',
-  },
-  confirmButtonDisabled: {
-    opacity: 0.5,
-  },
-  confirmGradient: {
-    padding: spacing.md,
-    alignItems: 'center',
-  },
-  confirmText: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.bold,
-    color: colors.text.primary,
-  },
-  confirmTextDisabled: {
-    color: colors.text.tertiary,
-  },
-});

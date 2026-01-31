@@ -91,7 +91,7 @@ export const MoodPicker: React.FC<MoodPickerProps> = ({
                 </View>
 
                 {/* Subtitle */}
-                <Text style={styles.subtitle}>Your friends will see this</Text>
+                <Text style={[styles.subtitle, { color: theme.colors.text.tertiary }]}>Your friends will see this</Text>
 
                 {/* Mood options */}
                 <View style={styles.moodList}>
@@ -106,6 +106,7 @@ export const MoodPicker: React.FC<MoodPickerProps> = ({
                         onPress={() => handleSelectMood(mood)}
                         style={[
                           styles.moodCard,
+                          { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border },
                           isSelected && { borderColor: moodColors.base, borderWidth: 2 },
                         ]}
                         accessibilityLabel={`${label}: ${description}`}
@@ -123,7 +124,7 @@ export const MoodPicker: React.FC<MoodPickerProps> = ({
                         {/* Text */}
                         <View style={styles.moodText}>
                           <Text style={[styles.moodLabel, { color: theme.colors.text.primary }]}>{label}</Text>
-                          <Text style={styles.moodDescription}>
+                          <Text style={[styles.moodDescription, { color: theme.colors.text.tertiary }]}>
                             {description}
                           </Text>
                         </View>
@@ -142,11 +143,11 @@ export const MoodPicker: React.FC<MoodPickerProps> = ({
                 {/* Cancel button */}
                 <TouchableOpacity
                   onPress={onClose}
-                  style={styles.cancelButton}
+                  style={[styles.cancelButton, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }]}
                   accessibilityLabel="Cancel"
                   accessibilityRole="button"
                 >
-                  <Text style={styles.cancelText}>Cancel</Text>
+                  <Text style={[styles.cancelText, { color: theme.colors.text.tertiary }]}>Cancel</Text>
                 </TouchableOpacity>
             </ScrollView>
           </LinearGradient>
@@ -200,7 +201,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.5)',
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -212,10 +212,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
     gap: 12,
   },
   imageWrapper: {
@@ -239,7 +237,6 @@ const styles = StyleSheet.create({
   },
   moodDescription: {
     fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.5)',
   },
   checkmark: {
     width: 28,
@@ -251,14 +248,11 @@ const styles = StyleSheet.create({
   cancelButton: {
     alignItems: 'center',
     paddingVertical: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   cancelText: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.5)',
     fontWeight: '600',
   },
 });

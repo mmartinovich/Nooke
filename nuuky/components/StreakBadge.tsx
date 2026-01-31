@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Streak } from '../types';
+import { useTheme } from '../hooks/useTheme';
 
 interface StreakBadgeProps {
   streak: Streak;
@@ -38,6 +39,8 @@ export function BoltIcon({ size = 11, tier = 'teal' }: { size?: number; tier?: B
 }
 
 function StreakBadgeComponent({ streak }: StreakBadgeProps) {
+  const { theme, isDark } = useTheme();
+
   if (streak.state === 'broken' || streak.consecutive_days < 1) return null;
 
   const days = streak.consecutive_days;
@@ -48,9 +51,14 @@ function StreakBadgeComponent({ streak }: StreakBadgeProps) {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.pill, isHot && !isFire && styles.pillHot, isFire && styles.pillFire]}>
+      <View style={[
+        styles.pill,
+        { backgroundColor: isDark ? 'rgba(15, 25, 45, 0.9)' : 'rgba(255, 255, 255, 0.95)' },
+        isHot && !isFire && styles.pillHot,
+        isFire && styles.pillFire
+      ]}>
         <BoltIcon size={isLarge ? 10 : 12} tier={tier} />
-        <Text style={[styles.count, isLarge && styles.countSmall]}>
+        <Text style={[styles.count, { color: isDark ? '#ffffff' : '#1a1a2e' }, isLarge && styles.countSmall]}>
           {days}
         </Text>
       </View>
@@ -71,7 +79,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-    backgroundColor: 'rgba(15, 25, 45, 0.9)',
     borderRadius: 12,
     paddingLeft: 5,
     paddingRight: 7,

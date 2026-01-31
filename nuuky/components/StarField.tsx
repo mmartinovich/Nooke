@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, memo } from 'react';
 import { View, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
+import { useTheme } from '../hooks/useTheme';
 
 const { width, height } = Dimensions.get('window');
 const STAR_COUNT = 50;
@@ -15,6 +16,8 @@ interface Star {
 }
 
 export function StarField() {
+  const { isDark } = useTheme();
+
   // Generate random stars
   const stars = useMemo(() => {
     return Array.from({ length: STAR_COUNT }, (_, i) => ({
@@ -31,7 +34,7 @@ export function StarField() {
   return (
     <View style={styles.container} pointerEvents="none">
       {stars.map((star) => (
-        <StarParticle key={star.id} star={star} />
+        <StarParticle key={star.id} star={star} isDark={isDark} />
       ))}
     </View>
   );
@@ -39,14 +42,15 @@ export function StarField() {
 
 interface StarParticleProps {
   star: Star;
+  isDark: boolean;
 }
 
-const StarParticle = memo(({ star }: StarParticleProps) => {
+const StarParticle = memo(({ star, isDark }: StarParticleProps) => {
   const twinkleAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     let twinkleAnimation: Animated.CompositeAnimation | null = null;
-    
+
     // Start twinkling after delay
     const timeout = setTimeout(() => {
       twinkleAnimation = Animated.loop(
@@ -67,9 +71,10 @@ const StarParticle = memo(({ star }: StarParticleProps) => {
     };
   }, []);
 
+  const lightModeMultiplier = isDark ? 1 : 0.15;
   const opacity = twinkleAnim.interpolate({
     inputRange: [0, 0.5, 1],
-    outputRange: [star.opacity * 0.6, star.opacity, star.opacity * 0.6],
+    outputRange: [star.opacity * 0.6 * lightModeMultiplier, star.opacity * lightModeMultiplier, star.opacity * 0.6 * lightModeMultiplier],
   });
 
   const scale = twinkleAnim.interpolate({

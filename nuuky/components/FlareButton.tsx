@@ -58,10 +58,11 @@ export const FlareButton: React.FC<FlareButtonProps> = ({
     >
       <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
         <LinearGradient
-          colors={hasActiveFlare ? ['#ef4444', '#dc2626'] : theme.gradients.button}
+          colors={hasActiveFlare ? [theme.colors.status.error, theme.colors.status.error] : theme.gradients.button}
           style={[
             styles.button,
-            hasActiveFlare && styles.activeButton,
+            { borderColor: theme.colors.border.subtle },
+            hasActiveFlare && { borderColor: theme.colors.status.error, borderWidth: 2 },
             loading && styles.buttonDisabled,
           ]}
         >
@@ -87,11 +88,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     padding: spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  activeButton: {
-    borderColor: '#ef4444',
-    borderWidth: 2,
   },
   buttonDisabled: {
     opacity: 0.5,

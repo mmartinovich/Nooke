@@ -12,7 +12,8 @@ import {
 } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { colors, spacing, radius, typography } from '../lib/theme';
+import { spacing, radius, typography } from '../lib/theme';
+import { useTheme } from '../hooks/useTheme';
 
 interface ReportModalProps {
   visible: boolean;
@@ -27,6 +28,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   onReport,
   userName,
 }) => {
+  const { theme } = useTheme();
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [details, setDetails] = useState('');
 
@@ -71,6 +73,8 @@ export const ReportModal: React.FC<ReportModalProps> = ({
       icon: '🔍',
     },
   ];
+
+  const styles = createStyles(theme);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -124,7 +128,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                     <TextInput
                       style={styles.input}
                       placeholder="Tell us more..."
-                      placeholderTextColor={colors.text.tertiary}
+                      placeholderTextColor={theme.colors.text.tertiary}
                       value={details}
                       onChangeText={setDetails}
                       multiline
@@ -150,8 +154,8 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                   <LinearGradient
                     colors={
                       selectedType
-                        ? colors.mood.reachOut.gradient
-                        : ['rgba(100, 100, 100, 0.3)', 'rgba(80, 80, 80, 0.3)']
+                        ? [theme.colors.status.error, theme.colors.status.warning]
+                        : [theme.colors.glass.background, theme.colors.glass.border]
                     }
                     style={styles.submitGradient}
                   >
@@ -169,12 +173,12 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.bg.overlay,
   },
   keyboardView: {
     width: '100%',
@@ -189,22 +193,22 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.glass.border,
+    borderColor: theme.colors.glass.border,
   },
   header: {
     padding: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.glass.border,
+    borderBottomColor: theme.colors.glass.border,
   },
   title: {
     fontSize: typography.sizes['2xl'],
     fontWeight: typography.weights.bold,
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
     marginBottom: spacing.xs,
   },
   subtitle: {
     fontSize: typography.sizes.sm,
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
   },
   content: {
     maxHeight: 500,
@@ -219,15 +223,15 @@ const styles = StyleSheet.create({
   typeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.glass.background,
+    backgroundColor: theme.colors.glass.background,
     borderRadius: radius.lg,
     padding: spacing.md,
     borderWidth: 2,
-    borderColor: colors.glass.border,
+    borderColor: theme.colors.glass.border,
   },
   typeCardSelected: {
-    borderColor: colors.mood.reachOut.base,
-    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+    borderColor: theme.colors.status.error,
+    backgroundColor: theme.colors.glass.highlight,
   },
   typeIcon: {
     fontSize: 28,
@@ -239,23 +243,23 @@ const styles = StyleSheet.create({
   typeTitle: {
     fontSize: typography.sizes.md,
     fontWeight: typography.weights.semibold,
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
     marginBottom: spacing.xs / 2,
   },
   typeDescription: {
     fontSize: typography.sizes.sm,
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
   },
   checkmark: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: colors.mood.reachOut.base,
+    backgroundColor: theme.colors.status.error,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkmarkText: {
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
     fontSize: typography.sizes.sm,
     fontWeight: typography.weights.bold,
   },
@@ -265,19 +269,19 @@ const styles = StyleSheet.create({
   detailsLabel: {
     fontSize: typography.sizes.sm,
     fontWeight: typography.weights.medium,
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
     marginBottom: spacing.sm,
   },
   inputContainer: {
-    backgroundColor: colors.glass.background,
+    backgroundColor: theme.colors.glass.background,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.glass.border,
+    borderColor: theme.colors.glass.border,
   },
   input: {
     padding: spacing.md,
     fontSize: typography.sizes.md,
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
     minHeight: 100,
   },
   buttons: {
@@ -285,21 +289,21 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     padding: spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: colors.glass.border,
+    borderTopColor: theme.colors.glass.border,
   },
   cancelButton: {
     flex: 1,
     padding: spacing.md,
     borderRadius: radius.full,
-    backgroundColor: colors.glass.background,
+    backgroundColor: theme.colors.glass.background,
     borderWidth: 1,
-    borderColor: colors.glass.border,
+    borderColor: theme.colors.glass.border,
     alignItems: 'center',
   },
   cancelText: {
     fontSize: typography.sizes.md,
     fontWeight: typography.weights.semibold,
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
   },
   submitButton: {
     flex: 1,
@@ -316,9 +320,9 @@ const styles = StyleSheet.create({
   submitText: {
     fontSize: typography.sizes.md,
     fontWeight: typography.weights.bold,
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
   },
   submitTextDisabled: {
-    color: colors.text.tertiary,
+    color: theme.colors.text.tertiary,
   },
 });

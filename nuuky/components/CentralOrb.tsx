@@ -5,6 +5,7 @@ import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { getMoodImage } from "../lib/theme";
 import { CustomMood } from "../types";
+import { useTheme } from "../hooks/useTheme";
 
 const { width, height } = Dimensions.get("window");
 const ORB_SIZE = 180;
@@ -30,6 +31,7 @@ function CentralOrbComponent({
   customMood,
   showHint = false,
 }: CentralOrbProps) {
+  const { theme, isDark } = useTheme();
   const breatheAnim = useRef(new Animated.Value(0)).current;
   const flareAnim = useRef(new Animated.Value(0)).current;
   const bounceAnim = useRef(new Animated.Value(0)).current;
@@ -330,14 +332,14 @@ function CentralOrbComponent({
           {/* Glass background with stronger mood tint */}
           <BlurView intensity={70} tint="light" style={styles.glassBlur}>
             <LinearGradient
-              colors={[`${moodColor}35`, `${glowColor}20`, `${moodColor}15`, "rgba(255, 255, 255, 0.08)"]}
+              colors={[`${moodColor}35`, `${glowColor}20`, `${moodColor}15`, theme.colors.glass.background]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.glassGradient}
             >
               {/* Enhanced white highlight - top-left shimmer */}
               <LinearGradient
-                colors={["rgba(255, 255, 255, 0.4)", "rgba(255, 255, 255, 0.1)", "transparent"]}
+                colors={isDark ? ["rgba(255, 255, 255, 0.4)", "rgba(255, 255, 255, 0.1)", "transparent"] : ["rgba(0, 0, 0, 0.08)", "rgba(0, 0, 0, 0.03)", "transparent"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.highlight}

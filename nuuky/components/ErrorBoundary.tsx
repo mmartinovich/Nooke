@@ -2,8 +2,8 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { spacing, radius, typography } from '../lib/theme';
-import { useTheme } from '../hooks/useTheme';
+import { spacing, radius, typography, getTheme } from '../lib/theme';
+import { useColorScheme } from 'react-native';
 
 interface Props {
   children: ReactNode;
@@ -17,7 +17,8 @@ interface State {
 }
 
 function ThemedErrorFallback({ error, onRetry }: { error: Error | null; onRetry: () => void }) {
-  const { theme } = useTheme();
+  const colorScheme = useColorScheme();
+  const theme = getTheme(colorScheme === 'light' ? 'light' : 'dark');
 
   return (
     <LinearGradient colors={theme.gradients.background} style={styles.container}>

@@ -81,7 +81,7 @@ export const CustomMoodEditor: React.FC<CustomMoodEditorProps> = ({
           onPress={handleClose}
         />
         <View style={styles.container}>
-          <LinearGradient colors={theme.gradients.card} style={[styles.modal, { borderColor: theme.colors.ui.border }]}>
+          <LinearGradient colors={theme.gradients.card} style={[styles.modal, { borderColor: theme.colors.ui.border, backgroundColor: theme.colors.bg.primary }]}>
             <ScrollView
               showsVerticalScrollIndicator={false}
               bounces={false}
@@ -106,7 +106,7 @@ export const CustomMoodEditor: React.FC<CustomMoodEditorProps> = ({
                 <View style={styles.inputGroup}>
                   <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Status Message</Text>
                   <TextInput
-                    style={[styles.textInput, { borderColor: theme.colors.ui.border, color: theme.colors.text.primary }]}
+                    style={[styles.textInput, { borderColor: theme.colors.ui.border, color: theme.colors.text.primary, backgroundColor: theme.colors.glass.background }]}
                     value={text}
                     onChangeText={setText}
                     placeholder="How are you feeling?"
@@ -168,7 +168,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     padding: spacing.lg,
     borderWidth: 1,
-    backgroundColor: 'rgba(20, 20, 40, 0.95)',
   },
   header: {
     marginBottom: spacing.lg,
@@ -194,7 +193,6 @@ const styles = StyleSheet.create({
   textInput: {
     borderWidth: 1,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     fontSize: typography.size.base,

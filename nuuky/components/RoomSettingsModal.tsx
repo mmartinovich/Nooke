@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, getMoodColor, interactionStates } from "../lib/theme";
+import { getMoodColor, interactionStates } from "../lib/theme";
 import { useTheme } from "../hooks/useTheme";
 import { useInviteLink } from "../hooks/useInviteLink";
 import { RoomParticipant } from "../types";
@@ -196,7 +196,8 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
             style={[
               styles.stackedAvatar,
               {
-                borderColor: isOnline ? moodColors.base : "rgba(255,255,255,0.2)",
+                borderColor: isOnline ? moodColors.base : theme.colors.glass.border,
+                backgroundColor: theme.colors.bg.secondary,
               },
             ]}
           />
@@ -207,14 +208,14 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
               styles.stackedAvatarPlaceholder,
               {
                 backgroundColor: accent.soft,
-                borderColor: isOnline ? moodColors.base : "rgba(255,255,255,0.2)",
+                borderColor: isOnline ? moodColors.base : theme.colors.glass.border,
               },
             ]}
           >
             <Ionicons name="person" size={16} color={accent.primary} />
           </View>
         )}
-        {isOnline && <View style={styles.stackedOnlineIndicator} />}
+        {isOnline && <View style={[styles.stackedOnlineIndicator, { backgroundColor: theme.colors.status.success, borderColor: theme.colors.bg.secondary }]} />}
       </View>
     );
   };
@@ -233,7 +234,7 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
 
     return (
       <React.Fragment key={participant.id}>
-        {index > 0 && <View style={styles.memberRowSeparator} />}
+        {index > 0 && <View style={[styles.memberRowSeparator, { backgroundColor: theme.colors.glass.border }]} />}
         <View style={styles.expandedMemberRow}>
           <View style={styles.memberInfo}>
             {/* Avatar with mood border */}
@@ -244,7 +245,7 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
                   style={[
                     styles.memberAvatar,
                     {
-                      borderColor: isOnline ? moodColors.base : "rgba(255,255,255,0.1)",
+                      borderColor: isOnline ? moodColors.base : theme.colors.glass.border,
                     },
                   ]}
                 />
@@ -255,20 +256,20 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
                     styles.memberAvatarPlaceholder,
                     {
                       backgroundColor: accent.soft,
-                      borderColor: isOnline ? moodColors.base : "rgba(255,255,255,0.1)",
+                      borderColor: isOnline ? moodColors.base : theme.colors.glass.border,
                     },
                   ]}
                 >
                   <Ionicons name="person" size={18} color={accent.primary} />
                 </View>
               )}
-              {isOnline && <View style={styles.onlineIndicator} />}
+              {isOnline && <View style={[styles.onlineIndicator, { backgroundColor: theme.colors.status.success, borderColor: theme.colors.bg.primary }]} />}
             </View>
 
             {/* Name and status */}
             <View style={styles.memberText}>
               <View style={styles.nameRow}>
-                <Text style={styles.memberName} numberOfLines={1}>
+                <Text style={[styles.memberName, { color: theme.colors.text.primary }]} numberOfLines={1}>
                   {user.display_name}
                   {isCurrentUser ? " (You)" : ""}
                 </Text>
@@ -278,7 +279,7 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
                   </View>
                 )}
               </View>
-              <Text style={styles.memberStatus}>{isOnline ? "Online" : "Offline"}</Text>
+              <Text style={[styles.memberStatus, { color: theme.colors.text.tertiary }]}>{isOnline ? "Online" : "Offline"}</Text>
             </View>
           </View>
 
@@ -291,9 +292,9 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
               activeOpacity={0.7}
             >
               {isRemoving ? (
-                <ActivityIndicator size="small" color="#EF4444" />
+                <ActivityIndicator size="small" color={theme.colors.status.error} />
               ) : (
-                <Ionicons name="close-circle" size={20} color="#EF4444" />
+                <Ionicons name="close-circle" size={20} color={theme.colors.status.error} />
               )}
             </TouchableOpacity>
           )}
@@ -307,19 +308,19 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { backgroundColor: theme.colors.glass.overlay }]}>
         <View style={styles.modalContainer}>
           <LinearGradient colors={theme.gradients.background} style={styles.gradientBackground}>
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: theme.colors.glass.background, borderBottomColor: theme.colors.glass.border }]}>
               <View style={styles.headerLeft} />
-              <Text style={styles.headerTitle}>Room Settings</Text>
+              <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Room Settings</Text>
               <TouchableOpacity
-                style={styles.closeButton}
+                style={[styles.closeButton, { backgroundColor: theme.colors.glass.background }]}
                 onPress={handleClose}
                 activeOpacity={interactionStates.pressed}
               >
-                <Ionicons name="close" size={24} color="#FFFFFF" />
+                <Ionicons name="close" size={24} color={theme.colors.text.primary} />
               </TouchableOpacity>
             </View>
 
@@ -330,28 +331,28 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
             >
               {/* Room Name Section */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitleText}>ROOM NAME</Text>
+                <Text style={[styles.sectionTitleText, { color: theme.colors.text.tertiary }]}>ROOM NAME</Text>
                 {isRenaming ? (
                   <View style={styles.renameContainer}>
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border, color: theme.colors.text.primary }]}
                       value={newName}
                       onChangeText={setNewName}
                       placeholder="Enter room name"
-                      placeholderTextColor="rgba(255,255,255,0.3)"
+                      placeholderTextColor={theme.colors.text.tertiary}
                       autoFocus
                       maxLength={50}
                     />
                     <View style={styles.renameButtons}>
                       <TouchableOpacity
-                        style={styles.cancelButton}
+                        style={[styles.cancelButton, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }]}
                         onPress={() => {
                           setIsRenaming(false);
                           setNewName(roomName);
                         }}
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.cancelButtonText}>Cancel</Text>
+                        <Text style={[styles.cancelButtonText, { color: theme.colors.text.secondary }]}>Cancel</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[styles.saveButton, { backgroundColor: accent.primary }]}
@@ -359,24 +360,24 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
                         disabled={loading}
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.saveButtonText}>{loading ? "Saving..." : "Save"}</Text>
+                        <Text style={[styles.saveButtonText, { color: theme.colors.text.primary }]}>{loading ? "Saving..." : "Save"}</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
                 ) : (
-                  <View style={styles.groupedCard}>
+                  <View style={[styles.groupedCard, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }]}>
                     <TouchableOpacity
                       style={styles.groupedCardRow}
                       onPress={() => isCreator && setIsRenaming(true)}
                       disabled={!isCreator}
                       activeOpacity={0.7}
                     >
-                      <Ionicons name="chatbubble-outline" size={20} color="rgba(255,255,255,0.5)" />
+                      <Ionicons name="chatbubble-outline" size={20} color={theme.colors.text.secondary} />
                       <View style={styles.actionTextContainer}>
-                        <Text style={styles.actionTitle}>{roomName}</Text>
-                        {isCreator && <Text style={styles.actionSubtitle}>Tap to rename</Text>}
+                        <Text style={[styles.actionTitle, { color: theme.colors.text.primary }]}>{roomName}</Text>
+                        {isCreator && <Text style={[styles.actionSubtitle, { color: theme.colors.text.tertiary }]}>Tap to rename</Text>}
                       </View>
-                      {isCreator && <Ionicons name="pencil" size={16} color="rgba(255,255,255,0.3)" />}
+                      {isCreator && <Ionicons name="pencil" size={16} color={theme.colors.text.tertiary} />}
                     </TouchableOpacity>
                   </View>
                 )}
@@ -385,13 +386,13 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
               {/* Members Section - Compact Avatar Stack */}
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitleTextInline}>MEMBERS</Text>
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{participants?.length || 0}</Text>
+                  <Text style={[styles.sectionTitleTextInline, { color: theme.colors.text.tertiary }]}>MEMBERS</Text>
+                  <View style={[styles.badge, { backgroundColor: theme.colors.glass.background }]}>
+                    <Text style={[styles.badgeText, { color: theme.colors.text.secondary }]}>{participants?.length || 0}</Text>
                   </View>
                 </View>
-                
-                <View style={styles.groupedCard}>
+
+                <View style={[styles.groupedCard, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }]}>
                   {/* Avatar Stack Header */}
                   <TouchableOpacity
                     style={styles.avatarStackContainer}
@@ -403,22 +404,22 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
                         renderStackedAvatar(participant, index)
                       )}
                       {overflowCount > 0 && (
-                        <View style={[styles.stackedAvatarWrapper, styles.overflowBadge]}>
-                          <Text style={styles.overflowText}>+{overflowCount}</Text>
+                        <View style={[styles.stackedAvatarWrapper, styles.overflowBadge, { backgroundColor: theme.colors.glass.border, borderColor: theme.colors.bg.secondary }]}>
+                          <Text style={[styles.overflowText, { color: theme.colors.text.secondary }]}>+{overflowCount}</Text>
                         </View>
                       )}
                     </View>
                     <Ionicons
                       name={membersExpanded ? "chevron-up" : "chevron-down"}
                       size={20}
-                      color="rgba(255,255,255,0.3)"
+                      color={theme.colors.text.tertiary}
                     />
                   </TouchableOpacity>
 
                   {/* Expanded Member List */}
                   {membersExpanded && (
                     <View style={styles.expandedMembersList}>
-                      <View style={styles.fullWidthSeparator} />
+                      <View style={[styles.fullWidthSeparator, { backgroundColor: theme.colors.glass.border }]} />
                       {sortedParticipants.map((participant, index) =>
                         renderExpandedMember(participant, index)
                       )}
@@ -429,10 +430,10 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
 
               {/* Actions Section - Grouped Card */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitleText}>ACTIONS</Text>
+                <Text style={[styles.sectionTitleText, { color: theme.colors.text.tertiary }]}>ACTIONS</Text>
                 {/* Invite & Share Actions (Creator Only) */}
                 {isCreator && (
-                  <View style={styles.groupedCard}>
+                  <View style={[styles.groupedCard, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }]}>
                     {/* Invite Friends */}
                     <TouchableOpacity
                       style={styles.groupedCardRow}
@@ -443,14 +444,14 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
                         <Ionicons name="person-add-outline" size={18} color={accent.primary} />
                       </View>
                       <View style={styles.actionTextContainer}>
-                        <Text style={styles.actionTitle}>Invite Friends</Text>
-                        <Text style={styles.actionSubtitle}>Add people to this room</Text>
+                        <Text style={[styles.actionTitle, { color: theme.colors.text.primary }]}>Invite Friends</Text>
+                        <Text style={[styles.actionSubtitle, { color: theme.colors.text.tertiary }]}>Add people to this room</Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.3)" />
+                      <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
                     </TouchableOpacity>
 
                     {/* Share Link */}
-                    <View style={styles.internalSeparator} />
+                    <View style={[styles.internalSeparator, { backgroundColor: theme.colors.glass.border }]} />
                     <TouchableOpacity
                       style={styles.groupedCardRow}
                       onPress={handleShareLink}
@@ -465,16 +466,16 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
                         )}
                       </View>
                       <View style={styles.actionTextContainer}>
-                        <Text style={styles.actionTitle}>Share Link</Text>
-                        <Text style={styles.actionSubtitle}>Anyone with link can join</Text>
+                        <Text style={[styles.actionTitle, { color: theme.colors.text.primary }]}>Share Link</Text>
+                        <Text style={[styles.actionSubtitle, { color: theme.colors.text.tertiary }]}>Anyone with link can join</Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.3)" />
+                      <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
                     </TouchableOpacity>
                   </View>
                 )}
 
                 {/* Leave Room - Separate Card */}
-                <View style={[styles.groupedCard, styles.leaveCard]}>
+                <View style={[styles.groupedCard, styles.leaveCard, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }]}>
                   <TouchableOpacity
                     style={styles.groupedCardRow}
                     onPress={() => {
@@ -483,14 +484,14 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
                     }}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.actionIconContainer, styles.leaveIconContainer]}>
-                      <Ionicons name="exit-outline" size={18} color="#EF4444" />
+                    <View style={[styles.actionIconContainer, styles.leaveIconContainer, { backgroundColor: `${theme.colors.status.error}20` }]}>
+                      <Ionicons name="exit-outline" size={18} color={theme.colors.status.error} />
                     </View>
                     <View style={styles.actionTextContainer}>
-                      <Text style={[styles.actionTitle, styles.leaveText]}>Leave Room</Text>
-                      <Text style={styles.actionSubtitle}>Exit this room</Text>
+                      <Text style={[styles.actionTitle, styles.leaveText, { color: theme.colors.status.error }]}>Leave Room</Text>
+                      <Text style={[styles.actionSubtitle, { color: theme.colors.text.tertiary }]}>Exit this room</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.3)" />
+                    <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -498,22 +499,23 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
               {/* Danger Zone (Creator Only) */}
               {isCreator && (
                 <View style={styles.section}>
-                  <Text style={[styles.sectionTitleText, styles.dangerSectionTitle]}>DANGER ZONE</Text>
-                  <View style={[styles.groupedCard, styles.dangerCard]}>
+                  <Text style={[styles.sectionTitleText, styles.dangerSectionTitle, { color: theme.colors.status.error }]}>DANGER ZONE</Text>
+                  <View style={[styles.groupedCard, styles.dangerCard, { backgroundColor: theme.colors.glass.background, borderColor: `${theme.colors.status.error}33` }]}>
                     <TouchableOpacity
                       style={styles.groupedCardRow}
                       onPress={handleDelete}
                       disabled={loading}
                       activeOpacity={0.7}
                     >
-                      <View style={[styles.actionIconContainer, styles.dangerIconContainer]}>
-                        <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                      <View style={[styles.actionIconContainer, styles.dangerIconContainer, { backgroundColor: `${theme.colors.status.error}20` }]}>
+
+                        <Ionicons name="trash-outline" size={18} color={theme.colors.status.error} />
                       </View>
                       <View style={styles.actionTextContainer}>
-                        <Text style={[styles.actionTitle, styles.dangerText]}>Delete Room</Text>
-                        <Text style={styles.actionSubtitle}>Permanently remove this room</Text>
+                        <Text style={[styles.actionTitle, styles.dangerText, { color: theme.colors.status.error }]}>Delete Room</Text>
+                        <Text style={[styles.actionSubtitle, { color: theme.colors.text.tertiary }]}>Permanently remove this room</Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.3)" />
+                      <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -531,7 +533,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
   modalContainer: {
     width: "90%",
@@ -551,9 +552,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 24,
     paddingVertical: 14,
-    backgroundColor: "rgba(255, 255, 255, 0.04)",
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.12)",
   },
   headerLeft: {
     width: 44,
@@ -562,13 +561,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "600",
     letterSpacing: -0.5,
-    color: colors.text.primary,
   },
   closeButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -593,32 +590,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     letterSpacing: 0.8,
-    color: "rgba(255, 255, 255, 0.4)",
     marginBottom: 12,
   },
   sectionTitleTextInline: {
     fontSize: 12,
     fontWeight: "600",
     letterSpacing: 0.8,
-    color: "rgba(255, 255, 255, 0.4)",
   },
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
   },
   badgeText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "rgba(255, 255, 255, 0.5)",
   },
   // Grouped card styles
   groupedCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
     overflow: "hidden",
   },
   groupedCardRow: {
@@ -630,7 +621,6 @@ const styles = StyleSheet.create({
   },
   internalSeparator: {
     height: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
     marginLeft: 56,
   },
   // Action styles
@@ -647,48 +637,37 @@ const styles = StyleSheet.create({
   actionTitle: {
     fontSize: 15,
     fontWeight: "600",
-    color: colors.text.primary,
     marginBottom: 1,
   },
   actionSubtitle: {
     fontSize: 12,
-    color: "rgba(255, 255, 255, 0.4)",
   },
   // Leave/Danger styles
   leaveCard: {
     marginTop: 12,
   },
   leaveIconContainer: {
-    backgroundColor: "rgba(239, 68, 68, 0.12)",
   },
   leaveText: {
-    color: "#EF4444",
   },
   dangerSectionTitle: {
-    color: "#EF4444",
   },
   dangerCard: {
-    borderColor: "rgba(239, 68, 68, 0.2)",
   },
   dangerIconContainer: {
-    backgroundColor: "rgba(239, 68, 68, 0.12)",
   },
   dangerText: {
-    color: "#EF4444",
   },
   // Rename container
   renameContainer: {
     gap: 12,
   },
   input: {
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: colors.text.primary,
   },
   renameButtons: {
     flexDirection: "row",
@@ -698,16 +677,13 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
     borderRadius: 16,
     alignItems: "center",
   },
   cancelButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "rgba(255, 255, 255, 0.5)",
   },
   saveButton: {
     flex: 1,
@@ -719,7 +695,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#FFFFFF",
   },
   // Avatar Stack styles
   avatarStackContainer: {
@@ -745,7 +720,6 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: 19,
     borderWidth: 2,
-    borderColor: colors.bg.secondary,
   },
   stackedAvatarPlaceholder: {
     justifyContent: "center",
@@ -758,24 +732,19 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: "#22C55E",
     borderWidth: 2,
-    borderColor: colors.bg.secondary,
   },
   overflowBadge: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderWidth: 2,
-    borderColor: colors.bg.secondary,
     justifyContent: "center",
     alignItems: "center",
   },
   overflowText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "rgba(255, 255, 255, 0.6)",
   },
   // Expanded member list
   expandedMembersList: {
@@ -783,7 +752,6 @@ const styles = StyleSheet.create({
   },
   fullWidthSeparator: {
     height: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
   },
   expandedMemberRow: {
     flexDirection: "row",
@@ -794,7 +762,6 @@ const styles = StyleSheet.create({
   },
   memberRowSeparator: {
     height: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
     marginLeft: 60,
   },
   memberInfo: {
@@ -827,9 +794,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: "#22C55E",
     borderWidth: 2,
-    borderColor: colors.bg.primary,
   },
   memberText: {
     flex: 1,
@@ -842,7 +807,6 @@ const styles = StyleSheet.create({
   memberName: {
     fontSize: 15,
     fontWeight: "600",
-    color: colors.text.primary,
     marginBottom: 1,
   },
   ownerBadge: {
@@ -854,7 +818,6 @@ const styles = StyleSheet.create({
   },
   memberStatus: {
     fontSize: 12,
-    color: "rgba(255, 255, 255, 0.4)",
   },
   removeButton: {
     padding: 4,

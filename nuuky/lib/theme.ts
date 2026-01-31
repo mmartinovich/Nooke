@@ -105,6 +105,22 @@ const darkColors = {
     soft: 'rgba(63, 203, 255, 0.15)', // Background for selected states
     muted: 'rgba(63, 203, 255, 0.5)', // Borders for inactive states
   },
+  // Navigation bar
+  nav: {
+    background: '#1C1C1E',
+  },
+  // Status/action colors
+  status: {
+    success: '#22C55E',
+    error: '#EF4444',
+    warning: '#F59E0B',
+    info: '#3FCBFF',
+  },
+  action: {
+    delete: '#EF4444',
+    archive: '#F59E0B',
+    mute: '#6B7280',
+  },
   // BlurView tint
   blurTint: 'dark' as const,
 };
@@ -122,7 +138,7 @@ const lightColors = {
   // Glass properties for light glassmorphism
   glass: {
     background: 'rgba(0, 0, 0, 0.04)',
-    border: 'rgba(0, 0, 0, 0.08)',
+    border: 'rgba(0, 0, 0, 0.12)',
     highlight: 'rgba(255, 255, 255, 0.9)',
     shadow: 'rgba(139, 92, 246, 0.1)',
   },
@@ -130,8 +146,8 @@ const lightColors = {
   text: {
     primary: '#1a1a2e',
     secondary: '#4c4c6d',
-    tertiary: '#7c7c9e',
-    accent: '#7c3aed',
+    tertiary: '#65658a',
+    accent: '#6d28d9',
     neon: '#c026d3',
   },
   // UI elements
@@ -148,6 +164,22 @@ const lightColors = {
     primary: '#3FCBFF', // Default to neutral (cyan)
     soft: 'rgba(63, 203, 255, 0.15)',
     muted: 'rgba(63, 203, 255, 0.5)',
+  },
+  // Navigation bar
+  nav: {
+    background: '#F5F3FF',
+  },
+  // Status/action colors
+  status: {
+    success: '#16A34A',
+    error: '#DC2626',
+    warning: '#D97706',
+    info: '#2563EB',
+  },
+  action: {
+    delete: '#DC2626',
+    archive: '#D97706',
+    mute: '#6B7280',
   },
   // BlurView tint
   blurTint: 'light' as const,

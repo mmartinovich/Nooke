@@ -30,7 +30,7 @@ export const TopHeader = React.memo(function TopHeader({
       <Image source={require("../assets/wordmark.png")} style={styles.wordmarkSmall} resizeMode="contain" />
 
       <TouchableOpacity
-        style={[styles.notificationBell, { backgroundColor: accent.soft }]}
+        style={[styles.notificationBell, { backgroundColor: accent.soft, borderColor: theme.colors.ui.borderLight }]}
         onPress={onNotificationPress}
         activeOpacity={0.7}
         accessibilityLabel={totalBadgeCount > 0 ? `Notifications, ${totalBadgeCount} unread` : "Notifications"}
@@ -39,7 +39,7 @@ export const TopHeader = React.memo(function TopHeader({
         <Ionicons name="notifications-outline" size={22} color={accent.primary} />
         {totalBadgeCount > 0 && (
           <View style={[styles.notificationBadge, { backgroundColor: accent.primary }]}>
-            <Text style={styles.notificationBadgeText}>
+            <Text style={[styles.notificationBadgeText, { color: theme.colors.text.primary }]}>
               {totalBadgeCount > 99 ? "99+" : totalBadgeCount}
             </Text>
           </View>
@@ -52,7 +52,7 @@ export const TopHeader = React.memo(function TopHeader({
             styles.roomPill,
             {
               backgroundColor: theme.colors.glass.background,
-              borderColor: "rgba(0, 240, 255, 0.3)",
+              borderColor: theme.colors.ui.borderLight,
               shadowColor: theme.colors.neon.cyan,
             },
           ]}
@@ -97,7 +97,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   notificationBadge: {
     position: "absolute",
@@ -113,7 +112,6 @@ const styles = StyleSheet.create({
   notificationBadgeText: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#FFFFFF",
   },
   wordmarkSmall: {
     width: 120,

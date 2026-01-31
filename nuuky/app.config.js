@@ -12,7 +12,7 @@ export default {
     version: "1.0.5",
     orientation: "portrait",
     icon: "./assets/icon.png",
-    userInterfaceStyle: "dark",
+    userInterfaceStyle: "automatic",
     newArchEnabled: true,
     scheme: "nuuky",
     splash: {

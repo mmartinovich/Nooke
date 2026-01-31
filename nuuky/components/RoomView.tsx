@@ -54,7 +54,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
             <View style={styles.headerContent}>
               {/* Back Button */}
               <TouchableOpacity
-                style={[styles.backButton, { borderColor: theme.colors.glass.border }]}
+                style={[styles.backButton, { borderColor: theme.colors.glass.border, backgroundColor: theme.colors.glass.background }]}
                 onPress={() => router.back()}
                 activeOpacity={0.8}
                 accessibilityLabel="Go back"
@@ -74,7 +74,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
               {/* Settings Button */}
               {onSettingsPress ? (
                 <TouchableOpacity
-                  style={[styles.settingsButton, { borderColor: theme.colors.glass.border }]}
+                  style={[styles.settingsButton, { borderColor: theme.colors.glass.border, backgroundColor: theme.colors.glass.background }]}
                   onPress={onSettingsPress}
                   activeOpacity={0.8}
                   accessibilityLabel="Room settings"
@@ -83,7 +83,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
                   <Ionicons name="settings-outline" size={24} color={theme.colors.text.primary} />
                 </TouchableOpacity>
               ) : (
-                <View style={styles.settingsButton} />
+                <View style={[styles.settingsButton, { backgroundColor: theme.colors.glass.background }]} />
               )}
             </View>
           </BlurView>
@@ -113,7 +113,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
   },
   headerInfo: {
@@ -135,7 +134,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
   },
 });

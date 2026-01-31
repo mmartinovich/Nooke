@@ -26,7 +26,7 @@ import { AppNotification } from '../../types';
 export default function NotificationsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { theme, isDark } = useTheme();
+  const { theme, isDark, accent } = useTheme();
   const {
     notifications,
     unreadCount,
@@ -112,6 +112,16 @@ export default function NotificationsScreen() {
     await deleteNotification(notificationId);
   };
 
+  // Dynamic styles that depend on theme
+  const dynamicStyles = {
+    markReadButton: {
+      backgroundColor: accent.soft,
+    },
+    emptyIconContainer: {
+      backgroundColor: theme.colors.glass.background,
+    },
+  };
+
   const renderSection = (
     title: string,
     sectionNotifications: AppNotification[],
@@ -163,7 +173,7 @@ export default function NotificationsScreen() {
 
           {unreadCount > 0 ? (
             <TouchableOpacity
-              style={styles.markReadButton}
+              style={[styles.markReadButton, dynamicStyles.markReadButton]}
               onPress={handleMarkAllAsRead}
               activeOpacity={interactionStates.pressed}
             >
@@ -237,6 +247,7 @@ export default function NotificationsScreen() {
               <Animated.View
                 style={[
                   styles.emptyIconContainer,
+                  dynamicStyles.emptyIconContainer,
                   {
                     borderColor: theme.colors.glass.border,
                     transform: [{ scale: pulseAnim }],
@@ -295,7 +306,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(168, 85, 247, 0.1)',
   },
   markReadText: {
     fontSize: 13,
@@ -350,7 +360,6 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',

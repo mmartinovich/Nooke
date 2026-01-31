@@ -40,7 +40,12 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
             key={emoji}
             style={[
               styles.emojiButton,
-              value === emoji && styles.emojiButtonSelected,
+              { backgroundColor: theme.colors.glass.background },
+              value === emoji && {
+                backgroundColor: theme.colors.accent.primary + '4D', // 30% opacity
+                borderWidth: 2,
+                borderColor: theme.colors.accent.primary,
+              },
             ]}
             onPress={() => onChangeEmoji(emoji)}
             activeOpacity={0.7}
@@ -81,14 +86,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  emojiButtonSelected: {
-    backgroundColor: 'rgba(20, 184, 166, 0.3)',
-    borderWidth: 2,
-    borderColor: '#14B8A6',
+    // backgroundColor set inline via theme
   },
   emojiText: {
     fontSize: 24,

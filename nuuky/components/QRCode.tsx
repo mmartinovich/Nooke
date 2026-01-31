@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, Share, ActivityIndicat
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { colors, spacing, radius, typography, gradients } from "../lib/theme";
+import { spacing, radius, typography, gradients } from "../lib/theme";
 import { useTheme } from "../hooks/useTheme";
 
 // Lazy import QRCode to handle cases where the package might not be installed
@@ -63,7 +63,7 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
     // Fallback if QR code package not installed
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.glass.background }]}>
-        <View style={[styles.qrPlaceholder, { width: size, height: size }]}>
+        <View style={[styles.qrPlaceholder, { width: size, height: size, borderColor: theme.colors.glass.border }]}>
           <Ionicons name="qr-code-outline" size={size * 0.5} color={theme.colors.text.tertiary} />
           <Text style={[styles.placeholderText, { color: theme.colors.text.tertiary }]}>QR Code</Text>
         </View>
@@ -131,20 +131,20 @@ interface QRCodeModalProps {
  * Full-screen modal for displaying a QR code
  */
 export const QRCodeModal: React.FC<QRCodeModalProps> = ({ visible, value, title, subtitle, onClose }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+        <BlurView intensity={20} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
 
-        <View style={styles.modalContainer}>
-          <BlurView intensity={80} tint="dark" style={styles.modal}>
+        <View style={[styles.modalContainer, { borderColor: theme.colors.glass.border }]}>
+          <BlurView intensity={80} tint={isDark ? "dark" : "light"} style={styles.modal}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.headerTitle}>{title || "QR Code"}</Text>
-              <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.8}>
-                <Ionicons name="close" size={24} color={colors.text.primary} />
+              <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>{title || "QR Code"}</Text>
+              <TouchableOpacity style={[styles.closeButton, { backgroundColor: theme.colors.glass.background }]} onPress={onClose} activeOpacity={0.8}>
+                <Ionicons name="close" size={24} color={theme.colors.text.primary} />
               </TouchableOpacity>
             </View>
 
@@ -183,7 +183,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: radius.lg,
     borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.1)",
     borderStyle: "dashed",
   },
   placeholderText: {
@@ -231,7 +230,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: colors.glass.border,
   },
   modal: {
     padding: spacing.lg,
@@ -245,7 +243,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: typography.size.xl,
     fontWeight: typography.weight.bold as any,
-    color: colors.text.primary,
   },
   closeButton: {
     width: 32,
@@ -253,7 +250,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
   },
   content: {
     alignItems: "center",

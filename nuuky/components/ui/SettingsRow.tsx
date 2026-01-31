@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, interactionStates } from '../../lib/theme';
+import { useTheme } from '../../hooks/useTheme';
 
 type SettingsRowType = 'toggle' | 'navigation';
 
@@ -37,6 +38,10 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
   accessibilityLabel,
   accessibilityHint,
 }) => {
+  const { isDark } = useTheme();
+
+  const trackColorOff = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(120, 120, 128, 0.16)';
+
   const handlePress = () => {
     if (disabled) return;
     if (type === 'toggle' && onChange) {
@@ -73,11 +78,11 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
             onValueChange={onChange}
             disabled={disabled}
             trackColor={{
-              false: 'rgba(255, 255, 255, 0.1)',
+              false: trackColorOff,
               true: colors.accent?.primary || colors.mood.notGreat.base,
             }}
             thumbColor="#ffffff"
-            ios_backgroundColor="rgba(255, 255, 255, 0.1)"
+            ios_backgroundColor={trackColorOff}
           />
         ) : (
           <Ionicons
