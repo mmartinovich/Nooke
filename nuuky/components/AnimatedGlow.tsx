@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, Dimensions, Easing } from "react-native";
 import Svg, { Defs, RadialGradient, Stop, Rect } from "react-native-svg";
+import { useTheme } from "../hooks/useTheme";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -9,6 +10,7 @@ const SWEEP_RANGE = SCREEN_WIDTH * 0.25;
 const DURATION = 14000;
 
 export default function AnimatedGlow() {
+  const { isDark } = useTheme();
   const translateX = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -37,6 +39,10 @@ export default function AnimatedGlow() {
     animation.start();
     return () => animation.stop();
   }, [translateX]);
+
+  if (!isDark) {
+    return null;
+  }
 
   return (
     <Animated.View

@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,10 +16,25 @@ interface RoomCardProps {
 }
 
 const RoomCardComponent: React.FC<RoomCardProps> = ({ room, onPress, isCreator = false, isDefault = false, creatorName }) => {
-  const { accent } = useTheme();
+  const { accent, theme } = useTheme();
   const participants = room.participants || [];
   const participantCount = participants.length;
   const maxMembers = 10;
+
+  const dynamicStyles = useMemo(() => ({
+    card: { backgroundColor: theme.colors.glass.background },
+    roomName: { color: theme.colors.text.primary },
+    creatorSubtitle: { color: theme.colors.text.tertiary },
+    avatar: { borderColor: theme.colors.ui.borderLight, backgroundColor: theme.colors.glass.background },
+    avatarText: { color: theme.colors.text.primary },
+    avatarOnlineDot: { borderColor: theme.colors.bg.primary },
+    avatarSmall: { borderColor: theme.colors.ui.borderLight, backgroundColor: theme.colors.glass.background },
+    avatarTextSmall: { color: theme.colors.text.primary },
+    separator: { backgroundColor: theme.colors.ui.borderLight },
+    remaining: { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.ui.borderLight },
+    dimText: { color: theme.colors.text.tertiary },
+    chevron: theme.colors.text.tertiary,
+  }), [theme]);
 
   // Sort participants: active-in-room first → online-elsewhere (dimmed) → offline
   const sortedParticipants = [...participants].sort((a, b) => {
@@ -28,16 +43,13 @@ const RoomCardComponent: React.FC<RoomCardProps> = ({ room, onPress, isCreator =
     const aActiveHere = aOnline && a.user?.default_room_id === room.id;
     const bActiveHere = bOnline && b.user?.default_room_id === room.id;
 
-    // Active in this room first
     if (aActiveHere && !bActiveHere) return -1;
     if (!aActiveHere && bActiveHere) return 1;
-    // Then online elsewhere
     if (aOnline && !bOnline) return -1;
     if (!aOnline && bOnline) return 1;
     return 0;
   });
 
-  // Split participants into active-in-room (online + default_room matches) vs away
   const activeHereParticipants = sortedParticipants.filter(p =>
     p.user && isUserTrulyOnline(p.user.is_online, p.user.last_seen_at) && p.user.default_room_id === room.id
   );
@@ -45,20 +57,14 @@ const RoomCardComponent: React.FC<RoomCardProps> = ({ room, onPress, isCreator =
     p.user && !(isUserTrulyOnline(p.user.is_online, p.user.last_seen_at) && p.user.default_room_id === room.id)
   );
 
-  // Limit display: up to 5 active, up to 4 away
   const displayedActive = activeHereParticipants.slice(0, 5);
   const displayedAway = awayParticipants.slice(0, 4);
   const remainingCount = Math.max(0, participantCount - displayedActive.length - displayedAway.length);
 
-  // Check if this is a home room (My Nūūky)
   const isHomeRoom = room.name === 'My Nūūky';
-
-  // Format the room name for display
   const displayName = isHomeRoom && !isCreator && creatorName
     ? `${creatorName}'s Nūūky`
     : (room.name || 'Unnamed Room');
-
-  // Only show subtitle for non-home rooms
   const showSubtitle = !isHomeRoom && !isCreator && creatorName;
 
   return (
@@ -67,32 +73,29 @@ const RoomCardComponent: React.FC<RoomCardProps> = ({ room, onPress, isCreator =
       onPress={onPress}
       style={[
         styles.card,
+        dynamicStyles.card,
         isDefault && [styles.cardSelected, { backgroundColor: accent.soft, borderColor: accent.primary + '40' }],
       ]}
     >
-      {/* Selected indicator - left border accent */}
       {isDefault && (
         <View style={[styles.selectedIndicator, { backgroundColor: accent.primary }]} />
       )}
       
       <View style={styles.content}>
-        {/* Room Header */}
         <View style={styles.header}>
           <View style={styles.titleRow}>
             <View style={styles.titleTextContainer}>
-              <Text style={styles.roomName} numberOfLines={1}>
+              <Text style={[styles.roomName, dynamicStyles.roomName]} numberOfLines={1}>
                 {displayName}
               </Text>
-              {/* Show creator name for non-home rooms you were invited to */}
               {showSubtitle && (
-                <Text style={styles.creatorSubtitle} numberOfLines={1}>
+                <Text style={[styles.creatorSubtitle, dynamicStyles.creatorSubtitle]} numberOfLines={1}>
                   {creatorName}'s room
                 </Text>
               )}
             </View>
           </View>
           
-          {/* Right side: selected badge */}
           <View style={styles.headerRight}>
             {isDefault && (
               <View style={[styles.activeBadge, { backgroundColor: accent.soft }]}>
@@ -102,9 +105,7 @@ const RoomCardComponent: React.FC<RoomCardProps> = ({ room, onPress, isCreator =
           </View>
         </View>
 
-        {/* Participant Avatars - split into active here vs away */}
         <View style={styles.avatarRow}>
-          {/* Active in this room */}
           {displayedActive.map((participant, index) => {
             const user = participant.user;
             if (!user) return null;
@@ -124,29 +125,28 @@ const RoomCardComponent: React.FC<RoomCardProps> = ({ room, onPress, isCreator =
                     source={{ uri: user.avatar_url }}
                     style={[
                       styles.avatar,
-                      { borderColor: isOnline ? moodColors.base : 'rgba(255,255,255,0.1)' }
+                      dynamicStyles.avatar,
+                      { borderColor: isOnline ? moodColors.base : theme.colors.ui.borderLight }
                     ]}
                   />
                 ) : (
                   <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: accent.soft, borderColor: accent.primary + '4D' }]}>
-                    <Text style={styles.avatarText}>
+                    <Text style={[styles.avatarText, dynamicStyles.avatarText]}>
                       {user.display_name.charAt(0).toUpperCase()}
                     </Text>
                   </View>
                 )}
                 {isOnline && (
-                  <View style={styles.avatarOnlineDot} />
+                  <View style={[styles.avatarOnlineDot, dynamicStyles.avatarOnlineDot]} />
                 )}
               </View>
             );
           })}
 
-          {/* Separator between active and away groups */}
           {displayedActive.length > 0 && displayedAway.length > 0 && (
-            <View style={styles.avatarGroupSeparator} />
+            <View style={[styles.avatarGroupSeparator, dynamicStyles.separator]} />
           )}
 
-          {/* Away / not in this room */}
           {displayedAway.map((participant, index) => {
             const user = participant.user;
             if (!user) return null;
@@ -162,11 +162,11 @@ const RoomCardComponent: React.FC<RoomCardProps> = ({ room, onPress, isCreator =
                 {user.avatar_url ? (
                   <Image
                     source={{ uri: user.avatar_url }}
-                    style={styles.avatarSmall}
+                    style={[styles.avatarSmall, dynamicStyles.avatarSmall]}
                   />
                 ) : (
                   <View style={[styles.avatarSmall, styles.avatarPlaceholder, { backgroundColor: accent.soft, borderColor: accent.primary + '4D' }]}>
-                    <Text style={styles.avatarTextSmall}>
+                    <Text style={[styles.avatarTextSmall, dynamicStyles.avatarTextSmall]}>
                       {user.display_name.charAt(0).toUpperCase()}
                     </Text>
                   </View>
@@ -177,28 +177,26 @@ const RoomCardComponent: React.FC<RoomCardProps> = ({ room, onPress, isCreator =
 
           {remainingCount > 0 && (
             <View style={[styles.avatarContainer, { marginLeft: -8, zIndex: 0 }]}>
-              <View style={[styles.avatarSmall, styles.remainingAvatar]}>
-                <Text style={styles.remainingTextSmall}>+{remainingCount}</Text>
+              <View style={[styles.avatarSmall, styles.remainingAvatar, dynamicStyles.remaining]}>
+                <Text style={[styles.remainingTextSmall, dynamicStyles.dimText]}>+{remainingCount}</Text>
               </View>
             </View>
           )}
 
-          {/* Member count */}
           {participantCount > 0 && (
-            <Text style={styles.memberCountInline}>
+            <Text style={[styles.memberCountInline, dynamicStyles.dimText]}>
               {participantCount}{participantCount >= 8 ? '/' + maxMembers : ''}
             </Text>
           )}
 
           {participantCount === 0 && (
-            <Text style={styles.emptyText}>No members yet</Text>
+            <Text style={[styles.emptyText, dynamicStyles.dimText]}>No members yet</Text>
           )}
         </View>
       </View>
 
-      {/* Chevron */}
       <View style={styles.chevronContainer}>
-        <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.3)" />
+        <Ionicons name="chevron-forward" size={20} color={dynamicStyles.chevron} />
       </View>
     </TouchableOpacity>
   );
@@ -208,7 +206,6 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderRadius: radius.md,
     overflow: 'hidden',
     position: 'relative',
@@ -258,12 +255,10 @@ const styles = StyleSheet.create({
   roomName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFFFFF',
   },
   creatorSubtitle: {
     fontSize: 12,
     fontWeight: '400',
-    color: 'rgba(255, 255, 255, 0.5)',
     marginTop: 2,
   },
   headerRight: {
@@ -295,18 +290,13 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
-  avatarPlaceholder: {
-    // Colors set dynamically via inline styles
-  },
+  avatarPlaceholder: {},
   avatarText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
   },
   avatarOnlineDot: {
     position: 'absolute',
@@ -317,62 +307,48 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: '#22C55E',
     borderWidth: 2,
-    borderColor: 'rgba(15, 15, 30, 1)',
   },
   avatarSmall: {
     width: 28,
     height: 28,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
   avatarTextSmall: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#FFFFFF',
   },
   avatarGroupSeparator: {
     width: 1,
     height: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     marginHorizontal: 8,
     borderRadius: 0.5,
   },
-  remainingAvatar: {
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
+  remainingAvatar: {},
   remainingText: {
     fontSize: 11,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.5)',
   },
   remainingTextSmall: {
     fontSize: 9,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.4)',
   },
   memberCountInline: {
     fontSize: 13,
     fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.4)',
     marginLeft: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.4)',
   },
   chevronContainer: {
     paddingRight: spacing.md,
   },
 });
 
-// Memoize to prevent re-renders when parent updates but room data hasn't changed
 export const RoomCard = memo(RoomCardComponent, (prevProps, nextProps) => {
-  // Only re-render if these specific props changed
   return (
     prevProps.room.id === nextProps.room.id &&
     prevProps.room.name === nextProps.room.name &&
@@ -380,7 +356,6 @@ export const RoomCard = memo(RoomCardComponent, (prevProps, nextProps) => {
     prevProps.isCreator === nextProps.isCreator &&
     prevProps.creatorName === nextProps.creatorName &&
     prevProps.room.participants?.length === nextProps.room.participants?.length &&
-    // Check if participants changed (by comparing user online status and last_seen_at)
     JSON.stringify(prevProps.room.participants?.map(p => ({ id: p.id, online: p.user?.is_online, lastSeen: p.user?.last_seen_at, defaultRoom: p.user?.default_room_id }))) ===
     JSON.stringify(nextProps.room.participants?.map(p => ({ id: p.id, online: p.user?.is_online, lastSeen: p.user?.last_seen_at, defaultRoom: p.user?.default_room_id })))
   );

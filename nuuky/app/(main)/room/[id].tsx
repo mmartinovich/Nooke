@@ -13,8 +13,6 @@ import { AudioConnectionBadge } from '../../../components/AudioConnectionBadge';
 import { useAppStore } from '../../../stores/appStore';
 import { supabase } from '../../../lib/supabase';
 
-const PURPLE_ACCENT = '#A855F7';
-
 export default function RoomScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -197,19 +195,20 @@ export default function RoomScreen() {
           style={[
             styles.muteButton,
             {
-              backgroundColor: isMuted ? 'transparent' : PURPLE_ACCENT,
-              borderColor: PURPLE_ACCENT,
+              backgroundColor: isMuted ? 'transparent' : theme.colors.accent.primary,
+              borderColor: theme.colors.accent.primary,
+              shadowColor: theme.colors.accent.primary,
               opacity: isAudioConnecting ? 0.7 : 1,
             },
           ]}
         >
           {isAudioConnecting ? (
-            <ActivityIndicator size="small" color={isMuted ? PURPLE_ACCENT : '#FFFFFF'} />
+            <ActivityIndicator size="small" color={isMuted ? theme.colors.accent.primary : theme.colors.text.primary} />
           ) : (
             <Ionicons
               name={isMuted ? 'mic-off' : 'mic'}
               size={28}
-              color={isMuted ? PURPLE_ACCENT : '#FFFFFF'}
+              color={isMuted ? theme.colors.accent.primary : theme.colors.text.primary}
             />
           )}
         </TouchableOpacity>
@@ -265,7 +264,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    shadowColor: PURPLE_ACCENT,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
     shadowRadius: 8,

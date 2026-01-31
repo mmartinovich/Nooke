@@ -77,8 +77,8 @@ export const OTPInput: React.FC<OTPInputProps> = ({
   };
 
   const getBorderColor = (index: number) => {
-    if (error) return "#EF4444";
-    if (digits[index]) return "#22C55E";
+    if (error) return theme.colors.status.error;
+    if (digits[index]) return theme.colors.status.success;
     return theme.colors.glass.border;
   };
 
@@ -105,8 +105,9 @@ export const OTPInput: React.FC<OTPInputProps> = ({
               ref={(ref) => (inputRefs.current[index] = ref)}
               style={[
                 styles.input,
-                { color: theme.colors.text.primary },
-                error && styles.inputError,
+                {
+                  color: error ? theme.colors.status.error : theme.colors.text.primary
+                },
               ]}
               value={digit}
               onChangeText={(text) => handleChange(text, index)}
@@ -151,9 +152,6 @@ const styles = StyleSheet.create({
     fontSize: typography.size["2xl"],
     fontWeight: typography.weight.bold as any,
     padding: 0,
-  },
-  inputError: {
-    color: "#EF4444",
   },
 });
 

@@ -18,7 +18,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useTheme } from "../../hooks/useTheme";
 import { usePreferences } from "../../hooks/usePreferences";
 import { useAppStore } from "../../stores/appStore";
-import { spacing, interactionStates } from "../../lib/theme";
+import { spacing, interactionStates, ThemeMode } from "../../lib/theme";
 
 
 interface SettingsRowProps {
@@ -51,7 +51,7 @@ const SettingsRow: React.FC<SettingsRowProps> = ({
       style={[
         styles.rowContainer,
         {
-          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          backgroundColor: theme.colors.glass.background,
           borderTopLeftRadius: isFirst ? 16 : 0,
           borderTopRightRadius: isFirst ? 16 : 0,
           borderBottomLeftRadius: isLast ? 16 : 0,
@@ -63,13 +63,13 @@ const SettingsRow: React.FC<SettingsRowProps> = ({
         <Ionicons
           name={icon as any}
           size={22}
-          color={isDestructive ? "#EF4444" : "#FFFFFF"}
+          color={isDestructive ? theme.colors.status?.error || "#EF4444" : theme.colors.text.primary}
           style={styles.rowIcon}
         />
         <Text
           style={[
             styles.rowLabel,
-            { color: isDestructive ? "#FF3B30" : theme.colors.text.primary },
+            { color: isDestructive ? (theme.colors.status?.error || "#EF4444") : theme.colors.text.primary },
           ]}
         >
           {label}
@@ -94,7 +94,7 @@ const SettingsRow: React.FC<SettingsRowProps> = ({
       {!isLast && (
         <View style={styles.separatorContainer}>
           <View
-            style={[styles.separator, { backgroundColor: 'rgba(255, 255, 255, 0.06)' }]}
+            style={[styles.separator, { backgroundColor: theme.colors.ui.borderLight }]}
           />
         </View>
       )}
@@ -153,7 +153,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { signOut } = useAuth();
-  const { theme, isDark } = useTheme();
+  const { theme, isDark, themeMode, setThemeMode } = useTheme();
   const {
     nudgesEnabled,
     flaresEnabled,
@@ -223,6 +223,8 @@ export default function SettingsScreen() {
             theme={theme}
           />
         </SettingsSection>
+
+        {/* Appearance Section - hidden until light mode is ready */}
 
         {/* Privacy & Safety Section */}
         <SettingsSection title="PRIVACY & SAFETY" theme={theme}>

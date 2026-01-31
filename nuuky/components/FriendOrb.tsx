@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { User } from '../types';
-import { colors, getMoodColor, getMoodDisplay, spacing, radius } from '../lib/theme';
+import { getMoodColor, getMoodDisplay, spacing, radius } from '../lib/theme';
 import { isUserTrulyOnline } from '../lib/utils';
+import { useTheme } from '../hooks/useTheme';
 
 interface FriendOrbProps {
   friend: User;
@@ -10,6 +11,7 @@ interface FriendOrbProps {
 }
 
 export const FriendOrb: React.FC<FriendOrbProps> = ({ friend, onPress }) => {
+  const { theme } = useTheme();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0.6)).current;
 
@@ -114,7 +116,7 @@ export const FriendOrb: React.FC<FriendOrbProps> = ({ friend, onPress }) => {
 
         {/* Online indicator */}
         {isOnline && (
-          <View style={styles.onlineRing}>
+          <View style={[styles.onlineRing, { backgroundColor: theme.colors.bg.primary }]}>
             <View
               style={[
                 styles.onlineDot,
@@ -126,7 +128,7 @@ export const FriendOrb: React.FC<FriendOrbProps> = ({ friend, onPress }) => {
       </View>
 
       {/* Friend name */}
-      <Text style={styles.name} numberOfLines={1}>
+      <Text style={[styles.name, { color: theme.colors.text.secondary }]} numberOfLines={1}>
         {friend.display_name}
       </Text>
     </TouchableOpacity>
@@ -175,7 +177,6 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: colors.bg.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -186,7 +187,6 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 13,
-    color: colors.text.secondary,
     maxWidth: 90,
     textAlign: 'center',
   },

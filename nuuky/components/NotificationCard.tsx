@@ -137,7 +137,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     });
 
     return (
-      <View style={[styles.deleteAction, { backgroundColor: '#FF3B30' }]}>
+      <View style={[styles.deleteAction, { backgroundColor: theme.colors.status.error }]}>
         <Animated.View
           style={[
             styles.deleteButton,
@@ -147,8 +147,8 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
             },
           ]}
         >
-          <Ionicons name="trash" size={22} color="#FFFFFF" />
-          <Text style={styles.deleteText}>Delete</Text>
+          <Ionicons name="trash" size={22} color={theme.colors.text.primary} />
+          <Text style={[styles.deleteText, { color: theme.colors.text.primary }]}>Delete</Text>
         </Animated.View>
       </View>
     );
@@ -200,7 +200,10 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 {/* Avatar or Icon */}
                 <View style={styles.iconContainer}>
                   {avatarUrl ? (
-                    <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                    <Image
+                      source={{ uri: avatarUrl }}
+                      style={[styles.avatar, { borderColor: theme.colors.glass.border }]}
+                    />
                   ) : (
                     <View
                       style={[
@@ -294,7 +297,6 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
   },
   iconCircle: {
     width: 44,
@@ -343,7 +345,6 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   deleteText: {
-    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '600',
   },

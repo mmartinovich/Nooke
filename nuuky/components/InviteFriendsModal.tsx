@@ -31,7 +31,7 @@ export const InviteFriendsModal: React.FC<InviteFriendsModalProps> = ({
   onClose,
   onInvite,
 }) => {
-  const { accent } = useTheme();
+  const { theme, accent } = useTheme();
   const [inviting, setInviting] = useState<Set<string>>(new Set());
 
   // Filter out friends who are already in the room
@@ -60,8 +60,8 @@ export const InviteFriendsModal: React.FC<InviteFriendsModalProps> = ({
             {/* Header */}
             <View style={styles.header}>
               <Text style={styles.title}>Invite Friends</Text>
-              <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.8}>
-                <Ionicons name="close" size={24} color={colors.text.primary} />
+              <TouchableOpacity style={[styles.closeButton, { backgroundColor: theme.colors.glass.background }]} onPress={onClose} activeOpacity={0.8}>
+                <Ionicons name="close" size={24} color={theme.colors.text.primary} />
               </TouchableOpacity>
             </View>
 
@@ -69,7 +69,7 @@ export const InviteFriendsModal: React.FC<InviteFriendsModalProps> = ({
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
               {availableFriends.length === 0 ? (
                 <View style={styles.emptyState}>
-                  <Ionicons name="people-outline" size={48} color={colors.text.tertiary} />
+                  <Ionicons name="people-outline" size={48} color={theme.colors.text.tertiary} />
                   <Text style={styles.emptyTitle}>No Friends Available</Text>
                   <Text style={styles.emptyMessage}>
                     All your friends are already in this room or you have no friends to invite.
@@ -137,10 +137,10 @@ const FriendItem: React.FC<FriendItemProps> = ({ friend, onInvite, isInviting, a
         activeOpacity={0.8}
       >
         {isInviting ? (
-          <ActivityIndicator size="small" color={colors.text.primary} />
+          <ActivityIndicator size="small" color={theme.colors.text.primary} />
         ) : (
           <>
-            <Ionicons name="send" size={16} color={colors.text.primary} />
+            <Ionicons name="send" size={16} color={theme.colors.text.primary} />
             <Text style={styles.inviteButtonText}>Invite</Text>
           </>
         )}
@@ -188,7 +188,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   content: {
     flex: 1,

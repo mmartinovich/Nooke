@@ -195,7 +195,7 @@ export default function FriendsScreen() {
                       <Ionicons name="people" size={32} color={accent.primary} />
                     </View>
                     <Text style={[styles.heroTitle, { color: theme.colors.text.primary }]}>Connect with Friends</Text>
-                    <Text style={styles.heroSubtitle}>
+                    <Text style={[styles.heroSubtitle, { color: theme.colors.text.tertiary }]}>
                       Find friends who are already on Nūūky or invite new ones to join
                     </Text>
                   </View>
@@ -207,16 +207,16 @@ export default function FriendsScreen() {
                   <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={() => setShowSearchModal(true)}
-                    style={styles.actionCard}
+                    style={[styles.actionCard, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }]}
                   >
                     <View style={[styles.actionIconContainer, { backgroundColor: accent.soft }]}>
                       <Ionicons name="at" size={20} color={accent.primary} />
                     </View>
                     <View style={styles.actionTextContainer}>
                       <Text style={[styles.actionTitle, { color: theme.colors.text.primary }]}>Search by Username</Text>
-                      <Text style={styles.actionSubtitle}>Find anyone on Nūūky</Text>
+                      <Text style={[styles.actionSubtitle, { color: theme.colors.text.tertiary }]}>Find anyone on Nūūky</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.3)" />
+                    <Ionicons name="chevron-forward" size={20} color={theme.colors.text.tertiary} />
                   </TouchableOpacity>
 
                   {/* Find Friends from Contacts Button */}
@@ -224,7 +224,7 @@ export default function FriendsScreen() {
                     activeOpacity={0.7}
                     onPress={handleSyncContacts}
                     disabled={syncLoading}
-                    style={[styles.actionCard, syncLoading && styles.buttonDisabled]}
+                    style={[styles.actionCard, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }, syncLoading && styles.buttonDisabled]}
                   >
                     <View style={[styles.actionIconContainer, { backgroundColor: accent.soft }]}>
                       {syncLoading ? (
@@ -237,9 +237,9 @@ export default function FriendsScreen() {
                       <Text style={[styles.actionTitle, { color: theme.colors.text.primary }]}>
                         {syncLoading ? "Searching..." : "Find from Contacts"}
                       </Text>
-                      <Text style={styles.actionSubtitle}>Sync your phone contacts</Text>
+                      <Text style={[styles.actionSubtitle, { color: theme.colors.text.tertiary }]}>Sync your phone contacts</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.3)" />
+                    <Ionicons name="chevron-forward" size={20} color={theme.colors.text.tertiary} />
                   </TouchableOpacity>
 
                   {/* Invite Button */}
@@ -247,16 +247,16 @@ export default function FriendsScreen() {
                     activeOpacity={0.7}
                     onPress={handleInviteToNooke}
                     disabled={sending}
-                    style={[styles.actionCard, sending && styles.buttonDisabled]}
+                    style={[styles.actionCard, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }, sending && styles.buttonDisabled]}
                   >
                     <View style={[styles.actionIconContainer, { backgroundColor: accent.soft }]}>
                       <Ionicons name="share-social-outline" size={20} color={accent.primary} />
                     </View>
                     <View style={styles.actionTextContainer}>
                       <Text style={[styles.actionTitle, { color: theme.colors.text.primary }]}>Invite to Nūūky</Text>
-                      <Text style={styles.actionSubtitle}>Share with anyone</Text>
+                      <Text style={[styles.actionSubtitle, { color: theme.colors.text.tertiary }]}>Share with anyone</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.3)" />
+                    <Ionicons name="chevron-forward" size={20} color={theme.colors.text.tertiary} />
                   </TouchableOpacity>
                 </View>
 
@@ -287,7 +287,7 @@ export default function FriendsScreen() {
                         <View style={styles.contactsList}>
                           {notYetAddedContacts.map((contact) => {
                             return (
-                              <View key={contact.id} style={styles.contactCard}>
+                              <View key={contact.id} style={[styles.contactCard, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }]}>
                                 <View style={styles.contactInfo}>
                                   <View style={[styles.contactAvatar, { backgroundColor: accent.soft }]}>
                                     <Ionicons name="person" size={20} color={accent.primary} />
@@ -296,7 +296,7 @@ export default function FriendsScreen() {
                                     <Text style={[styles.contactName, { color: theme.colors.text.primary }]}>
                                       {contact.displayName || contact.name}
                                     </Text>
-                                    <Text style={styles.contactPhone}>{contact.phoneNumbers[0]}</Text>
+                                    <Text style={[styles.contactPhone, { color: theme.colors.text.tertiary }]}>{contact.phoneNumbers[0]}</Text>
                                   </View>
                                 </View>
 
@@ -319,15 +319,15 @@ export default function FriendsScreen() {
                 {/* Friends Search & List Header */}
                 <View style={[styles.section, { marginBottom: 8 }]}>
                   <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitleText}>MY FRIENDS</Text>
+                    <Text style={[styles.sectionTitleText, { color: theme.colors.text.tertiary }]}>MY FRIENDS</Text>
                   </View>
                   {friends.length > 0 && (
-                    <View style={[styles.searchBar, { borderColor: theme.colors.border?.subtle || "rgba(255,255,255,0.08)" }]}>
-                      <Ionicons name="search" size={18} color="rgba(255,255,255,0.4)" />
+                    <View style={[styles.searchBar, { borderColor: theme.colors.glass.border, backgroundColor: theme.colors.glass.background }]}>
+                      <Ionicons name="search" size={18} color={theme.colors.text.tertiary} />
                       <TextInput
                         style={[styles.searchInput, { color: theme.colors.text.primary }]}
                         placeholder="Search friends..."
-                        placeholderTextColor="rgba(255,255,255,0.3)"
+                        placeholderTextColor={theme.colors.text.tertiary}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         autoCorrect={false}
@@ -335,7 +335,7 @@ export default function FriendsScreen() {
                       />
                       {searchQuery.length > 0 && (
                         <TouchableOpacity onPress={() => setSearchQuery("")} activeOpacity={0.7}>
-                          <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.4)" />
+                          <Ionicons name="close-circle" size={18} color={theme.colors.text.tertiary} />
                         </TouchableOpacity>
                       )}
                     </View>
@@ -351,7 +351,7 @@ export default function FriendsScreen() {
                   <Ionicons name="person-add-outline" size={36} color={accent.primary} />
                 </View>
                 <Text style={[styles.emptyTitle, { color: theme.colors.text.primary }]}>No Friends Yet</Text>
-                <Text style={styles.emptyMessage}>Search by username or sync contacts to find friends</Text>
+                <Text style={[styles.emptyMessage, { color: theme.colors.text.tertiary }]}>Search by username or sync contacts to find friends</Text>
               </View>
             ) : null
           }
@@ -436,7 +436,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     lineHeight: 20,
-    color: "rgba(255, 255, 255, 0.5)",
   },
   // Actions Section
   actionsSection: {
@@ -447,10 +446,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.04)",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.06)",
     gap: 12,
   },
   actionIconContainer: {
@@ -470,7 +467,6 @@ const styles = StyleSheet.create({
   },
   actionSubtitle: {
     fontSize: 13,
-    color: "rgba(255, 255, 255, 0.5)",
   },
   // Section Headers
   section: {
@@ -491,7 +487,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "500",
     letterSpacing: 0.5,
-    color: "rgba(255,255,255,0.5)",
   },
   badge: {
     paddingHorizontal: 8,
@@ -514,10 +509,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     padding: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.04)",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.06)",
   },
   contactInfo: {
     flexDirection: "row",
@@ -542,7 +535,6 @@ const styles = StyleSheet.create({
   },
   contactPhone: {
     fontSize: 13,
-    color: "rgba(255,255,255,0.5)",
   },
   addContactButton: {
     paddingHorizontal: 16,
@@ -559,7 +551,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.04)",
     borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 14,
@@ -592,7 +583,6 @@ const styles = StyleSheet.create({
   },
   emptyMessage: {
     fontSize: 14,
-    color: "rgba(255, 255, 255, 0.5)",
     textAlign: "center",
     lineHeight: 20,
   },

@@ -28,6 +28,9 @@ export default function QRScannerScreen() {
   const [cameraReady, setCameraReady] = useState(false);
   const overlayFade = useRef(new Animated.Value(0)).current;
 
+  // Create dynamic styles based on theme
+  const styles = createStyles(theme);
+
   // Request permission on mount if not granted
   React.useEffect(() => {
     if (permission && !permission.granted && permission.canAskAgain) {
@@ -54,12 +57,12 @@ export default function QRScannerScreen() {
             onPress={() => router.back()}
             activeOpacity={interactionStates.pressed}
           >
-            <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+            <Ionicons name="chevron-back" size={28} color={theme.colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Scan QR Code</Text>
           <View style={styles.placeholderButton} />
         </View>
-        <Ionicons name="camera-outline" size={64} color="rgba(255,255,255,0.4)" />
+        <Ionicons name="camera-outline" size={64} color={theme.colors.text.tertiary} />
         <Text style={[styles.instruction, { marginTop: spacing.lg }]}>
           Camera access needed
         </Text>
@@ -176,7 +179,7 @@ export default function QRScannerScreen() {
         pointerEvents="none"
       >
         <View style={styles.successCircle}>
-          <Ionicons name="checkmark" size={48} color="#FFFFFF" />
+          <Ionicons name="checkmark" size={48} color={theme.colors.text.primary} />
         </View>
       </Animated.View>
 
@@ -187,7 +190,7 @@ export default function QRScannerScreen() {
           onPress={() => router.back()}
           activeOpacity={interactionStates.pressed}
         >
-          <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={28} color={theme.colors.text.primary} />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Scan QR Code</Text>
@@ -217,10 +220,10 @@ const SCAN_AREA_SIZE = 250;
 const CORNER_SIZE = 30;
 const CORNER_WIDTH = 4;
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ReturnType<typeof useTheme>['theme']) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: theme.colors.bg.primary,
   },
   overlaySection: {
     backgroundColor: "rgba(0, 0, 0, 0.55)",
@@ -239,7 +242,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: CORNER_SIZE,
     height: CORNER_SIZE,
-    borderColor: "#FFFFFF",
+    borderColor: theme.colors.text.primary,
   },
   topLeft: {
     top: 0,
@@ -279,7 +282,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "#34C759",
+    backgroundColor: theme.colors.status.success,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -304,7 +307,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: theme.colors.text.primary,
     letterSpacing: -0.3,
   },
   placeholderButton: {
@@ -325,23 +328,23 @@ const styles = StyleSheet.create({
   instruction: {
     fontSize: typography.size.lg,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: theme.colors.text.primary,
     textAlign: "center",
     marginBottom: spacing.xs,
   },
   subInstruction: {
     fontSize: typography.size.sm,
-    color: "rgba(255, 255, 255, 0.7)",
+    color: theme.colors.text.secondary,
     textAlign: "center",
   },
   permissionButton: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.colors.text.primary,
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: radius.lg,
   },
   permissionButtonText: {
-    color: "#000000",
+    color: theme.colors.bg.primary,
     fontSize: typography.size.md,
     fontWeight: "600",
   },

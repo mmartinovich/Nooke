@@ -3,9 +3,11 @@ import { View, ActivityIndicator } from 'react-native';
 import { Redirect } from 'expo-router';
 import { useAppStore } from '../stores/appStore';
 import { supabase } from '../lib/supabase';
+import { useTheme } from '../hooks/useTheme';
 
 export default function Index() {
   const { isAuthenticated, currentUser } = useAppStore();
+  const { theme } = useTheme();
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
@@ -24,8 +26,8 @@ export default function Index() {
   // Show loading while checking auth
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
-        <ActivityIndicator size="large" color="#fff" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.bg.primary }}>
+        <ActivityIndicator size="large" color={theme.colors.text.primary} />
       </View>
     );
   }

@@ -95,7 +95,7 @@ export const UserSearchModal: React.FC<UserSearchModalProps> = ({ visible, onClo
             {/* Header */}
             <View style={[styles.header, { borderBottomColor: theme.colors.glass.border }]}>
               <Text style={[styles.title, { color: theme.colors.text.primary }]}>Find Users</Text>
-              <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.8}>
+              <TouchableOpacity style={[styles.closeButton, { backgroundColor: theme.colors.glass.background }]} onPress={onClose} activeOpacity={0.8}>
                 <Ionicons name="close" size={24} color={theme.colors.text.primary} />
               </TouchableOpacity>
             </View>
@@ -265,7 +265,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
   },
   searchContainer: {
     padding: spacing.md,

@@ -18,7 +18,8 @@ import { ThemeProvider } from "../context/ThemeContext";
 import { NotificationBannerProvider, useNotificationBanner } from "../context/NotificationBannerContext";
 import { initializeLiveKit } from "../lib/livekit";
 import { ErrorBoundary } from "../components/ErrorBoundary";
-import { getAllMoodImages } from "../lib/theme";
+import { getAllMoodImages, getTheme } from "../lib/theme";
+import { useTheme } from "../hooks/useTheme";
 import { startNetworkMonitor, stopNetworkMonitor } from "../lib/network";
 import { OfflineBanner } from "../components/OfflineBanner";
 import {
@@ -44,6 +45,27 @@ function NotificationBannerConnector({ onReady }: { onReady: (fn: any) => void }
     onReady(showNotification);
   }, [showNotification, onReady]);
   return null;
+}
+
+function ThemedAppShell() {
+  const { theme } = useTheme();
+  return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.colors.bg.primary }}>
+      <OfflineBanner />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: {
+            backgroundColor: theme.colors.bg.primary,
+          },
+          animation: "slide_from_right",
+        }}
+      >
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(main)" />
+      </Stack>
+    </GestureHandlerRootView>
+  );
 }
 
 export default function RootLayout() {
@@ -649,21 +671,7 @@ export default function RootLayout() {
               showNotificationBannerRef.current = showNotification;
             }}
           />
-          <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#0a0a0f" }}>
-            <OfflineBanner />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: {
-                  backgroundColor: "#0a0a0f",
-                },
-                animation: "slide_from_right",
-              }}
-            >
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(main)" />
-            </Stack>
-          </GestureHandlerRootView>
+          <ThemedAppShell />
         </NotificationBannerProvider>
       </ThemeProvider>
     </ErrorBoundary>

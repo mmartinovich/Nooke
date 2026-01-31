@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, memo } from 'react';
 import { Animated, Easing } from 'react-native';
 import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import { StreakState } from '../types';
+import { useTheme } from '../hooks/useTheme';
 
 interface ElectricBoltProps {
   fromX: number;
@@ -57,6 +58,7 @@ function ElectricBoltComponent({
   consecutiveDays,
   boltIndex,
 }: ElectricBoltProps) {
+  const { isDark } = useTheme();
   const [pathD, setPathD] = useState(() => generateBoltPath(fromX, fromY, toX, toY));
   const opacityAnim = useRef(new Animated.Value(state === 'active' ? 0.85 : 0.4)).current;
 
@@ -131,7 +133,7 @@ function ElectricBoltComponent({
         {/* White hot core */}
         <Path
           d={pathD}
-          stroke="rgba(255,255,255,0.7)"
+          stroke={isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)'}
           strokeWidth={state === 'fading' ? 0.5 : Math.min(strokeWidth * 0.35, 1.5)}
           strokeLinecap="round"
           strokeLinejoin="round"

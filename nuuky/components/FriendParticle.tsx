@@ -7,6 +7,7 @@ import { getMoodColor } from '../lib/theme';
 import { useLowPowerMode } from '../stores/appStore';
 import { isUserTrulyOnline } from '../lib/utils';
 import { StreakBadge } from './StreakBadge';
+import { useTheme } from '../hooks/useTheme';
 
 const { width, height } = Dimensions.get('window');
 const CENTER_X = width / 2;
@@ -42,6 +43,7 @@ function FriendParticleComponent({
   streak,
 }: FriendParticleProps) {
   const lowPowerMode = useLowPowerMode();
+  const { theme } = useTheme();
 
   // Check if user is truly online (handles stale is_online flags from force-closed apps)
   const isOnline = useMemo(
@@ -374,7 +376,7 @@ function FriendParticleComponent({
               />
             ) : (
               <View style={[styles.avatarPlaceholder, { backgroundColor: `${moodColors.base}30` }]}>
-                <Text style={styles.initialsText}>{getInitials(friend.display_name)}</Text>
+                <Text style={[styles.initialsText, { color: theme.colors.text.primary }]}>{getInitials(friend.display_name)}</Text>
               </View>
             )}
           </View>
@@ -386,10 +388,11 @@ function FriendParticleComponent({
 
           {/* Online indicator - positioned outside avatar circle at top-right */}
           {isOnline && (
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.onlineIndicator,
                 {
+                  borderColor: theme.colors.text.primary,
                   opacity: pulseAnim.interpolate({
                     inputRange: [0, 1],
                     outputRange: [0.8, 1],
@@ -401,14 +404,14 @@ function FriendParticleComponent({
                     }),
                   }],
                 },
-              ]} 
+              ]}
             />
           )}
         </View>
       </TouchableOpacity>
 
       {/* Name label - show first name only */}
-      <Text style={styles.nameLabel} numberOfLines={1}>
+      <Text style={[styles.nameLabel, { color: theme.colors.text.secondary }]} numberOfLines={1}>
         {friend.display_name.split(' ')[0]}
       </Text>
       </Animated.View>
@@ -499,7 +502,6 @@ const styles = StyleSheet.create({
   initialsText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#ffffff',
   },
   onlineIndicator: {
     position: 'absolute',
@@ -510,7 +512,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#22C55E',
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
     shadowColor: '#22C55E',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
@@ -521,7 +522,6 @@ const styles = StyleSheet.create({
   nameLabel: {
     marginTop: 8,
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: '500',
     textAlign: 'center',
     maxWidth: 80,

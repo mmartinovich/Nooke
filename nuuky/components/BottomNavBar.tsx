@@ -112,10 +112,10 @@ export const BottomNavBar = React.memo(function BottomNavBar({
 
       {/* Navigation bar with SVG shape */}
       <View style={styles.navBarWrapper}>
-        <View style={[styles.navBarFill, { backgroundColor: theme.colors.nav?.background || "#1C1C1E" }]} />
+        <View style={[styles.navBarFill, { backgroundColor: theme.colors.nav.background }]} />
         <Image
           source={require("../assets/nav-bar-shape.png")}
-          style={[styles.navBarShape, { tintColor: theme.colors.nav?.background || "#1C1C1E" }]}
+          style={[styles.navBarShape, { tintColor: theme.colors.nav.background }]}
           resizeMode="stretch"
         />
         <View style={styles.navBarContent}>
@@ -130,7 +130,7 @@ export const BottomNavBar = React.memo(function BottomNavBar({
               accessibilityRole="button"
             >
               <Ionicons name="flame" size={26} color="#FF3B30" />
-              <Text style={[styles.navLabel, { color: theme.colors.text.tertiary || "rgba(255, 255, 255, 0.65)" }]}>Flare</Text>
+              <Text style={[styles.navLabel, { color: theme.colors.text.tertiary }]}>Flare</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -140,8 +140,8 @@ export const BottomNavBar = React.memo(function BottomNavBar({
               accessibilityLabel="Friends"
               accessibilityRole="button"
             >
-              <Feather name="users" size={24} color={theme.colors.text.secondary || "rgba(255, 255, 255, 0.85)"} />
-              <Text style={[styles.navLabel, { color: theme.colors.text.tertiary || "rgba(255, 255, 255, 0.65)" }]}>Friends</Text>
+              <Feather name="users" size={24} color={theme.colors.text.secondary} />
+              <Text style={[styles.navLabel, { color: theme.colors.text.tertiary }]}>Friends</Text>
             </TouchableOpacity>
           </View>
 
@@ -156,8 +156,8 @@ export const BottomNavBar = React.memo(function BottomNavBar({
               accessibilityLabel="Rooms"
               accessibilityRole="button"
             >
-              <Ionicons name="grid-outline" size={24} color={theme.colors.text.secondary || "rgba(255, 255, 255, 0.85)"} />
-              <Text style={[styles.navLabel, { color: theme.colors.text.tertiary || "rgba(255, 255, 255, 0.65)" }]}>Nuuks</Text>
+              <Ionicons name="grid-outline" size={24} color={theme.colors.text.secondary} />
+              <Text style={[styles.navLabel, { color: theme.colors.text.tertiary }]}>Nuuks</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -167,8 +167,8 @@ export const BottomNavBar = React.memo(function BottomNavBar({
               accessibilityLabel="Settings"
               accessibilityRole="button"
             >
-              <Feather name="settings" size={24} color={theme.colors.text.tertiary || "rgba(255, 255, 255, 0.7)"} />
-              <Text style={[styles.navLabel, { color: theme.colors.text.tertiary || "rgba(255, 255, 255, 0.65)" }]}>Settings</Text>
+              <Feather name="settings" size={24} color={theme.colors.text.tertiary} />
+              <Text style={[styles.navLabel, { color: theme.colors.text.tertiary }]}>Settings</Text>
             </TouchableOpacity>
           </View>
         </View>

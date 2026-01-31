@@ -76,7 +76,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { backgroundColor: theme.colors.ui.overlay }]}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}
@@ -92,7 +92,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
           >
             <LinearGradient
               colors={theme.gradients.background}
-              style={styles.gradientBackground}
+              style={[styles.gradientBackground, { borderColor: theme.colors.glass.border }]}
             >
               {/* Header Section */}
               <View style={styles.headerSection}>
@@ -101,18 +101,18 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 </View>
                 <View style={styles.headerText}>
                   <Text style={[styles.title, { color: theme.colors.text.primary }]}>Create Room</Text>
-                  <Text style={styles.subtitle}>Start a space for friends</Text>
+                  <Text style={[styles.subtitle, { color: theme.colors.text.tertiary }]}>Start a space for friends</Text>
                 </View>
               </View>
 
               {/* Input Section */}
               <View style={styles.inputSection}>
-                <Text style={styles.sectionLabel}>ROOM NAME</Text>
-                <View style={styles.inputCard}>
+                <Text style={[styles.sectionLabel, { color: theme.colors.text.tertiary }]}>ROOM NAME</Text>
+                <View style={[styles.inputCard, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }]}>
                   <TextInput
                     style={[styles.input, { color: theme.colors.text.primary }]}
                     placeholder="Enter a name..."
-                    placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                    placeholderTextColor={theme.colors.text.tertiary}
                     value={roomName}
                     onChangeText={setRoomName}
                     maxLength={30}
@@ -127,10 +127,10 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               <View style={styles.buttons}>
                 <TouchableOpacity
                   onPress={handleCancel}
-                  style={styles.cancelButton}
+                  style={[styles.cancelButton, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }]}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                  <Text style={[styles.cancelButtonText, { color: theme.colors.text.tertiary }]}>Cancel</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -138,7 +138,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                   style={[
                     styles.createButton,
                     {
-                      backgroundColor: canCreate ? accent.primary : 'rgba(255, 255, 255, 0.08)',
+                      backgroundColor: canCreate ? accent.primary : theme.colors.glass.background,
                     },
                   ]}
                   activeOpacity={0.7}
@@ -147,7 +147,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                   <Text
                     style={[
                       styles.createButtonText,
-                      { color: canCreate ? '#FFFFFF' : 'rgba(255, 255, 255, 0.3)' },
+                      { color: canCreate ? '#FFFFFF' : theme.colors.text.tertiary },
                     ]}
                   >
                     Create
@@ -167,7 +167,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   keyboardView: {
     width: '100%',
@@ -183,7 +182,6 @@ const styles = StyleSheet.create({
     padding: 24,
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   // Header
   headerSection: {
@@ -211,7 +209,6 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 13,
     fontWeight: '400',
-    color: 'rgba(255, 255, 255, 0.5)',
   },
   // Input Section
   inputSection: {
@@ -221,14 +218,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.8,
-    color: 'rgba(255, 255, 255, 0.4)',
     marginBottom: 10,
   },
   inputCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   input: {
     paddingHorizontal: 16,
@@ -247,14 +241,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   cancelButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.5)',
   },
   createButton: {
     flex: 1,

@@ -526,6 +526,7 @@ export default function QuantumOrbitScreen() {
       <LinearGradient colors={theme.gradients.background} style={StyleSheet.absoluteFill} />
       <AnimatedGlow />
       <StarField />
+      <View style={[styles.grain, { backgroundColor: theme.colors.grain }]} pointerEvents="none" />
 
       {/* Electric Bolt Layer */}
       {activeBolts.length > 0 && !isSpinning && boltPositionsRef.current.length === activeBolts.length && (
@@ -718,8 +719,6 @@ export default function QuantumOrbitScreen() {
           }}
         />
       )}
-
-      <View style={styles.grain} pointerEvents="none" />
     </View>
   );
 }
@@ -763,7 +762,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0, 240, 255, 0.01)",
     opacity: 0.3,
     pointerEvents: "none",
   },

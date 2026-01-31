@@ -114,9 +114,9 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
 
   // Determine border color based on state
   const getBorderColor = () => {
-    if (error) return "#EF4444";
+    if (error) return theme.colors.status.error;
     if (isFocused) return theme.colors.mood.neutral.base;
-    if (value.length >= 7) return "#22C55E";
+    if (value.length >= 7) return theme.colors.status.success;
     return theme.colors.glass.border;
   };
 
@@ -124,8 +124,8 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
   const borderColor = focusAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [
-      error ? "#EF4444" : value.length >= 7 ? "#22C55E" : theme.colors.glass.border,
-      error ? "#EF4444" : theme.colors.mood.neutral.base,
+      error ? theme.colors.status.error : value.length >= 7 ? theme.colors.status.success : theme.colors.glass.border,
+      error ? theme.colors.status.error : theme.colors.mood.neutral.base,
     ],
   });
 
@@ -247,7 +247,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
           {value.length > 0 && (
             <View style={styles.validationIcon}>
               {value.length >= 7 ? (
-                <Feather name="check-circle" size={20} color="#22C55E" />
+                <Feather name="check-circle" size={20} color={theme.colors.status.success} />
               ) : (
                 <Feather name="phone" size={18} color={theme.colors.text.tertiary} />
               )}
@@ -260,8 +260,8 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
       <View style={styles.footer}>
         {error ? (
           <View style={styles.errorRow}>
-            <Feather name="alert-circle" size={12} color="#EF4444" />
-            <Text style={styles.errorText}>{error}</Text>
+            <Feather name="alert-circle" size={12} color={theme.colors.status.error} />
+            <Text style={[styles.errorText, { color: theme.colors.status.error }]}>{error}</Text>
           </View>
         ) : (
           <Text style={[styles.hint, { color: theme.colors.text.tertiary }]}>
@@ -347,7 +347,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: typography.size.xs,
-    color: "#EF4444",
   },
 });
 

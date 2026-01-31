@@ -54,7 +54,7 @@ const ProfileRow: React.FC<ProfileRowProps> = ({
       style={[
         styles.rowContainer,
         {
-          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          backgroundColor: theme.colors.glass.background,
           borderTopLeftRadius: isFirst ? 16 : 0,
           borderTopRightRadius: isFirst ? 16 : 0,
           borderBottomLeftRadius: isLast ? 16 : 0,
@@ -96,7 +96,7 @@ const ProfileRow: React.FC<ProfileRowProps> = ({
       {!isLast && (
         <View style={styles.separatorContainer}>
           <View
-            style={[styles.separator, { backgroundColor: 'rgba(255, 255, 255, 0.06)' }]}
+            style={[styles.separator, { backgroundColor: theme.colors.glass.background }]}
           />
         </View>
       )}
@@ -458,7 +458,7 @@ export default function ProfileScreen() {
         {isEditingName ? (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text.tertiary }]}>DISPLAY NAME</Text>
-            <View style={[styles.editCard, { backgroundColor: 'rgba(255, 255, 255, 0.05)' }]}>
+            <View style={[styles.editCard, { backgroundColor: theme.colors.glass.background }]}>
               <View style={styles.editInputContainer}>
                 <TextInput
                   style={[styles.nameInput, { color: theme.colors.text.primary }]}
@@ -472,12 +472,12 @@ export default function ProfileScreen() {
                   onSubmitEditing={handleSaveName}
                 />
               </View>
-              <View style={[styles.editDivider, { backgroundColor: 'rgba(255, 255, 255, 0.06)' }]} />
+              <View style={[styles.editDivider, { backgroundColor: theme.colors.glass.background }]} />
               <View style={styles.editButtons}>
                 <TouchableOpacity style={styles.editButton} onPress={handleCancelEdit} activeOpacity={interactionStates.pressed}>
                   <Text style={[styles.cancelButtonText, { color: theme.colors.text.secondary }]}>Cancel</Text>
                 </TouchableOpacity>
-                <View style={[styles.buttonDivider, { backgroundColor: 'rgba(255, 255, 255, 0.06)' }]} />
+                <View style={[styles.buttonDivider, { backgroundColor: theme.colors.glass.background }]} />
                 <TouchableOpacity
                   style={styles.editButton}
                   onPress={handleSaveName}
@@ -548,7 +548,7 @@ export default function ProfileScreen() {
         ) : (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text.tertiary }]}>PHONE NUMBER</Text>
-            <View style={[styles.editCard, { backgroundColor: 'rgba(255, 255, 255, 0.05)' }]}>
+            <View style={[styles.editCard, { backgroundColor: theme.colors.glass.background }]}>
               <View style={styles.phoneInputContainer}>
                 {/* Country Picker */}
                 <TouchableOpacity
@@ -570,25 +570,25 @@ export default function ProfileScreen() {
                       ...DARK_THEME,
                       backgroundColor: '#0a0a20',
                       onBackgroundTextColor: '#ffffff',
-                      filterPlaceholderTextColor: 'rgba(255, 255, 255, 0.35)',
+                      filterPlaceholderTextColor: theme.colors.text.tertiary,
                     }}
                     containerButtonStyle={styles.pickerTrigger}
                     renderCountryFilter={(props: any) => (
-                      <View style={pickerStyles.filterContainer}>
+                      <View style={[pickerStyles.filterContainer, { borderBottomColor: theme.colors.glass.border }]}>
                         <View style={pickerStyles.filterRow}>
                           <TouchableOpacity
                             onPress={() => setShowCountryPicker(false)}
-                            style={pickerStyles.closeButton}
+                            style={[pickerStyles.closeButton, { backgroundColor: theme.colors.glass.border }]}
                             activeOpacity={0.7}
                           >
-                            <Ionicons name="close" size={22} color="rgba(255,255,255,0.6)" />
+                            <Ionicons name="close" size={22} color={theme.colors.text.secondary} />
                           </TouchableOpacity>
-                          <View style={pickerStyles.searchInputWrapper}>
-                            <Ionicons name="search" size={18} color="rgba(255,255,255,0.35)" style={pickerStyles.searchIcon} />
+                          <View style={[pickerStyles.searchInputWrapper, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }]}>
+                            <Ionicons name="search" size={18} color={theme.colors.text.tertiary} style={pickerStyles.searchIcon} />
                             <TextInput
                               {...props}
                               placeholder="Search country..."
-                              placeholderTextColor="rgba(255,255,255,0.3)"
+                              placeholderTextColor={theme.colors.text.tertiary}
                               autoFocus
                               style={pickerStyles.searchInput}
                             />
@@ -627,12 +627,12 @@ export default function ProfileScreen() {
                   onSubmitEditing={handleSavePhone}
                 />
               </View>
-              <View style={[styles.editDivider, { backgroundColor: 'rgba(255, 255, 255, 0.06)' }]} />
+              <View style={[styles.editDivider, { backgroundColor: theme.colors.glass.background }]} />
               <View style={styles.editButtons}>
                 <TouchableOpacity style={styles.editButton} onPress={handleCancelPhoneEdit} activeOpacity={interactionStates.pressed}>
                   <Text style={[styles.cancelButtonText, { color: theme.colors.text.secondary }]}>Cancel</Text>
                 </TouchableOpacity>
-                <View style={[styles.buttonDivider, { backgroundColor: 'rgba(255, 255, 255, 0.06)' }]} />
+                <View style={[styles.buttonDivider, { backgroundColor: theme.colors.glass.background }]} />
                 <TouchableOpacity
                   style={styles.editButton}
                   onPress={handleSavePhone}
@@ -977,7 +977,6 @@ const pickerStyles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
   filterRow: {
     flexDirection: 'row',
@@ -988,7 +987,6 @@ const pickerStyles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -996,10 +994,8 @@ const pickerStyles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.07)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
     paddingHorizontal: 12,
     height: 42,
   },

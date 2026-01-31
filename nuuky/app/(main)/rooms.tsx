@@ -148,7 +148,7 @@ export default function RoomsScreen() {
               {homeRoom && (
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { color: 'rgba(255,255,255,0.5)' }]}>MY NŪŪKY</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.colors.text.tertiary }]}>MY NŪŪKY</Text>
                   </View>
                   <View style={styles.defaultRoomContainer}>
                     <RoomCard
@@ -166,7 +166,7 @@ export default function RoomsScreen() {
               {otherRooms.length > 0 && (
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { color: 'rgba(255,255,255,0.5)' }]}>OTHER ROOMS</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.colors.text.tertiary }]}>OTHER ROOMS</Text>
                   </View>
                   <View style={styles.roomsList}>
                     {otherRooms.map((room) => (
@@ -192,7 +192,7 @@ export default function RoomsScreen() {
                   <Ionicons name="home-outline" size={36} color={accent.primary} />
                 </View>
                 <Text style={[styles.emptyTitle, { color: theme.colors.text.primary }]}>No Rooms Yet</Text>
-                <Text style={styles.emptyMessage}>Create your first room to hang with friends</Text>
+                <Text style={[styles.emptyMessage, { color: theme.colors.text.tertiary }]}>Create your first room to hang with friends</Text>
                 <TouchableOpacity
                   style={styles.emptyButton}
                   onPress={handleCreateRoom}
@@ -303,7 +303,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: "center",
     marginBottom: spacing.xl,
-    color: "rgba(255, 255, 255, 0.5)",
   },
   emptyButton: {
     borderRadius: 12,

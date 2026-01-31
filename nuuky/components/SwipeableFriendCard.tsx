@@ -13,9 +13,9 @@ import { User, Friendship, Streak } from '../types';
 import { getMoodColor, radius } from '../lib/theme';
 import { isUserTrulyOnline } from '../lib/utils';
 import { BoltIcon, BoltTier } from './StreakBadge';
+import { useTheme } from '../hooks/useTheme';
 
 const ACTION_WIDTH = 74; // Per-action width, iOS standard
-const TAILWIND_RED = '#EF4444';
 
 interface SwipeableFriendCardProps {
   friendship: Friendship;
@@ -32,6 +32,7 @@ function RightAction({
   index,
   totalActions,
   onPress,
+  theme,
 }: {
   drag: SharedValue<number>;
   iconName: string;
@@ -40,6 +41,7 @@ function RightAction({
   index: number;
   totalActions: number;
   onPress: () => void;
+  theme: ReturnType<typeof useTheme>['theme'];
 }) {
   const actionOffset = ACTION_WIDTH * (totalActions - index);
 
@@ -63,8 +65,8 @@ function RightAction({
         style={[styles.actionButtonInner, { backgroundColor: color }]}
         onPress={onPress}
       >
-        <Ionicons name={iconName as any} size={24} color="#FFFFFF" />
-        <Text style={styles.actionText}>{label}</Text>
+        <Ionicons name={iconName as any} size={24} color={theme.colors.text.primary} />
+        <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>{label}</Text>
       </RectButton>
     </Reanimated.View>
   );
@@ -76,6 +78,7 @@ export const SwipeableFriendCard: React.FC<SwipeableFriendCardProps> = ({
   textPrimaryColor,
   streak,
 }) => {
+  const { theme } = useTheme();
   const swipeableRef = useRef<any>(null);
   const pendingAction = useRef<'remove' | null>(null);
   const friend = friendship.friend as User;
@@ -100,15 +103,16 @@ export const SwipeableFriendCard: React.FC<SwipeableFriendCardProps> = ({
             drag={drag}
             iconName="trash-outline"
             label="Remove"
-            color={TAILWIND_RED}
+            color={theme.colors.action.delete}
             index={0}
             totalActions={1}
             onPress={handleRemoveAction}
+            theme={theme}
           />
         </View>
       );
     },
-    [handleRemoveAction]
+    [handleRemoveAction, theme]
   );
 
   const onSwipeableOpen = useCallback((direction: string) => {
@@ -144,7 +148,13 @@ export const SwipeableFriendCard: React.FC<SwipeableFriendCardProps> = ({
       containerStyle={styles.swipeableContainer}
       enableTrackpadTwoFingerGesture
     >
-      <View style={styles.friendCard}>
+      <View style={[
+        styles.friendCard,
+        {
+          backgroundColor: theme.colors.glass.background,
+          borderColor: theme.colors.glass.border,
+        }
+      ]}>
         <View style={styles.friendInfo}>
           <View style={styles.friendAvatarWrapper}>
             {friend.avatar_url ? (
@@ -153,7 +163,7 @@ export const SwipeableFriendCard: React.FC<SwipeableFriendCardProps> = ({
                 style={[
                   styles.friendAvatar,
                   {
-                    borderColor: isOnline ? moodColors.base : "rgba(255,255,255,0.1)",
+                    borderColor: isOnline ? moodColors.base : theme.colors.ui.borderLight,
                   },
                 ]}
               />
@@ -163,7 +173,7 @@ export const SwipeableFriendCard: React.FC<SwipeableFriendCardProps> = ({
                   styles.friendAvatar,
                   {
                     backgroundColor: moodColors.base,
-                    borderColor: isOnline ? moodColors.base : "rgba(255,255,255,0.1)",
+                    borderColor: isOnline ? moodColors.base : theme.colors.ui.borderLight,
                     justifyContent: 'center',
                     alignItems: 'center',
                   },
@@ -179,7 +189,7 @@ export const SwipeableFriendCard: React.FC<SwipeableFriendCardProps> = ({
 
           <View style={styles.friendText}>
             <Text style={[styles.friendName, { color: textPrimaryColor }]}>{friend.display_name}</Text>
-            <Text style={styles.friendStatus}>{isOnline ? "Online" : "Offline"}</Text>
+            <Text style={[styles.friendStatus, { color: theme.colors.text.tertiary }]}>{isOnline ? "Online" : "Offline"}</Text>
           </View>
         </View>
 
@@ -226,7 +236,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   actionText: {
-    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -235,10 +244,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     padding: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.04)",
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.06)",
   },
   friendInfo: {
     flexDirection: "row",
@@ -262,7 +269,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#FFFFFF', // Keep white for avatar text as it's on colored background
   },
   onlineIndicator: {
     position: "absolute",
@@ -285,7 +292,6 @@ const styles = StyleSheet.create({
   },
   friendStatus: {
     fontSize: 13,
-    color: "rgba(255,255,255,0.5)",
   },
   streakInline: {
     flexDirection: 'row',

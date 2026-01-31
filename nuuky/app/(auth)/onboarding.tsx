@@ -30,7 +30,7 @@ import { validatePhone, formatPhoneDisplay, getDialCode, getPhonePlaceholder, ge
 export default function OnboardingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { currentUser } = useAppStore();
   const { loading, pickAndUploadAvatar, updateDisplayName, updatePhone, completeProfile } = useProfile();
   const { checking, validateUsername, checkAvailability, suggestUsername, updateUsername } = useUsername();
@@ -295,8 +295,8 @@ export default function OnboardingScreen() {
                   )}
                 </View>
 
-                <View style={[styles.cameraBadge, { backgroundColor: "#007AFF" }]} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                  <Ionicons name="camera" size={16} color="#fff" />
+                <View style={[styles.cameraBadge, { backgroundColor: "#007AFF", borderColor: theme.colors.bg.primary }]} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                  <Ionicons name="camera" size={16} color={theme.colors.text.primary} />
                 </View>
               </TouchableOpacity>
 
@@ -311,8 +311,8 @@ export default function OnboardingScreen() {
                 DISPLAY NAME
               </Text>
               <View style={styles.sectionContent}>
-                <View style={[styles.inputRow, { backgroundColor: "rgba(255, 255, 255, 0.05)" }]}>
-                  <Ionicons name="person-outline" size={20} color="#FFFFFF" style={styles.inputIcon} />
+                <View style={[styles.inputRow, { backgroundColor: theme.colors.glass.background }]}>
+                  <Ionicons name="person-outline" size={20} color={theme.colors.text.primary} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.textInput, { color: theme.colors.text.primary }]}
                     value={displayName}
@@ -341,7 +341,7 @@ export default function OnboardingScreen() {
                   style={[
                     styles.inputRow,
                     {
-                      backgroundColor: "rgba(255, 255, 255, 0.05)",
+                      backgroundColor: theme.colors.glass.background,
                       borderWidth: usernameError ? 1 : 0,
                       borderColor: usernameError ? "#EF4444" : "transparent",
                     },
@@ -380,7 +380,7 @@ export default function OnboardingScreen() {
                 PHONE NUMBER
               </Text>
               <View style={styles.sectionContent}>
-                <View style={[styles.inputRow, { backgroundColor: "rgba(255, 255, 255, 0.05)" }]}>
+                <View style={[styles.inputRow, { backgroundColor: theme.colors.glass.background }]}>
                   {/* Country Picker */}
                   <TouchableOpacity
                     onPress={handleCountryPress}
@@ -399,11 +399,11 @@ export default function OnboardingScreen() {
                       withCloseButton={false}
                       theme={{
                         ...DARK_THEME,
-                        backgroundColor: '#0a0a20',
-                        onBackgroundTextColor: '#ffffff',
-                        filterPlaceholderTextColor: 'rgba(255, 255, 255, 0.35)',
+                        backgroundColor: theme.colors.bg.primary,
+                        onBackgroundTextColor: theme.colors.text.primary,
+                        filterPlaceholderTextColor: theme.colors.text.tertiary,
                         primaryColor: '#3FCBFF',
-                        primaryColorVariant: '#141428',
+                        primaryColorVariant: theme.colors.glass.background,
                         activeOpacity: interactionStates.pressed,
                         itemHeight: 56,
                         flagSize: 28,
@@ -412,33 +412,33 @@ export default function OnboardingScreen() {
                       }}
                       containerButtonStyle={styles.pickerTrigger}
                       renderCountryFilter={(props: any) => (
-                        <View style={pickerStyles.filterContainer}>
+                        <View style={[pickerStyles.filterContainer, { borderBottomColor: theme.colors.glass.border }]}>
                           <View style={pickerStyles.filterRow}>
                             <TouchableOpacity
                               onPress={() => setShowCountryPicker(false)}
-                              style={pickerStyles.closeButton}
+                              style={[pickerStyles.closeButton, { backgroundColor: theme.colors.glass.border }]}
                               activeOpacity={0.7}
                               accessibilityLabel="Close country picker"
                               accessibilityRole="button"
                               hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                             >
-                              <Ionicons name="close" size={22} color="rgba(255,255,255,0.6)" />
+                              <Ionicons name="close" size={22} color={theme.colors.text.secondary} />
                             </TouchableOpacity>
-                            <View style={pickerStyles.searchInputWrapper}>
-                              <Ionicons name="search" size={18} color="rgba(255,255,255,0.35)" style={pickerStyles.searchIcon} />
+                            <View style={[pickerStyles.searchInputWrapper, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }]}>
+                              <Ionicons name="search" size={18} color={theme.colors.text.tertiary} style={pickerStyles.searchIcon} />
                               <TextInput
                                 {...props}
                                 placeholder="Search country..."
-                                placeholderTextColor="rgba(255,255,255,0.3)"
+                                placeholderTextColor={theme.colors.text.tertiary}
                                 autoFocus
-                                style={pickerStyles.searchInput}
+                                style={[pickerStyles.searchInput, { color: theme.colors.text.primary }]}
                               />
                             </View>
                           </View>
                         </View>
                       )}
                       flatListProps={{
-                        style: { backgroundColor: '#0a0a20' },
+                        style: { backgroundColor: theme.colors.bg.primary },
                         contentContainerStyle: { paddingBottom: 60, paddingTop: 4 },
                         showsVerticalScrollIndicator: false,
                       }}
@@ -492,7 +492,7 @@ export default function OnboardingScreen() {
                 style={[
                   styles.continueButton,
                   {
-                    backgroundColor: isValid ? "#FFFFFF" : "rgba(255, 255, 255, 0.1)",
+                    backgroundColor: isValid ? "#FFFFFF" : theme.colors.glass.border,
                     opacity: loading ? 0.6 : 1,
                   },
                 ]}
@@ -594,7 +594,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 3,
-    borderColor: "#050510",
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -727,7 +726,6 @@ const pickerStyles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
   filterRow: {
     flexDirection: 'row',
@@ -738,7 +736,6 @@ const pickerStyles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -746,10 +743,8 @@ const pickerStyles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.07)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
     paddingHorizontal: 12,
     height: 42,
   },
@@ -758,7 +753,6 @@ const pickerStyles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '400',
     letterSpacing: -0.2,
