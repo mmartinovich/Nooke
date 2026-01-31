@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,67 +9,73 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Animated,
   Dimensions,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  runOnJS,
+  Easing,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmojiInput } from './EmojiInput';
 import { radius, CUSTOM_MOOD_NEUTRAL_COLOR } from '../lib/theme';
 import { useTheme } from '../hooks/useTheme';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 interface CustomMoodEditorProps {
   visible: boolean;
   onSave: (emoji: string, text: string, color: string) => void;
   onClose: () => void;
+  onBack?: () => void;
   initialEmoji?: string;
   initialText?: string;
+  originPoint?: { x: number; y: number };
 }
 
 export const CustomMoodEditor: React.FC<CustomMoodEditorProps> = ({
   visible,
   onSave,
   onClose,
+  onBack,
   initialEmoji = '',
   initialText = '',
+  originPoint,
 }) => {
   const { theme, accent } = useTheme();
+  const insets = useSafeAreaInsets();
   const [emoji, setEmoji] = useState(initialEmoji);
   const [text, setText] = useState(initialText);
 
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const offsetX = (originPoint?.x ?? SCREEN_W / 2) - SCREEN_W / 2;
+  const offsetY = (originPoint?.y ?? SCREEN_H / 2) - SCREEN_H / 2;
 
-  // Sync state when modal opens with existing custom mood data
+  const progress = useSharedValue(0);
+
   useEffect(() => {
     if (visible) {
       setEmoji(initialEmoji);
       setText(initialText);
+      progress.value = withTiming(1, { duration: 300, easing: Easing.linear });
+    } else {
+      progress.value = 0;
     }
   }, [visible]);
 
-  useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 100,
-          friction: 10,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      scaleAnim.setValue(0.95);
-      opacityAnim.setValue(0);
-    }
-  }, [visible]);
+  const handleBack = useCallback(() => {
+    progress.value = withTiming(0, { duration: 200, easing: Easing.linear }, () => {
+      if (onBack) {
+        runOnJS(onBack)();
+      } else {
+        runOnJS(onClose)();
+      }
+    });
+  }, [onBack, onClose]);
 
   const canSave = emoji.trim().length > 0 && text.trim().length > 0;
 
@@ -93,149 +99,162 @@ export const CustomMoodEditor: React.FC<CustomMoodEditorProps> = ({
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onSave(cleanedEmoji, text.trim(), CUSTOM_MOOD_NEUTRAL_COLOR);
-    handleClose();
+    progress.value = withTiming(0, { duration: 200, easing: Easing.linear }, () => {
+      runOnJS(onClose)();
+    });
   };
 
-  const handleClose = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setEmoji('');
-    setText('');
-    onClose();
-  };
+  const animatedStyle = useAnimatedStyle(() => {
+    const p = progress.value;
+    return {
+      opacity: p,
+      transform: [
+        { translateX: offsetX * (1 - p) },
+        { translateY: offsetY * (1 - p) },
+        { scale: 0.3 + p * 0.7 },
+      ],
+    };
+  });
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+  }));
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
-      <View style={[styles.overlay, { backgroundColor: theme.colors.ui.overlay }]}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
-        >
-          <Animated.View
-            style={[
-              styles.modalContainer,
-              {
-                opacity: opacityAnim,
-                transform: [{ scale: scaleAnim }],
-              },
-            ]}
-          >
-            <LinearGradient
-              colors={theme.gradients.background}
-              style={[styles.gradientBackground, { borderColor: theme.colors.glass.border }]}
-            >
-              {/* Header */}
-              <View style={styles.headerSection}>
-                <View style={styles.headerText}>
-                  <Text style={[styles.title, { color: theme.colors.text.primary }]}>Custom Mood</Text>
-                  <Text style={[styles.subtitle, { color: theme.colors.text.tertiary }]}>Make it yours!</Text>
-                </View>
-              </View>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onRequestClose={handleBack}
+      statusBarTranslucent
+    >
+      <View style={styles.fullScreen}>
+        {/* Blurred backdrop */}
+        <Animated.View style={[StyleSheet.absoluteFill, backdropStyle]}>
+          <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill}>
+            <TouchableOpacity
+              style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.4)' }]}
+              activeOpacity={1}
+              onPress={handleBack}
+            />
+          </BlurView>
+        </Animated.View>
 
-              {/* Emoji Input */}
-              <View style={styles.inputSection}>
-                <EmojiInput
-                  value={emoji}
-                  onChangeEmoji={setEmoji}
+        {/* Content */}
+        <Animated.View style={[styles.fullScreenContent, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 8 }, animatedStyle]}>
+          {/* Header with X button */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={[styles.closeButton, { backgroundColor: theme.colors.glass.background }]}
+              onPress={handleBack}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={22} color={theme.colors.text.primary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Title */}
+          <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Custom Mood</Text>
+          <Text style={[styles.subtitle, { color: theme.colors.text.tertiary }]}>Make it yours!</Text>
+
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.formArea}
+          >
+            {/* Emoji Input */}
+            <View style={styles.inputSection}>
+              <EmojiInput
+                value={emoji}
+                onChangeEmoji={setEmoji}
+              />
+            </View>
+
+            {/* Status Message */}
+            <View style={styles.inputSection}>
+              <Text style={[styles.sectionLabel, { color: theme.colors.text.tertiary }]}>STATUS MESSAGE</Text>
+              <View style={[styles.inputCard, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }]}>
+                <TextInput
+                  style={[styles.input, { color: theme.colors.text.primary }]}
+                  value={text}
+                  onChangeText={setText}
+                  placeholder="How are you feeling?"
+                  placeholderTextColor={theme.colors.text.tertiary}
+                  maxLength={50}
+                  returnKeyType="done"
                 />
               </View>
+              <Text style={[styles.charCount, { color: theme.colors.text.tertiary }]}>{text.length}/50</Text>
+            </View>
 
-              {/* Status Message */}
-              <View style={styles.inputSection}>
-                <Text style={[styles.sectionLabel, { color: theme.colors.text.tertiary }]}>STATUS MESSAGE</Text>
-                <View style={[styles.inputCard, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }]}>
-                  <TextInput
-                    style={[styles.input, { color: theme.colors.text.primary }]}
-                    value={text}
-                    onChangeText={setText}
-                    placeholder="How are you feeling?"
-                    placeholderTextColor={theme.colors.text.tertiary}
-                    maxLength={50}
-                    returnKeyType="done"
-                  />
-                </View>
-                <Text style={[styles.charCount, { color: theme.colors.text.tertiary }]}>{text.length}/50</Text>
-              </View>
+            {/* Buttons */}
+            <View style={styles.buttons}>
+              <TouchableOpacity
+                onPress={handleBack}
+                style={[styles.cancelButton, { backgroundColor: 'rgba(239, 68, 68, 0.12)', borderColor: 'rgba(239, 68, 68, 0.3)' }]}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.cancelButtonText, { color: '#EF4444' }]}>Cancel</Text>
+              </TouchableOpacity>
 
-              {/* Buttons */}
-              <View style={styles.buttons}>
-                <TouchableOpacity
-                  onPress={handleClose}
-                  style={[styles.cancelButton, { backgroundColor: 'rgba(239, 68, 68, 0.12)', borderColor: 'rgba(239, 68, 68, 0.3)' }]}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.cancelButtonText, { color: '#EF4444' }]}>Cancel</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={handleSave}
+              <TouchableOpacity
+                onPress={handleSave}
+                style={[
+                  styles.saveButton,
+                  { backgroundColor: canSave ? accent.primary : theme.colors.glass.background },
+                ]}
+                activeOpacity={0.7}
+                disabled={!canSave}
+              >
+                <Text
                   style={[
-                    styles.saveButton,
-                    { backgroundColor: canSave ? accent.primary : theme.colors.glass.background },
+                    styles.saveButtonText,
+                    { color: canSave ? '#FFFFFF' : theme.colors.text.tertiary },
                   ]}
-                  activeOpacity={0.7}
-                  disabled={!canSave}
                 >
-                  <Text
-                    style={[
-                      styles.saveButtonText,
-                      { color: canSave ? '#FFFFFF' : theme.colors.text.tertiary },
-                    ]}
-                  >
-                    Save & Use
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </LinearGradient>
-          </Animated.View>
-        </KeyboardAvoidingView>
+                  Save & Use
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </Animated.View>
       </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
+  fullScreen: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  keyboardView: {
+  fullScreenContent: {
     flex: 1,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingHorizontal: 24,
   },
-  modalContainer: {
-    width: SCREEN_WIDTH - 48,
-    maxWidth: 360,
-    borderRadius: radius.xl,
-    overflow: 'hidden',
-  },
-  gradientBackground: {
-    padding: 24,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-  },
-  // Header
-  headerSection: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
-  headerText: {
-    flex: 1,
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
-    letterSpacing: -0.3,
-    marginBottom: 2,
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 13,
-    fontWeight: '400',
+    fontSize: 14,
+    marginBottom: 24,
   },
-  // Input Sections
+  formArea: {
+    flex: 1,
+  },
   inputSection: {
     marginBottom: 24,
   },
@@ -260,7 +279,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'right',
   },
-  // Buttons
   buttons: {
     flexDirection: 'row',
     gap: 12,

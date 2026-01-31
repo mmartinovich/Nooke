@@ -1,33 +1,28 @@
-import React, { useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Image, ScrollView } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, Modal, Image, ScrollView, TextInput, Dimensions } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { PresetMood, CustomMood } from '../types';
-import { getMoodImage, getMoodColor, getCustomMoodColor, radius } from '../lib/theme';
+import { getMoodImage, getMoodColor, getCustomMoodColor, radius, CUSTOM_MOOD_NEUTRAL_COLOR } from '../lib/theme';
 import { useTheme } from '../hooks/useTheme';
+import { EmojiInput } from './EmojiInput';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  runOnJS,
+  Easing,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Moved outside component to prevent recreation on each render
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
 const MOODS: ReadonlyArray<{ mood: PresetMood; label: string; description: string }> = [
-  {
-    mood: 'good',
-    label: 'Feeling good',
-    description: 'Positive and available',
-  },
-  {
-    mood: 'neutral',
-    label: 'Neutral',
-    description: 'Just here, nothing special',
-  },
-  {
-    mood: 'not_great',
-    label: 'Not great',
-    description: 'Having a rough time',
-  },
-  {
-    mood: 'reach_out',
-    label: 'Need support',
-    description: 'Could use some company',
-  },
+  { mood: 'good', label: 'Feeling good', description: 'Positive and available' },
+  { mood: 'neutral', label: 'Neutral', description: 'Just here, nothing special' },
+  { mood: 'not_great', label: 'Not great', description: 'Having a rough time' },
+  { mood: 'reach_out', label: 'Need support', description: 'Could use some company' },
 ] as const;
 
 interface MoodPickerProps {
@@ -37,8 +32,9 @@ interface MoodPickerProps {
   onClose: () => void;
   customMood?: CustomMood | null;
   isCustomMoodActive?: boolean;
-  onCreateCustomMood?: () => void;
   onSelectCustomMood?: () => void;
+  onSaveCustomMood?: (emoji: string, text: string, color: string) => void;
+  originPoint?: { x: number; y: number };
 }
 
 export const MoodPicker: React.FC<MoodPickerProps> = ({
@@ -48,227 +44,303 @@ export const MoodPicker: React.FC<MoodPickerProps> = ({
   onClose,
   customMood,
   isCustomMoodActive,
-  onCreateCustomMood,
   onSelectCustomMood,
+  onSaveCustomMood,
+  originPoint,
 }) => {
   const { theme, accent } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editEmoji, setEditEmoji] = useState('');
+  const [editText, setEditText] = useState('');
+
+  const offsetX = (originPoint?.x ?? SCREEN_W / 2) - SCREEN_W / 2;
+  const offsetY = (originPoint?.y ?? SCREEN_H / 2) - SCREEN_H / 2;
+
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    if (visible) {
+      progress.value = withTiming(1, { duration: 250, easing: Easing.out(Easing.cubic) });
+      // Reset editing state, pre-fill if custom mood exists
+      setIsEditing(false);
+      setEditEmoji(customMood?.emoji ?? '');
+      setEditText(customMood?.text ?? '');
+    } else {
+      progress.value = 0;
+    }
+  }, [visible]);
+
+  const handleClose = useCallback(() => {
+    progress.value = withTiming(0, { duration: 200, easing: Easing.in(Easing.cubic) }, () => {
+      runOnJS(onClose)();
+    });
+  }, [onClose]);
 
   const handleSelectMood = useCallback((mood: PresetMood) => {
     onSelectMood(mood);
-    onClose();
-  }, [onSelectMood, onClose]);
+    handleClose();
+  }, [onSelectMood, handleClose]);
+
+  const handleStartEditing = useCallback(() => {
+    setEditEmoji(customMood?.emoji ?? '');
+    setEditText(customMood?.text ?? '');
+    setIsEditing(true);
+  }, [customMood]);
+
+  const handleSaveCustom = useCallback(() => {
+    const cleanedEmoji = editEmoji.trim();
+    const cleanedText = editText.trim();
+    if (!cleanedEmoji || !cleanedText) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onSaveCustomMood?.(cleanedEmoji, cleanedText, CUSTOM_MOOD_NEUTRAL_COLOR);
+    setIsEditing(false);
+    handleClose();
+  }, [editEmoji, editText, onSaveCustomMood, handleClose]);
+
+  const canSave = editEmoji.trim().length > 0 && editText.trim().length > 0;
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const p = progress.value;
+    return {
+      opacity: p,
+      transform: [
+        { translateX: offsetX * (1 - p) },
+        { translateY: offsetY * (1 - p) },
+        { scale: 0.3 + p * 0.7 },
+      ],
+    };
+  });
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+  }));
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
-      onRequestClose={onClose}
+      animationType="none"
+      onRequestClose={handleClose}
       accessibilityViewIsModal={true}
+      statusBarTranslucent
     >
-      <TouchableOpacity
-        style={styles.overlay}
-        activeOpacity={1}
-        onPress={onClose}
-        accessibilityLabel="Close mood picker"
-        accessibilityRole="button"
-      >
-        <View
-          style={styles.modalContainer}
-          onStartShouldSetResponder={() => true}
-        >
-          <LinearGradient colors={theme.gradients.background} style={styles.gradientBackground}>
-            <ScrollView
-                showsVerticalScrollIndicator={false}
-                bounces={false}
-                contentContainerStyle={styles.scrollContent}
-              >
-                {/* Header - Friends page style */}
-                <View style={styles.header}>
-                  <View style={styles.headerLeft} />
-                  <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>How are you?</Text>
+      <View style={styles.fullScreen}>
+        <Animated.View style={[StyleSheet.absoluteFill, backdropStyle]}>
+          <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill}>
+            <TouchableOpacity
+              style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.4)' }]}
+              activeOpacity={1}
+              onPress={handleClose}
+            />
+          </BlurView>
+        </Animated.View>
+
+        <Animated.View style={[styles.fullScreenContent, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 8 }, animatedStyle]}>
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={[styles.closeButton, { backgroundColor: theme.colors.glass.background }]}
+              onPress={handleClose}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={22} color={theme.colors.text.primary} />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>How are you?</Text>
+          <Text style={[styles.subtitle, { color: theme.colors.text.tertiary }]}>Your friends will see this</Text>
+
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            contentContainerStyle={styles.scrollContent}
+            style={styles.scrollView}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.moodList}>
+              {MOODS.map(({ mood, label, description }) => {
+                const isSelected = !isCustomMoodActive && currentMood === mood;
+                const moodColors = getMoodColor(mood);
+
+                return (
                   <TouchableOpacity
-                    style={[styles.closeButton, { backgroundColor: accent.soft }]}
-                    onPress={onClose}
+                    key={mood}
                     activeOpacity={0.7}
-                    accessibilityLabel="Close mood picker"
-                    accessibilityRole="button"
+                    onPress={() => handleSelectMood(mood)}
+                    style={[
+                      styles.moodCard,
+                      { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border },
+                      isSelected && { borderColor: moodColors.base, borderWidth: 2, backgroundColor: moodColors.soft },
+                    ]}
                   >
-                    <Ionicons name="close" size={24} color={accent.primary} />
+                    <View style={styles.imageWrapper}>
+                      <Image source={getMoodImage(mood)} style={styles.moodImage} />
+                    </View>
+                    <View style={styles.moodText}>
+                      <Text style={[styles.moodLabel, { color: theme.colors.text.primary }]}>{label}</Text>
+                      <Text style={[styles.moodDescription, { color: theme.colors.text.tertiary }]}>{description}</Text>
+                    </View>
+                    {isSelected && (
+                      <View style={[styles.checkmark, { backgroundColor: moodColors.base, shadowColor: moodColors.base }]}>
+                        <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                      </View>
+                    )}
                   </TouchableOpacity>
-                </View>
+                );
+              })}
 
-                {/* Subtitle */}
-                <Text style={[styles.subtitle, { color: theme.colors.text.tertiary }]}>Your friends will see this</Text>
-
-                {/* Mood options */}
-                <View style={styles.moodList}>
-                  {MOODS.map(({ mood, label, description }) => {
-                    const isSelected = !isCustomMoodActive && currentMood === mood;
-                    const moodColors = getMoodColor(mood);
-
-                    return (
-                      <TouchableOpacity
-                        key={mood}
-                        activeOpacity={0.7}
-                        onPress={() => handleSelectMood(mood)}
-                        style={[
-                          styles.moodCard,
-                          { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border },
-                          isSelected && { borderColor: moodColors.base, borderWidth: 2 },
-                        ]}
-                        accessibilityLabel={`${label}: ${description}`}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: isSelected }}
-                      >
-                        {/* Mood Creature Image */}
-                        <View style={styles.imageWrapper}>
-                          <Image
-                            source={getMoodImage(mood)}
-                            style={styles.moodImage}
-                          />
-                        </View>
-
-                        {/* Text */}
-                        <View style={styles.moodText}>
-                          <Text style={[styles.moodLabel, { color: theme.colors.text.primary }]}>{label}</Text>
-                          <Text style={[styles.moodDescription, { color: theme.colors.text.tertiary }]}>
-                            {description}
-                          </Text>
-                        </View>
-
-                        {/* Check mark */}
-                        {isSelected && (
-                          <View style={[styles.checkmark, { backgroundColor: moodColors.base }]}>
-                            <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-                          </View>
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-
-                  {/* Custom Mood */}
-                  {customMood ? (
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        if (isCustomMoodActive) {
-                          onCreateCustomMood?.();
-                        } else {
-                          onSelectCustomMood?.();
-                          onClose();
-                        }
-                      }}
-                      onLongPress={onCreateCustomMood}
-                      delayLongPress={400}
-                      style={[
-                        styles.moodCard,
-                        { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border },
-                        isCustomMoodActive && { borderColor: getCustomMoodColor(customMood.color).base, borderWidth: 2 },
-                      ]}
-                    >
-                      <View style={styles.imageWrapper}>
-                        <Text style={{ fontSize: 40 }}>{customMood.emoji}</Text>
-                      </View>
-                      <View style={styles.moodText}>
-                        <Text style={[styles.moodLabel, { color: theme.colors.text.primary }]}>{customMood.text}</Text>
-                        <Text style={[styles.moodDescription, { color: theme.colors.text.tertiary }]}>
-                          {isCustomMoodActive ? 'Hold to edit' : 'Custom mood'}
-                        </Text>
-                      </View>
-                      {isCustomMoodActive && (
-                        <View style={[styles.checkmark, { backgroundColor: getCustomMoodColor(customMood.color).base }]}>
-                          <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={onCreateCustomMood}
-                      style={[
-                        styles.moodCard,
-                        { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border, borderStyle: 'dashed' as const },
-                      ]}
-                    >
-                      <View style={styles.imageWrapper}>
-                        <Ionicons name="add-circle-outline" size={40} color={theme.colors.text.tertiary} />
-                      </View>
-                      <View style={styles.moodText}>
-                        <Text style={[styles.moodLabel, { color: theme.colors.text.primary }]}>Custom mood</Text>
-                        <Text style={[styles.moodDescription, { color: theme.colors.text.tertiary }]}>Pick your own emoji & message</Text>
-                      </View>
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                {/* Cancel button */}
-                <TouchableOpacity
-                  onPress={onClose}
-                  style={[styles.cancelButton, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }]}
-                  accessibilityLabel="Cancel"
-                  accessibilityRole="button"
+              {/* Custom Mood Card — expandable inline editor */}
+              <View
+                style={[
+                  styles.customCard,
+                  { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border },
+                  !isEditing && customMood && isCustomMoodActive && {
+                    borderColor: getCustomMoodColor(customMood.color).base,
+                    borderWidth: 2,
+                    backgroundColor: getCustomMoodColor(customMood.color).soft,
+                  },
+                  !isEditing && !customMood && { borderStyle: 'dashed' as const },
+                ]}
+              >
+                {/* Top row: tap to select, edit button */}
+                <Pressable
+                  style={styles.customTopRow}
+                  onPress={() => {
+                    if (isEditing) return;
+                    if (customMood) {
+                      if (!isCustomMoodActive) {
+                        onSelectCustomMood?.();
+                        handleClose();
+                      }
+                    } else {
+                      handleStartEditing();
+                    }
+                  }}
                 >
-                  <Text style={[styles.cancelText, { color: theme.colors.text.tertiary }]}>Cancel</Text>
-                </TouchableOpacity>
-            </ScrollView>
-          </LinearGradient>
-        </View>
-      </TouchableOpacity>
+                  <View style={styles.imageWrapperSmall}>
+                    {customMood && !isEditing ? (
+                      <Text style={{ fontSize: 36 }}>{customMood.emoji}</Text>
+                    ) : isEditing && editEmoji ? (
+                      <Text style={{ fontSize: 36 }}>{editEmoji}</Text>
+                    ) : (
+                      <Ionicons name="add-circle-outline" size={36} color={theme.colors.text.tertiary} />
+                    )}
+                  </View>
+                  <View style={styles.moodText}>
+                    <Text style={[styles.moodLabel, { color: theme.colors.text.primary }]}>
+                      {customMood && !isEditing ? customMood.text : 'Custom mood'}
+                    </Text>
+                    <Text style={[styles.moodDescription, { color: theme.colors.text.tertiary }]}>
+                      {customMood && !isEditing ? 'Custom mood' : 'Pick your own emoji & message'}
+                    </Text>
+                  </View>
+                  {customMood && !isEditing && (
+                    <Pressable
+                      style={[styles.editButton, { backgroundColor: theme.colors.glass.border }]}
+                      onPress={handleStartEditing}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Ionicons name="pencil" size={14} color={theme.colors.text.secondary} />
+                    </Pressable>
+                  )}
+                  {isCustomMoodActive && !isEditing && customMood && (
+                    <View style={[styles.checkmark, { backgroundColor: getCustomMoodColor(customMood.color).base, shadowColor: getCustomMoodColor(customMood.color).base }]}>
+                      <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                    </View>
+                  )}
+                </Pressable>
+
+                {/* Expanded editor */}
+                {isEditing && (
+                  <View style={styles.editorArea}>
+                    <View style={styles.editorDivider}>
+                      <View style={[styles.dividerLine, { backgroundColor: theme.colors.glass.border }]} />
+                    </View>
+
+                    <EmojiInput value={editEmoji} onChangeEmoji={setEditEmoji} />
+
+                    <View style={[styles.textInputCard, { backgroundColor: theme.colors.glass.background, borderColor: theme.colors.glass.border }]}>
+                      <TextInput
+                        style={[styles.textInput, { color: theme.colors.text.primary }]}
+                        value={editText}
+                        onChangeText={setEditText}
+                        placeholder="How are you feeling?"
+                        placeholderTextColor={theme.colors.text.tertiary}
+                        maxLength={50}
+                        returnKeyType="done"
+                      />
+                    </View>
+
+                    <View style={styles.editorButtons}>
+                      <TouchableOpacity
+                        onPress={() => setIsEditing(false)}
+                        style={[styles.editorCancel, { backgroundColor: 'rgba(239,68,68,0.12)', borderColor: 'rgba(239,68,68,0.3)' }]}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={{ color: '#EF4444', fontSize: 14, fontWeight: '600' }}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={handleSaveCustom}
+                        style={[styles.editorSave, { backgroundColor: canSave ? accent.primary : theme.colors.glass.background }]}
+                        activeOpacity={0.7}
+                        disabled={!canSave}
+                      >
+                        <Text style={{ color: canSave ? '#FFF' : theme.colors.text.tertiary, fontSize: 14, fontWeight: '600' }}>
+                          Save & Use
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              </View>
+            </View>
+          </ScrollView>
+        </Animated.View>
+      </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
+  fullScreen: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
   },
-  modalContainer: {
-    width: '100%',
-    maxWidth: 400,
-    borderRadius: radius.xl,
-    overflow: 'hidden',
+  fullScreenContent: {
+    flex: 1,
+    paddingHorizontal: 24,
   },
-  gradientBackground: {
-    borderRadius: radius.xl,
-  },
-  scrollContent: {
-    padding: 24,
-  },
-  // Header - Friends page style
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  headerLeft: {
-    width: 44,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    letterSpacing: -0.5,
+    marginBottom: 16,
   },
   closeButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+    marginBottom: 4,
+  },
   subtitle: {
     fontSize: 14,
-    textAlign: 'center',
     marginBottom: 24,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
   moodList: {
     gap: 12,
-    marginBottom: 24,
   },
   moodCard: {
     flexDirection: 'row',
@@ -284,6 +356,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  imageWrapperSmall: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   moodImage: {
     width: 56,
     height: 56,
@@ -293,28 +371,81 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   moodLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 2,
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 3,
+    letterSpacing: -0.2,
   },
   moodDescription: {
-    fontSize: 13,
+    fontSize: 12,
+    opacity: 0.6,
   },
   checkmark: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+  },
+  // Custom mood card
+  customCard: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    padding: 12,
+  },
+  customTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  editButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cancelButton: {
+  // Inline editor
+  editorArea: {
+    gap: 12,
+  },
+  editorDivider: {
+    paddingVertical: 8,
+  },
+  dividerLine: {
+    height: 1,
+  },
+  textInputCard: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+  },
+  textInput: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  editorButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  editorCancel: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 12,
     borderRadius: radius.md,
     borderWidth: 1,
   },
-  cancelText: {
-    fontSize: 16,
-    fontWeight: '600',
+  editorSave: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: radius.md,
   },
 });
