@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { RoomCard } from './RoomCard';
 import { Room } from '../types';
+import { radius } from '../lib/theme';
 
 const ACTION_WIDTH = 74; // Per-action width, iOS standard
 
@@ -179,7 +180,7 @@ export const SwipeableRoomCard: React.FC<SwipeableRoomCardProps> = ({
 
 const styles = StyleSheet.create({
   swipeableContainer: {
-    borderRadius: 16,
+    borderRadius: radius.md,
     overflow: 'hidden',
   },
   actionButton: {

@@ -10,7 +10,7 @@ import Reanimated, {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { User, Friendship, Streak } from '../types';
-import { getMoodColor } from '../lib/theme';
+import { getMoodColor, radius } from '../lib/theme';
 import { isUserTrulyOnline } from '../lib/utils';
 import { BoltIcon, BoltTier } from './StreakBadge';
 
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     padding: 16,
     backgroundColor: "rgba(255, 255, 255, 0.04)",
-    borderRadius: 16,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.06)",
   },

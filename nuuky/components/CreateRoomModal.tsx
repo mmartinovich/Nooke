@@ -15,7 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../hooks/useTheme';
-import { colors } from '../lib/theme';
+import { colors, radius } from '../lib/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -176,12 +176,12 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: SCREEN_WIDTH - 48,
     maxWidth: 360,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     overflow: 'hidden',
   },
   gradientBackground: {
     padding: 24,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   },
   inputCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 16,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
-    borderRadius: 16,
+    borderRadius: radius.md,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
-    borderRadius: 16,
+    borderRadius: radius.md,
   },
   createButtonText: {
     fontSize: 15,

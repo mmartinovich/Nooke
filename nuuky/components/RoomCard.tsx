@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 16,
+    borderRadius: radius.md,
     overflow: 'hidden',
     position: 'relative',
     ...Platform.select({

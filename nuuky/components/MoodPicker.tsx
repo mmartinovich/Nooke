@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, Image, ScrollView } fr
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { PresetMood } from '../types';
-import { colors, getMoodImage, getMoodColor } from '../lib/theme';
+import { colors, getMoodImage, getMoodColor, radius } from '../lib/theme';
 import { useTheme } from '../hooks/useTheme';
 
 // Moved outside component to prevent recreation on each render
@@ -165,11 +165,11 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: '100%',
     maxWidth: 400,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     overflow: 'hidden',
   },
   gradientBackground: {
-    borderRadius: 24,
+    borderRadius: radius.xl,
   },
   scrollContent: {
     padding: 24,
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 16,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
     gap: 12,
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 16,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
