@@ -14,6 +14,7 @@ interface FriendActionBubbleProps {
   onNudge: () => void;
   onCallMe: () => void;
   onHeart: () => void;
+  onInteraction?: () => void;
 }
 
 export function FriendActionBubble({
@@ -23,6 +24,7 @@ export function FriendActionBubble({
   onNudge,
   onCallMe,
   onHeart,
+  onInteraction,
 }: FriendActionBubbleProps) {
   const scaleAnim = useRef(new Animated.Value(0.3)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -85,6 +87,7 @@ export function FriendActionBubble({
       setSentAction('nudge');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onNudge();
+      onInteraction?.();
       Animated.spring(nudgeScale, { toValue: 1, tension: 300, friction: 10, useNativeDriver: true }).start(() => {
         setTimeout(() => {
           Animated.timing(nudgeScale, { toValue: 0, duration: 100, useNativeDriver: true }).start(() => {
@@ -121,6 +124,7 @@ export function FriendActionBubble({
         setSentAction('call');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         onCallMe();
+        onInteraction?.();
         Animated.spring(callScale, { toValue: 1, tension: 300, friction: 10, useNativeDriver: true }).start(() => {
           setTimeout(() => {
             Animated.timing(callScale, { toValue: 0, duration: 100, useNativeDriver: true }).start(() => {
@@ -149,6 +153,7 @@ export function FriendActionBubble({
       setSentAction('heart');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onHeart();
+      onInteraction?.();
       // Pop checkmark back in
       Animated.spring(heartScale, { toValue: 1, tension: 300, friction: 10, useNativeDriver: true }).start(() => {
         setTimeout(() => {
@@ -213,7 +218,7 @@ export function FriendActionBubble({
             >
               <Animated.View style={{ transform: [{ scale: nudgeScale }] }}>
                 {sentAction === 'nudge' ? (
-                  <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />
+                  <MaterialCommunityIcons name="check-bold" size={28} color="#3B82F6" />
                 ) : (
                   <MaterialCommunityIcons name="hand-wave" size={20} color="#3B82F6" />
                 )}
@@ -242,7 +247,7 @@ export function FriendActionBubble({
                 }}
               >
                 {sentAction === 'call' ? (
-                  <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
+                  <MaterialCommunityIcons name="check-bold" size={28} color="#22C55E" />
                 ) : (
                   <Ionicons name="call" size={20} color="#22C55E" />
                 )}
@@ -259,7 +264,7 @@ export function FriendActionBubble({
             >
               <Animated.View style={{ transform: [{ scale: heartScale }] }}>
                 {sentAction === 'heart' ? (
-                  <Ionicons name="checkmark-circle" size={20} color="#EF4444" />
+                  <MaterialCommunityIcons name="check-bold" size={28} color="#EF4444" />
                 ) : (
                   <Ionicons name="heart" size={20} color="#EF4444" />
                 )}

@@ -46,6 +46,15 @@ const sharedColors = {
       gradient: ['#FF4D6D', '#E6365A'] as const,
     },
   },
+  // Streak colors
+  streak: {
+    bolt: ['#00f0ff', '#3B82F6', '#b537f2'] as const, // cyan → blue → purple gradient
+    active: '#00f0ff',
+    fading: 'rgba(0, 240, 255, 0.4)',
+    badge: ['#00c6d4', '#0088ff'] as const,
+    badgeText: '#ffffff',
+    glow: 'rgba(0, 240, 255, 0.6)',
+  },
   // Neon accent colors (same in both themes)
   neon: {
     pink: '#ff1aff',
